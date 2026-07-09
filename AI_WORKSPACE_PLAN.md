@@ -92,29 +92,31 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - [x] Root `.mcp.json` created (Claude Code): `loupe` (stdio, `%LOCALAPPDATA%` install) + `atlassian` (HTTP).
 - [x] `.vscode/mcp.json` updated (Copilot): added `loupe` alongside existing `atlassian`.
 - [x] Core instructions: skill references now carry explicit file paths; Atlassian tool naming made neutral; pointer to this plan added at top.
-- [ ] **Work PC one-time setup:** run `Tools&Scripts/Loupe.Mcp-v0.2.0-win-x64/install.ps1`; approve the project MCP servers in Claude Code (it prompts); authenticate Atlassian MCP in Claude Code (`/mcp`).
+- [ ] **Work PC one-time setup:** run `Tools&Scripts/Loupe.Mcp-v0.2.0-win-x64/install.ps1`; authenticate Atlassian MCP in Claude Code (`/mcp` → atlassian → Authenticate); start `loupe` once in VS Code for Copilot. (Project MCP servers are auto-approved via `.claude/settings.json` → `enableAllProjectMcpServers: true`, added 2026-07-09 — note: `.mcp.json` is only read at session start, so restart the session after pulling.)
 - [x] Hard-stop guard added to `skalar-log-analysis` skill (F4b).
 - [x] **Home PC:** `loupe` MCP server started in VS Code and confirmed working in Copilot log analysis (2026-07-09). Work PC still needs the same one-time start (`MCP: List Servers` → `loupe` → Start).
 - [x] **Verified (home PC, 2026-07-09):** Copilot discovers skills from `.claude/skills/` (rename test). `.github/skills/` mirror and `Sync-Skills.ps1` deleted (F2). Re-verify once on the work PC.
 - [ ] Remove the now-redundant user-level `loupe` entry from `~/.claude.json` (home PC) to avoid confusion.
 
-### Phase 1 — Restructure the core (F1, F3, F5, F6, F7, F8) — done 2026-07-09 except F6
+### Phase 1 — Restructure the core (F1, F3, F5, F6, F7, F8) — COMPLETE 2026-07-09
 - [x] Section 4 carved into `.claude/skills/skalar-code-reference/SKILL.md` (verbatim content; search protocol rewritten tool-neutrally as "Domain Deduction"); core now has a slim routing section. Core shrank ~40 KB → ~19 KB.
 - [x] "Workspace Tooling & Generated Artifacts" section added to the core (F7): Sequences/ CSVs first, fetch-project, Process-SoftwareFolder, Parse-SkalarTables, Sync-ActionCode, ticket scraper, Loupe MCP.
 - [x] Past-Issue Case Base section added to the core (F8) — search `md documents/` logs before diagnosing; log new resolutions.
 - [x] "Where tables live" map + application-flow tracing recipe (CSV-first, tree output, splits/merges, -1 = disabled) added to core section 2 — absorbs the useful parts of the old `lookup-table`/`trace-sequence` prompts (F5 partially: tool-specific search protocol left the core with Section 4).
-- [ ] Restore the Confluence guide list (F6 — needs Joost: which guides? The copy-an-application guide link survives in section 2; the promised "noteworthy guides" list was never in the file).
+- [x] Confluence guide list added to core section 2 (F6): Software Setup + In Details pages per template (Testkit, BOD parent page, Waters, Soil ×4 variants, Clay Fraction) with page IDs, provided by Joost 2026-07-09. Semantics captured: Software Setup = what Lab follows to configure an A-robot; In Details = deeper template docs; "Soil robot" usually means Soil Single pHEC (~90% of Soil systems).
 - [x] `.github/prompts/` deleted entirely (F3): `analyze-log` superseded by the log-analysis skill, `trace-action` by the code-reference skill's Domain Deduction, `lookup-table`/`trace-sequence` folded into core section 2, `debug-issue` covered by case-base rule + skills (revisit in the Phase 3 ticket-analysis skill).
 - [x] `svn-package-upload` moved to `.claude/skills/svn-package-upload/` (with `scripts/` and `references/`; absolute paths inside updated). Now discovered as a skill by both assistants (F16 partially).
 
-### Phase 2 — Missing knowledge (F9–F12)
-- [ ] Hardware + domain glossary (needs Joost input for SP-series meanings).
-- [ ] `systems.md` order registry.
-- [ ] `error-codes.md` per template (AI-extractable).
-- [ ] Template `docs/` for Waters, Testkit, Lutum (AI-drafted, human-reviewed).
+### Phase 2 — Missing knowledge (F9–F12) — started 2026-07-09
+- [x] Hardware + domain glossary added directly to the core instructions (small + universally needed, so inline rather than a separate file). Covers: SP2000-N = frame size / ≈tray count, SP10 legacy (out of scope), order-name shorthand (Triple YSI, COD MN = Testkit w/ Macherey-Nagel, TSS paper weighing = out-of-scope template), A/B robots, ES-xxx = Escalation board vs RB-xxx = Robot Aftersales board, domain abbreviations, and the hardware-detection recipe (check Available/Enabled in DeviceConfiguration/MotorConfiguration/IOConfiguration/DiluterConfiguration/Probes/etc.).
+- [x] ~~`systems.md` order registry~~ **Dropped (Joost, 2026-07-09)**: users state the robot type when asking, order folders are often just temporary checkouts, and the scraper derives the template from the software checkout itself. Not worth hand-maintaining.
+- [x] `error-codes.md` generated for all 4 checked-out templates (BOD 92, Lutum 157, Testkit 145, Waters 99 codes) into each `Template <name>/99xxxxxx 2xxxxx/docs/`. Generator: `Tools&Scripts/Extract-ErrorCodes.py`. Log-analysis skill + core now point there first.
+- [x] **Waters** template docs drafted (`Template Waters/99xxxxxx 2xxxxx/docs/`: README, 01_applications, 02_methods, 03_software_setup) from Confluence page 1263337473 + checkout + Sequence CSVs. **Shallow first draft** — Joost compared with the BOD docs and found it lacking; needs the deep-exploration pass (below). Still needs review of what's there.
+- [x] **Platform knowledge from the BOD docs absorbed into skills** (2026-07-09, after reviewing the colleague-written BOD docs): (a) **major correction** — the runtime compiles code from the SkalarPacks XML into `Skalar.Pack1.dll`; `SkalarPackSolution` is only a generated developer mirror (fixed in `skalar-code-reference` skill + core section 4); (b) Units concept (regular vs ExtensionUnit) + application file anatomy (Workflow.xaml/.cleaned.txt, Calculation.mathml, Validation, TreeDatabases, dictionaries.xml, RoboticsConfig.xml hidden settings) → `skalar-code-reference`; (c) platform failure modes (Analyses.TreeDatabase.Xml corruption fix, UnhandledDump.dmp, Apply/Build backup snapshots, DeletedAnalyses recovery) + sample-state vocabulary → `skalar-log-analysis`. BOD docs themselves left untouched.
+- [ ] **Deep-exploration doc passes** (deferred by Joost — "another time"): deepen Waters docs to the BOD-docs standard (per-application Settings/Tables docs, subsequence walkthroughs, file-level exploration), then Testkit and Lutum/Clay Fraction the same way. The BOD `docs/` folder is the quality benchmark; keep template docs template-specific (platform generics belong in the skills, which must stay self-contained). TSS paper weighing template: out of scope for now.
 
 ### Phase 3 — Pipelines (F13–F15)
-- [ ] Scraper: decide Copilot CLI vs `claude -p`; point its prompt at the shared skills; add confidence gate; auto-log confirmed resolutions.
+- [ ] Scraper: decide Copilot CLI vs `claude -p`; point its prompt at the shared skills; add confidence gate; auto-log confirmed resolutions. **Also: extend to the ES (Escalation) Jira board** — scraper currently polls RB (Robot Aftersales) only; both are needed eventually (Joost, 2026-07-09).
 - [ ] `skalar-lab-issue` intake skill.
 - [ ] Sequence CSV diff script.
 
@@ -133,4 +135,6 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - **2026-07-09 — `.github/prompts/` retired**: prompt files were Copilot-only and had drifted into contradicting the skills (manual log parsing vs. Loupe MCP). All reusable workflows are skills from now on; useful prompt content was folded into the core/skills before deletion.
 - **2026-07-09 — Core restructured (Phase 1)**: Section 4 → `skalar-code-reference` skill; always-on core ~40 KB → ~19 KB. Rationale: the C# reference is only needed for code work; skills load on demand for both assistants.
 - **2026-07-09 — Hard-stop policy for missing tools**: when a skill's required MCP tools are unavailable, assistants must report and stop, never improvise around binary formats (incident F4b). Apply the same pattern to future skills that depend on MCP servers.
+- **2026-07-09 — Skills must be self-contained; template docs may be duplicated into them** (Joost): template folders (`Template BOD` etc.) are SVN checkouts that are NOT guaranteed to be on disk, so generic platform knowledge extracted from template docs is copied INTO the skills rather than referenced. The no-duplication parity rule applies to assistant-specific locations, not to this.
+- **2026-07-09 — SkalarPackSolution correction**: the colleague-written BOD docs established that the runtime never consumes SkalarPackSolution — it compiles XML-stored code into `Skalar.Pack1.dll` on Build; the solution is a generated mirror for reading/IDE use. Core + code-reference skill corrected accordingly. When template docs and our instructions disagree, verify against the software and prefer the evidence.
 - **2026-07-09 — Findings documented before implementing** (this file), because the two PCs share only the repo; chat context must be reconstructable from the repo alone.
