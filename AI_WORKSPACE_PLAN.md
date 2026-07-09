@@ -92,7 +92,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - [x] Root `.mcp.json` created (Claude Code): `loupe` (stdio, `%LOCALAPPDATA%` install) + `atlassian` (HTTP).
 - [x] `.vscode/mcp.json` updated (Copilot): added `loupe` alongside existing `atlassian`.
 - [x] Core instructions: skill references now carry explicit file paths; Atlassian tool naming made neutral; pointer to this plan added at top.
-- [ ] **Work PC one-time setup:** run `Tools&Scripts/Loupe.Mcp-v0.2.0-win-x64/install.ps1`; authenticate Atlassian MCP in Claude Code (`/mcp` → atlassian → Authenticate); start `loupe` once in VS Code for Copilot. (Project MCP servers are auto-approved via `.claude/settings.json` → `enableAllProjectMcpServers: true`, added 2026-07-09 — note: `.mcp.json` is only read at session start, so restart the session after pulling.)
+- [ ] **Work PC one-time setup:** follow `SETUP.md` at the repo root — run `Tools&Scripts/Setup-Workspace.ps1` (installs Loupe MCP binary + checks tools/configs), then the manual steps it prints (Claude Code session restart + `/mcp` Atlassian OAuth; VS Code `MCP: List Servers` → start `loupe`; verify skill + loupe on both assistants). SETUP.md/script created 2026-07-09; script verified green on the home PC.
 - [x] Hard-stop guard added to `skalar-log-analysis` skill (F4b).
 - [x] **Home PC:** `loupe` MCP server started in VS Code and confirmed working in Copilot log analysis (2026-07-09). Work PC still needs the same one-time start (`MCP: List Servers` → `loupe` → Start).
 - [x] **Verified (home PC, 2026-07-09):** Copilot discovers skills from `.claude/skills/` (rename test). `.github/skills/` mirror and `Sync-Skills.ps1` deleted (F2). Re-verify once on the work PC.
