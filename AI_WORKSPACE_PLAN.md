@@ -6,7 +6,7 @@
 > It contains (1) the context-loading architecture both assistants must follow, (2) the findings of the
 > 2026-07-09 workspace review, and (3) the phased implementation checklist with current status.
 
-Last updated: 2026-07-09 (Claude Code session, home PC).
+Last updated: 2026-07-15 (Claude Code session): F14 lab-issue intake skill + fetch-project refresh mode.
 
 ---
 
@@ -42,7 +42,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 ## 2. Workspace inventory (as of 2026-07-09)
 
 - **Core instructions:** `.github/copilot-instructions.md` (~40 KB): company/product context, the 3 software parts, Sequence/SubSequence execution model, Jira/Confluence protocol, and a large Section 4 = SkalarPackSolution C# code reference.
-- **Skills** (in `.claude/skills/`, loaded by both assistants): `skalar-log-analysis`, `skalar-feature-implementation`, `skalar-code-reference` (added 2026-07-09, carved from core Section 4), `svn-package-upload` (moved 2026-07-09 from Tools&Scripts).
+- **Skills** (in `.claude/skills/`, loaded by both assistants): `skalar-log-analysis`, `skalar-feature-implementation`, `skalar-code-reference` (added 2026-07-09, carved from core Section 4), `svn-package-upload` (moved 2026-07-09 from Tools&Scripts), `skalar-lab-issue` (added 2026-07-15, F14 intake: fetch/refresh + log placement + hand-off to log analysis).
 - **Copilot prompt files:** none — `.github/prompts/` retired 2026-07-09 (see F3 / decision log).
 - **Tools:** `Tools&Scripts/` — `fetch-project.ps1` (SVN checkout of an order's software), `Parse-SkalarTables.ps1` (XML → Sequence/SubSequence CSVs), `Process-SoftwareFolder.ps1`, `Sync-ActionCode.ps1` (sync C# action code back into the software), `SkPack_SyncCLI.exe`, `Loupe.Mcp-v0.2.0-win-x64/` (the Loupe MCP server binary + `install.ps1`), `Jira ticket scraper/` (Process-ServiceTickets.ps1 — polls Jira RB tickets, builds `Service Items/RB-XXX/` folders with description, attachments, software checkout; optional AI analysis, currently via Copilot CLI, experimental).
 - **Generated artifacts:** `Sequences/` — pre-parsed Sequence/SubSequence CSVs per order and per template.
@@ -117,7 +117,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 
 ### Phase 3 — Pipelines (F13–F15)
 - [ ] Scraper: decide Copilot CLI vs `claude -p`; point its prompt at the shared skills; add confidence gate; auto-log confirmed resolutions. **Also: extend to the ES (Escalation) Jira board** — scraper currently polls RB (Robot Aftersales) only; both are needed eventually (Joost, 2026-07-09).
-- [ ] `skalar-lab-issue` intake skill.
+- [x] `skalar-lab-issue` intake skill (2026-07-15): parses order number + log path + symptom from one message; runs `fetch-project.ps1` (which now auto-refreshes existing checkouts in place — svn revert + update + post-processing — instead of requiring delete-and-refetch); moves the log to `<order>\<99xxxxxx serial>\Log\`; case-base check; hands off to `skalar-log-analysis`. Core got a "PROTOCOL: LAB-ISSUE INTAKE" routing line. Same day: zip intake path added — `Process-SoftwareFolder.ps1` gained install mode (`-DestinationRoot`/`-DestinationName`: extract/copy a customer zip into the workspace like an SVN checkout, CSVs to workspace `Sequences\`, rerun = refresh from newer zip) for software that arrives as a zip (customer install / Jira attachment) instead of via SVN; skill step 1 branches on source, with folder/CSV-prefix collision guidance when both a zip and an SVN checkout of the same order exist.
 - [ ] Sequence CSV diff script.
 
 ### Phase 4 — Hygiene (F16)
@@ -138,3 +138,4 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - **2026-07-09 — Skills must be self-contained; template docs may be duplicated into them** (Joost): template folders (`Template BOD` etc.) are SVN checkouts that are NOT guaranteed to be on disk, so generic platform knowledge extracted from template docs is copied INTO the skills rather than referenced. The no-duplication parity rule applies to assistant-specific locations, not to this.
 - **2026-07-09 — SkalarPackSolution correction**: the colleague-written BOD docs established that the runtime never consumes SkalarPackSolution — it compiles XML-stored code into `Skalar.Pack1.dll` on Build; the solution is a generated mirror for reading/IDE use. Core + code-reference skill corrected accordingly. When template docs and our instructions disagree, verify against the software and prefer the evidence.
 - **2026-07-09 — Findings documented before implementing** (this file), because the two PCs share only the repo; chat context must be reconstructable from the repo alone.
+- **2026-07-15 — fetch-project refresh discards local changes by design** (Joost): when refetching an order, local edits to the checked-out software are never worth keeping — even just opening the application dirties files and would cause conflicts. So `fetch-project.ps1`'s refresh path does `svn revert -R` + `svn update --accept theirs-full` unconditionally (after a y/n confirm; `-NoVerify` skips it). Unversioned files (logs placed in `Log\`) survive, which is the point: the old delete-and-refetch habit destroyed the log each round-trip. A menu/GUI wrapper around Tools&Scripts was considered and rejected — the streamline is removing steps (skills), not relabeling them.
