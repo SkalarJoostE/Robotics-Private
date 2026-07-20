@@ -3,38 +3,38 @@
 > **Purpose of this file:** This is the cross-PC, cross-assistant memory for the AI-workspace improvement effort.
 > Joost works on two PCs (home + work) whose chat histories do not sync — **this repo is the only shared state**.
 > If you are an AI assistant (Claude Code or GitHub Copilot) asked to continue this work: read this file fully first.
-> It contains (1) the context-loading architecture both assistants must follow, (2) the findings of the
+> It contains (1) the context-loading architecture all assistants must follow, (2) the findings of the
 > 2026-07-09 workspace review, and (3) the phased implementation checklist with current status.
 
-Last updated: 2026-07-15 (Claude Code session): F14 lab-issue intake skill + fetch-project refresh mode.
+Last updated: 2026-07-20 (Codex session): added the Codex guidance, skill, and MCP adapter.
 
 ---
 
-## 1. The Prime Constraint: dual-assistant context parity
+## 1. The Prime Constraint: cross-assistant context parity
 
-Both **Claude Code** and **GitHub Copilot Chat (VS Code)** are used on this repo, on both PCs.
-**Every piece of AI context must live in exactly one file, and both assistants must load it the same way.**
+**Claude Code**, **GitHub Copilot Chat (VS Code)**, and **Codex** are used on this repo, on both PCs.
+**Every piece of AI context must live in exactly one canonical file, and all assistants must load it through a documented route.**
 No content may be duplicated between assistant-specific locations, because duplicates drift.
 
-### How each assistant loads context (verified 2026-07-09)
+### How each assistant loads context (Codex route verified 2026-07-20)
 
-| Layer | Canonical location | Claude Code | GitHub Copilot |
-|---|---|---|---|
-| Always-on core instructions | `.github/copilot-instructions.md` | Loaded via `CLAUDE.md` which contains only `@.github/copilot-instructions.md` | Auto-loaded natively |
-| On-demand skills | `.claude/skills/<name>/SKILL.md` | Native skill discovery | **Also native**: VS Code discovers project skills from `.github/skills`, **`.claude/skills`**, or `.agents/skills` (see sources below) |
-| MCP servers (Loupe, Atlassian) | `.mcp.json` (Claude) + `.vscode/mcp.json` (Copilot) — two files, unavoidable, keep in sync | Project-scope `.mcp.json` at repo root | `.vscode/mcp.json` |
-| Manually-invoked prompts | **Retired 2026-07-09** — `.github/prompts/` was Copilot-only (parity violation) and contradicted the skills; all reusable workflows are now skills. Don't add prompt files; add skills. | — | — |
-| Deep reference docs (template docs, glossaries) | Plain `.md` files in the repo, referenced **by explicit path** from the core instructions | Read on demand | Read on demand (agent mode) |
+| Layer | Canonical location | Claude Code | GitHub Copilot | Codex |
+|---|---|---|---|---|
+| Always-on core instructions | `.github/copilot-instructions.md` | Loaded via `CLAUDE.md` which contains only `@.github/copilot-instructions.md` | Auto-loaded natively | `AGENTS.md` directs Codex to read the canonical file |
+| On-demand skills | `.claude/skills/<name>/SKILL.md` | Native skill discovery | Native discovery from `.claude/skills`; `.vscode/settings.json` disables generated `.agents/skills` adapters to avoid duplicate names | `Setup-Workspace.ps1` generates git-ignored `.agents/skills` discovery adapters whose bodies route back to the canonical files |
+| MCP servers (Loupe, Atlassian) | Same definitions in `.mcp.json` (Claude), `.vscode/mcp.json` (Copilot), and `.codex/config.toml` (Codex) — transport configs are necessarily assistant-specific; keep them in sync | Project-scope `.mcp.json` at repo root | `.vscode/mcp.json` | Project-scope `.codex/config.toml` |
+| Manually-invoked prompts | **Retired 2026-07-09** — `.github/prompts/` was Copilot-only (parity violation) and contradicted the skills; all reusable workflows are now skills. Don't add prompt files; add skills. | — | — | — |
+| Deep reference docs (template docs, glossaries) | Plain `.md` files in the repo, referenced **by explicit path** from the core instructions | Read on demand | Read on demand (agent mode) | Read on demand |
 
-Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills), [GitHub Docs — Adding agent skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills).
+Sources for skill discovery: [VS Code — Use Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills), [GitHub Docs — Adding agent skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills), [Codex — Build skills](https://developers.openai.com/codex/skills), and the [Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
 ### Rules for all future edits
 
-1. **Skills live in `.claude/skills/` ONLY.** Verified 2026-07-09 (home PC): with `.github` temporarily renamed, Copilot loaded the skill from `.claude/skills/` — so the `.github/skills/` mirror and `Sync-Skills.ps1` were deleted. Never recreate assistant-specific skill copies. (Re-verify once on the work PC; if its VS Code is older and doesn't discover `.claude/skills`, update VS Code.)
+1. **Canonical skill bodies live in `.claude/skills/` ONLY.** Verified 2026-07-09 (home PC): with `.github` temporarily renamed, Copilot loaded the skill from `.claude/skills/` — so the `.github/skills/` mirror and `Sync-Skills.ps1` were deleted. Codex requires `.agents/skills` for repo discovery, so `Setup-Workspace.ps1` generates git-ignored metadata adapters there; each adapter contains no workflow and routes back to the canonical file. VS Code ignores `.agents/skills` through `.vscode/settings.json` to prevent duplicate Copilot names. Never hand-edit or commit generated adapters. (Re-verify Copilot once on the work PC; if its VS Code is older and doesn't discover `.claude/skills`, update VS Code.)
 2. **Always-on content goes in `.github/copilot-instructions.md`**; `CLAUDE.md` stays a one-line `@`-include. Never add content to `CLAUDE.md` directly — Copilot would not see it.
 3. **Any routing instruction in the core must give the explicit file path** (e.g. "read `.claude/skills/skalar-log-analysis/SKILL.md`"), never just a skill name — so an assistant without a skill loader can still follow it.
 4. **Write instructions tool-neutrally.** Say "search for X in file Y", not `file_search`/`grep_search` (Copilot tool names) or `Grep`/`Glob` (Claude tool names). Say "the Atlassian MCP Confluence search tool", not `mcp_atlassian_confluence_search`.
-5. **MCP definitions exist in two files** (`.mcp.json` + `.vscode/mcp.json`). When adding/changing a server, change both.
+5. **MCP definitions exist in three files** (`.mcp.json` + `.vscode/mcp.json` + `.codex/config.toml`). When adding/changing a server, change all three.
 6. When a decision about this architecture is made, record it in §5 Decision Log — chats don't sync; this file does.
 
 ---
@@ -42,7 +42,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 ## 2. Workspace inventory (as of 2026-07-09)
 
 - **Core instructions:** `.github/copilot-instructions.md` (~40 KB): company/product context, the 3 software parts, Sequence/SubSequence execution model, Jira/Confluence protocol, and a large Section 4 = SkalarPackSolution C# code reference.
-- **Skills** (in `.claude/skills/`, loaded by both assistants): `skalar-log-analysis`, `skalar-feature-implementation`, `skalar-code-reference` (added 2026-07-09, carved from core Section 4), `svn-package-upload` (moved 2026-07-09 from Tools&Scripts), `skalar-lab-issue` (added 2026-07-15, F14 intake: fetch/refresh + log placement + hand-off to log analysis).
+- **Skills** (canonical in `.claude/skills/`, loaded by all three assistants): `skalar-log-analysis`, `skalar-feature-implementation`, `skalar-code-reference` (added 2026-07-09, carved from core Section 4), `svn-package-upload` (moved 2026-07-09 from Tools&Scripts), `skalar-lab-issue` (added 2026-07-15, F14 intake: fetch/refresh + log placement + hand-off to log analysis).
 - **Copilot prompt files:** none — `.github/prompts/` retired 2026-07-09 (see F3 / decision log).
 - **Tools:** `Tools&Scripts/` — `fetch-project.ps1` (SVN checkout of an order's software), `Parse-SkalarTables.ps1` (XML → Sequence/SubSequence CSVs), `Process-SoftwareFolder.ps1`, `Sync-ActionCode.ps1` (sync C# action code back into the software), `SkPack_SyncCLI.exe`, `Loupe.Mcp-v0.2.0-win-x64/` (the Loupe MCP server binary + `install.ps1`), `Jira ticket scraper/` (Process-ServiceTickets.ps1 — polls Jira RB tickets, builds `Service Items/RB-XXX/` folders with description, attachments, software checkout; optional AI analysis, currently via Copilot CLI, experimental).
 - **Generated artifacts:** `Sequences/` — pre-parsed Sequence/SubSequence CSVs per order and per template.
@@ -56,7 +56,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 ## 3. Review findings (2026-07-09)
 
 ### What works well — keep
-- The `CLAUDE.md` → `@copilot-instructions.md` include pattern (zero-duplication core, both assistants).
+- The canonical `.github/copilot-instructions.md` pattern (zero-duplication core, now routed to all three assistants).
 - The skills pattern with progressive disclosure (description always visible, body loaded on demand).
 - The `Sequences/` CSV generation — vastly cheaper to read than the raw XML.
 - The `md documents/` case-base with disciplined entry templates.
@@ -91,8 +91,9 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - [x] This plan document created.
 - [x] Root `.mcp.json` created (Claude Code): `loupe` (stdio, `%LOCALAPPDATA%` install) + `atlassian` (HTTP).
 - [x] `.vscode/mcp.json` updated (Copilot): added `loupe` alongside existing `atlassian`.
+- [x] Codex adapter added 2026-07-20: root `AGENTS.md` routes to the canonical core; `.codex/config.toml` defines Loupe + Atlassian MCP; `Setup-Workspace.ps1` generates git-ignored `.agents/skills` metadata adapters that route to canonical `.claude/skills/` bodies; `.vscode/settings.json` keeps Copilot on the canonical path only.
 - [x] Core instructions: skill references now carry explicit file paths; Atlassian tool naming made neutral; pointer to this plan added at top.
-- [ ] **Work PC one-time setup:** follow `SETUP.md` at the repo root — run `Tools&Scripts/Setup-Workspace.ps1` (installs Loupe MCP binary + checks tools/configs), then the manual steps it prints (Claude Code session restart + `/mcp` Atlassian OAuth; VS Code `MCP: List Servers` → start `loupe`; verify skill + loupe on both assistants). SETUP.md/script created 2026-07-09; script verified green on the home PC.
+- [ ] **Work PC one-time setup:** follow `SETUP.md` at the repo root — run `Tools&Scripts/Setup-Workspace.ps1` (installs Loupe, generates Codex skill adapters, and checks tools/configs), then the manual steps it prints (Claude Code session restart + `/mcp` Atlassian OAuth; VS Code `MCP: List Servers` → start `loupe`; Codex trust/restart + `codex mcp login atlassian`; verify skills + Loupe on all assistants). SETUP.md/script created 2026-07-09 and extended for Codex 2026-07-20; script verified green on the home PC.
 - [x] Hard-stop guard added to `skalar-log-analysis` skill (F4b).
 - [x] **Home PC:** `loupe` MCP server started in VS Code and confirmed working in Copilot log analysis (2026-07-09). Work PC still needs the same one-time start (`MCP: List Servers` → `loupe` → Start).
 - [x] **Verified (home PC, 2026-07-09):** Copilot discovers skills from `.claude/skills/` (rename test). `.github/skills/` mirror and `Sync-Skills.ps1` deleted (F2). Re-verify once on the work PC.
@@ -105,7 +106,7 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - [x] "Where tables live" map + application-flow tracing recipe (CSV-first, tree output, splits/merges, -1 = disabled) added to core section 2 — absorbs the useful parts of the old `lookup-table`/`trace-sequence` prompts (F5 partially: tool-specific search protocol left the core with Section 4).
 - [x] Confluence guide list added to core section 2 (F6): Software Setup + In Details pages per template (Testkit, BOD parent page, Waters, Soil ×4 variants, Clay Fraction) with page IDs, provided by Joost 2026-07-09. Semantics captured: Software Setup = what Lab follows to configure an A-robot; In Details = deeper template docs; "Soil robot" usually means Soil Single pHEC (~90% of Soil systems).
 - [x] `.github/prompts/` deleted entirely (F3): `analyze-log` superseded by the log-analysis skill, `trace-action` by the code-reference skill's Domain Deduction, `lookup-table`/`trace-sequence` folded into core section 2, `debug-issue` covered by case-base rule + skills (revisit in the Phase 3 ticket-analysis skill).
-- [x] `svn-package-upload` moved to `.claude/skills/svn-package-upload/` (with `scripts/` and `references/`; absolute paths inside updated). Now discovered as a skill by both assistants (F16 partially).
+- [x] `svn-package-upload` moved to `.claude/skills/svn-package-upload/` (with `scripts/` and `references/`; absolute paths inside updated). Now available to all three assistants (F16 partially).
 
 ### Phase 2 — Missing knowledge (F9–F12) — started 2026-07-09
 - [x] Hardware + domain glossary added directly to the core instructions (small + universally needed, so inline rather than a separate file). Covers: SP2000-N = frame size / ≈tray count, SP10 legacy (out of scope), order-name shorthand (Triple YSI, COD MN = Testkit w/ Macherey-Nagel, TSS paper weighing = out-of-scope template), A/B robots, ES-xxx = Escalation board vs RB-xxx = Robot Aftersales board, domain abbreviations, and the hardware-detection recipe (check Available/Enabled in DeviceConfiguration/MotorConfiguration/IOConfiguration/DiluterConfiguration/Probes/etc.).
@@ -133,9 +134,10 @@ Sources for Copilot skill discovery: [VS Code — Use Agent Skills](https://code
 - **2026-07-09 — Loupe MCP referenced via installed location** (`%LOCALAPPDATA%\Skalar\Loupe.Mcp\Loupe.Mcp.exe`, per-PC `install.ps1`) rather than the repo copy, because the repo path contains `&` (`Tools&Scripts`) which risks breaking process spawning, and the home PC already uses the installed path.
 - **2026-07-09 (later) — Skill mirror DELETED**: the rename test proved Copilot discovers `.claude/skills/` natively on the home PC, so the `.github/skills/` mirror and `Sync-Skills.ps1` were removed the same day they were created. Single canonical skill location achieved.
 - **2026-07-09 — `.github/prompts/` retired**: prompt files were Copilot-only and had drifted into contradicting the skills (manual log parsing vs. Loupe MCP). All reusable workflows are skills from now on; useful prompt content was folded into the core/skills before deletion.
-- **2026-07-09 — Core restructured (Phase 1)**: Section 4 → `skalar-code-reference` skill; always-on core ~40 KB → ~19 KB. Rationale: the C# reference is only needed for code work; skills load on demand for both assistants.
+- **2026-07-09 — Core restructured (Phase 1)**: Section 4 → `skalar-code-reference` skill; always-on core ~40 KB → ~19 KB. Rationale: the C# reference is only needed for code work; skills load on demand for each assistant.
 - **2026-07-09 — Hard-stop policy for missing tools**: when a skill's required MCP tools are unavailable, assistants must report and stop, never improvise around binary formats (incident F4b). Apply the same pattern to future skills that depend on MCP servers.
 - **2026-07-09 — Skills must be self-contained; template docs may be duplicated into them** (Joost): template folders (`Template BOD` etc.) are SVN checkouts that are NOT guaranteed to be on disk, so generic platform knowledge extracted from template docs is copied INTO the skills rather than referenced. The no-duplication parity rule applies to assistant-specific locations, not to this.
 - **2026-07-09 — SkalarPackSolution correction**: the colleague-written BOD docs established that the runtime never consumes SkalarPackSolution — it compiles XML-stored code into `Skalar.Pack1.dll` on Build; the solution is a generated mirror for reading/IDE use. Core + code-reference skill corrected accordingly. When template docs and our instructions disagree, verify against the software and prefer the evidence.
 - **2026-07-09 — Findings documented before implementing** (this file), because the two PCs share only the repo; chat context must be reconstructable from the repo alone.
 - **2026-07-15 — fetch-project refresh discards local changes by design** (Joost): when refetching an order, local edits to the checked-out software are never worth keeping — even just opening the application dirties files and would cause conflicts. So `fetch-project.ps1`'s refresh path does `svn revert -R` + `svn update --accept theirs-full` unconditionally (after a y/n confirm; `-NoVerify` skips it). Unversioned files (logs placed in `Log\`) survive, which is the point: the old delete-and-refetch habit destroyed the log each round-trip. A menu/GUI wrapper around Tools&Scripts was considered and rejected — the streamline is removing steps (skills), not relabeling them.
+- **2026-07-20 — Codex added without duplicating workflow bodies**: `AGENTS.md` is a thin bridge to `.github/copilot-instructions.md`; `.codex/config.toml` mirrors the Loupe/Atlassian MCP transports. Codex's `skills.config` was tested and found to enable/disable already-discovered skills rather than register `.claude/skills`, while current Claude Code only discovers `.claude/skills`. Therefore `Setup-Workspace.ps1` generates git-ignored `.agents/skills` adapters from canonical frontmatter; adapter bodies only route back to `.claude/skills`. `.vscode/settings.json` disables `.agents/skills` for Copilot to prevent duplicate names. Atlassian writes use approval mode `writes`; Loupe is local/read-only.
