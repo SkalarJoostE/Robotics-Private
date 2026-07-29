@@ -1,0 +1,4 @@
+timestamp_utc,engine,order,model,status,duration_s,input_tokens,output_tokens,cache_read_tokens,cache_creation_tokens,cost_usd,session_id
+2026-07-28T12:41:40+00:00,cli-subscription,99444244,claude-opus-4-8,success,313.8,24,19220,1267596,121353,2.328814,f5eb0a49-dfa4-4945-97ab-eb48475c1503
+2026-07-29T08:54:40+00:00,cli-subscription,99442589,claude-opus-4-8,success,56.8,5,2025,88524,30543,0.401135,af40241c-763c-4527-8191-a895d79f7a04
+2026-07-29T13:59:08+00:00,cli-subscription,99441966,claude-opus-5,success,744.3,106,43500,7246942,207225,4.071192,1f498711-08b1-4d1b-9a69-f4a8409774aa
