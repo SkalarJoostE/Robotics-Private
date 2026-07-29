@@ -12,7 +12,20 @@
 > If you are an AI assistant asked to continue this work: read this file fully first, then
 > `AI_WORKSPACE_PLAN.md`. Chat history does not sync between PCs — this repo is the only shared state.
 
-**Last updated:** 2026-07-25 — project started; Helpdesk and Lab usage plans drafted; error-code extraction cut from all capability claims as unevidenced (Joost).
+**Last updated:** 2026-07-29 — capability-overview deliverables and brand assets moved in from `output/`.
+
+## 0. What is in this folder
+
+| Path | What it is |
+|---|---|
+| `PROJECT.md` | This file — the organizational layer (why, who, scope, phases, governance, decisions). |
+| [Helpdesk-Usage-Plan.md](Helpdesk-Usage-Plan.md) | What Helpdesk would actually use it for, and its stated limits. |
+| [Lab-Usage-Plan.md](Lab-Usage-Plan.md) | Same, for Lab. |
+| `Capability Overview/` | The non-technical "what can it do" pitch material: web page (`robotics-ai-overview.html`), Word doc + its generator (`build-capability-doc.js`), and the handoff note explaining both. Start at [CAPABILITY_OVERVIEW_HANDOFF.md](Capability%20Overview/CAPABILITY_OVERVIEW_HANDOFF.md). |
+| `Brand/` | Velaris brand book and the Skalar document-format example the overview is styled against. |
+
+Anything still in `output/` is older or unrelated and is **not** part of this project — that folder is
+gitignored scratch space.
 
 ---
 
@@ -134,6 +147,7 @@ Append dated entries. Chats don't sync between PCs; this file does.
 - **2026-07-25 — Committed time is the interest signal**, not enthusiasm. A department that won't name a pilot person and free their time has not actually said yes.
 - **2026-07-25 — The budget ask leads with allocated development time**, with licences as the secondary line item. Licences without a maintainer produce shelfware.
 - **2026-07-25 — Usage plans state limits prominently and invite correction.** Credibility with sceptical users is worth more than a polished pitch; objections raised in the meeting are cheaper than silence afterwards.
+- **2026-07-29 — All rollout material lives under `Rollout/`** (Joost). The capability overview, its generator and the brand assets moved out of `output/`, which is gitignored scratch space — they were only in version control because they had been force-added. Left behind deliberately: `ROBOTICS_AI_CAPABILITIES_OVERVIEW.md` and the `documents/`/`pdf/` exports of it (a superseded earlier draft), and `pets/` (unrelated).
 - **2026-07-25 — Capability claims must be backed by a case, not by existence** (Joost). Error-code extraction was cut from all three documents: none of the 41 write-ups reference `error-codes.md`, and only 4 mention error codes at all, incidentally. The tables are a real convenience and stay in the workspace — they are just not evidence of value and must not be pitched as such. Apply the same test to every future claim.
 
 ## 9. Next actions
