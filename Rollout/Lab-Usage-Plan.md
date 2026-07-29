@@ -15,12 +15,12 @@ Already built and in daily use by Software Engineering. Nothing here needs devel
 
 | You type | What happens |
 |---|---|
-| `Order 99441496, log attached — robot hangs after the sample pickup` | Checks out (or refreshes) that order's software from SVN, files the log in the project's `Log` folder, checks whether we've seen this before, then reads the log and diagnoses. One step instead of six. |
-| *(when the software came as a zip instead)* | Same thing from a customer zip — a customer install or a ticket attachment — installed into the workspace exactly like an SVN checkout. |
+| `Order 99441496, log attached — robot hangs after the sample pickup` | Checks out (or refreshes) that order's software from SVN, files the log in the project's `Log` folder, checks whether we've seen this before, then reads the log and diagnoses. One step instead of six. Works the same when the software came as a zip — a customer install or a ticket attachment — installed into the workspace exactly like an SVN checkout. |
 | `Why does it rinse twice before the first sample?` | Traces the real execution path through *that system's* Sequence and SubSequence tables and shows it as a tree, including parallel branches and disabled rows. No hunting through multi-megabyte XML. |
 | `How should the QC interval be configured on a Soil Single pHEC?` | Reads the Software Setup and "in Details" pages from Confluence directly and answers for that template. |
 | `Is this configured the way the template expects?` | Compares that system's tables against the template it was built from, so a wrong row shows up as a difference rather than something you have to spot by eye. |
-| *(old order that won't run on Windows 11)* | `Update-Core.bat` — drag the software folder onto it and pick "full update". It performs the whole Confluence core-update procedure, applies the known fixes, and writes a report. You still open the software and click Build once to accept it. |
+
+**Nothing to type for this one:** an old order that won't run on Windows 11 is handled by `Update-Core.bat`. Drag the software folder onto it and pick "full update" — it performs the whole Confluence core-update procedure, applies the known fixes, and writes a report. You still open the software and click Build once to accept it.
 
 **What you get back:** a written diagnosis with the evidence it examined, the root cause **with a confidence level**, and what's still unknown. If a fix is needed in the tables or action code, it can prepare the change locally and tell you exactly which files it touched — but committing is always your call.
 

@@ -16,10 +16,13 @@ This is already built and in daily use by Software Engineering. Nothing in this 
 | You type | What happens |
 |---|---|
 | `Solve issue RB-380` | Pulls the current ticket text, comments and every attachment. Detects what each ZIP actually contains, installs the customer's own software build, extracts their logs, and checks out the current SVN version alongside it for comparison. Then diagnoses. |
-| *(automatically, every time)* | Searches 41 previously solved cases for the same order number, error code and symptoms before investigating from scratch. Field issues repeat — often the old write-up is most of the answer. |
-| *(automatically, when logs are attached)* | Reads the binary `.glf` Gibraltar logs directly — no exporting, no manual scrolling. Finds the exceptions, the timeline around the failure, and what the robot was doing when it went wrong. |
 | `Why did the robot skip the rinse step?` | Traces the actual execution path through that system's Sequence and SubSequence tables and shows it as a tree. |
-| *(automatically, when the customer sent their build)* | Compares the customer's actual running software against current SVN, so you see what's genuinely different on their machine rather than assuming they're on the shipped version. |
+
+**And on every case, without being asked:**
+
+- **It checks the case base first** — 41 previously solved cases, searched for the same order number, error code and symptoms before investigating from scratch. Field issues repeat, and often the old write-up is most of the answer.
+- **It reads the logs directly**, when logs are attached — the binary `.glf` Gibraltar logs, with no exporting and no manual scrolling. Finds the exceptions, the timeline around the failure, and what the robot was doing when it went wrong.
+- **It compares against SVN**, when the customer sent their build — so you see what is genuinely different on their machine rather than assuming they are on the shipped version.
 
 **What you get back:** a written analysis with the symptom, the evidence it actually examined, the root cause **with a confidence level**, what's still unknown, and a **draft** reply for Jira. The draft is never posted — you read it, correct it, and send it yourself.
 
