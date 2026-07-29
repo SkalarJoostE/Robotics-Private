@@ -23,6 +23,7 @@
 | [Lab-Usage-Plan.md](Lab-Usage-Plan.md) | Same, for Lab. |
 | `Capability Overview/` | The non-technical "what can it do" pitch material: web page (`robotics-ai-overview.html`), Word doc + its generator (`build-capability-doc.js`), and the handoff note explaining both. Start at [CAPABILITY_OVERVIEW_HANDOFF.md](Capability%20Overview/CAPABILITY_OVERVIEW_HANDOFF.md). |
 | `Replay-Test/` | Phase-A evidence gathering: [PROTOCOL.md](Replay-Test/PROTOCOL.md) (how to run it defensibly), the ticket shortlist, and `RESULTS.md` once runs begin. |
+| `Document Build/` | Generates branded Word versions of the plans and the protocol from their Markdown. `cd Rollout && npm install && npm run build`. The Markdown stays the source of truth — never edit a generated `.docx`. See [README.md](Document%20Build/README.md). |
 | `Brand/` | Velaris brand book and the Skalar document-format example the overview is styled against. |
 
 Anything still in `output/` is older or unrelated and is **not** part of this project — that folder is

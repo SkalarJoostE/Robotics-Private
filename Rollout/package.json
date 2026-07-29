@@ -1,0 +1,13 @@
+{
+  "name": "robotics-ai-rollout-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Branded Word-document generators for Robotics-AI rollout material.",
+  "scripts": {
+    "build": "node \"Document Build/build-rollout-docs.js\"",
+    "build-capability": "node \"Capability Overview/build-capability-doc.js\" \"Capability Overview/Robotics-AI Capability Overview.docx\""
+  },
+  "dependencies": {
+    "docx": "^9.0.0"
+  }
+}
