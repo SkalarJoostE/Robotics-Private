@@ -12,7 +12,7 @@
 > If you are an AI assistant asked to continue this work: read this file fully first, then
 > `AI_WORKSPACE_PLAN.md`. Chat history does not sync between PCs — this repo is the only shared state.
 
-**Last updated:** 2026-07-29 — capability-overview deliverables and brand assets moved in from `output/`.
+**Last updated:** 2026-07-29 — capability-overview deliverables and brand assets moved in from `output/`; replay/question-test protocol added; "R&D" renamed to Software Engineering throughout (except SSO).
 
 ## 0. What is in this folder
 
@@ -22,6 +22,7 @@
 | [Helpdesk-Usage-Plan.md](Helpdesk-Usage-Plan.md) | What Helpdesk would actually use it for, and its stated limits. |
 | [Lab-Usage-Plan.md](Lab-Usage-Plan.md) | Same, for Lab. |
 | `Capability Overview/` | The non-technical "what can it do" pitch material: web page (`robotics-ai-overview.html`), Word doc + its generator (`build-capability-doc.js`), and the handoff note explaining both. Start at [CAPABILITY_OVERVIEW_HANDOFF.md](Capability%20Overview/CAPABILITY_OVERVIEW_HANDOFF.md). |
+| `Replay-Test/` | Phase-A evidence gathering: [PROTOCOL.md](Replay-Test/PROTOCOL.md) (how to run it defensibly), the ticket shortlist, and `RESULTS.md` once runs begin. |
 | `Brand/` | Velaris brand book and the Skalar document-format example the overview is styled against. |
 
 Anything still in `output/` is older or unrelated and is **not** part of this project — that folder is
@@ -33,12 +34,12 @@ gitignored scratch space.
 
 Robotics-AI is an AI assistant taught our robot software — the Sequence/SubSequence execution model,
 the C# action code, per-template error codes, the Confluence setup guides, and a growing base of
-solved cases. It has been in real use by R&D since April 2026.
+solved cases. It has been in real use by Software Engineering since April 2026.
 
-The argument for making it official is not "AI is useful". It is that **R&D engineer time is the
+The argument for making it official is not "AI is useful". It is that **Software Engineer time is the
 scarcest resource in the product chain**, and a large share of it is spent answering questions from
 Helpdesk and Lab that the evidence already contains. Every question those departments can answer
-themselves is R&D capacity returned.
+themselves is Software Engineering capacity returned.
 
 The two things being asked for are **allocated development time** (the real constraint) and
 **Claude subscriptions** (the small, easy number). Licences without a maintainer produce shelfware,
@@ -46,7 +47,7 @@ so the time is the headline ask.
 
 ## 2. Where we are today
 
-**Users:** 1 (Joost, R&D), across two PCs. Everything below is built, working, and in daily use.
+**Users:** 1 (Joost, Software Engineering), across two PCs. Everything below is built, working, and in daily use.
 
 | Evidence | Figure |
 |---|---|
@@ -74,7 +75,7 @@ runs setup. Then two browser OAuth logins. See `SETUP.md`.
 | **Helpdesk** (RB/ES) | Strong | **Ready to pilot** | Highest volume, most repeatable, clearest before/after metric. Plan: [Helpdesk-Usage-Plan.md](Helpdesk-Usage-Plan.md) |
 | **Lab** | Strong | **Ready to pilot** | Nearly as ready; audience is less terminal-comfortable. Plan: [Lab-Usage-Plan.md](Lab-Usage-Plan.md) |
 | **Sales** | Plausible | **Not ready** | "Have we built X before?" over the order index, and A-vs-B feasibility during quoting. The index is keyed on engineer vocabulary (commit messages, folder names), not sales vocabulary — real work needed before it's usable. Deferred to phase 2. |
-| **R&D** | — | In use | Current home. Feature precedent, B-feature porting, SSO approvals. |
+| **Software Engineering** | — | In use | Current home. Feature precedent, B-feature porting, SSO approvals. |
 
 **Decision (2026-07-25): Helpdesk goes first, alone.** Two simultaneous pilots halve the attention
 each gets, and Helpdesk gives the cleaner number.
@@ -84,7 +85,9 @@ each gets, and Helpdesk gives the cleaner number.
 ### Phase A — Validate (current)
 - [x] Draft usage plans for Helpdesk and Lab.
 - [ ] Discovery conversations: 2–3 people per department, ~30 min. Ask what took too long last week and how long it took — **not** "would this help?".
-- [ ] Replay test: 3 closed RB/ES tickets + 2 lab cases, run cold. Record output quality vs. what actually happened, and time taken.
+- [x] Replay/question test designed — [Replay-Test/PROTOCOL.md](Replay-Test/PROTOCOL.md). Two arms: **A** closed RB/ES tickets replayed cold against a frozen, comment-trimmed bundle; **B** the questions Lab is sending unprompted. Arm B is the stronger evidence and leads.
+- [ ] Run Arm B as Lab's questions arrive. Record the answer, the time, and — the actual metric — whether it would have saved them a trip to a Software Engineer.
+- [ ] Run Arm A: Helpdesk picks 3 from the shortlist in the meeting. Record output quality vs. what actually happened, and time taken.
 - [ ] Confirmation round: show the replay, not the plan. Ask each department to name a pilot person and commit their time.
 
 **Exit criteria:** each department has either named a pilot person and committed their time, or given a specific reason not to. Enthusiasm without committed time counts as a no.
@@ -112,11 +115,11 @@ To be filled from Phase A. Challenge these before collecting them — measuring 
 | Dept | Measure | Baseline | After |
 |---|---|---|---|
 | Helpdesk | Time from ticket arrival to first informed reply | ___ | ___ |
-| Helpdesk | Tickets/month escalated to R&D | ___ | ___ |
+| Helpdesk | Tickets/month escalated to Software Engineering | ___ | ___ |
 | Helpdesk | Evidence-gathering time before diagnosis starts | ___ | ___ |
-| Lab | Time lost/week waiting on R&D for software answers | ___ | ___ |
+| Lab | Time lost/week waiting on Software Engineering for software answers | ___ | ___ |
 | Lab | Time to diagnose a build/FAT blocker | ___ | ___ |
-| All | R&D engineer hours returned (the headline number) | ___ | ___ |
+| All | Software Engineer hours returned (the headline number) | ___ | ___ |
 
 ## 6. Open questions — must be answered before Phase C
 
@@ -147,6 +150,9 @@ Append dated entries. Chats don't sync between PCs; this file does.
 - **2026-07-25 — Committed time is the interest signal**, not enthusiasm. A department that won't name a pilot person and free their time has not actually said yes.
 - **2026-07-25 — The budget ask leads with allocated development time**, with licences as the secondary line item. Licences without a maintainer produce shelfware.
 - **2026-07-25 — Usage plans state limits prominently and invite correction.** Credibility with sceptical users is worth more than a polished pitch; objections raised in the meeting are cheaper than silence afterwards.
+- **2026-07-29 — The test has two arms, and the forward one leads** (Joost). Lab offered to send the questions they would ask if they had access, which is better evidence than any replay: unsolicited, genuinely what they want to know, and uncontaminated because nobody has answered them yet. Arm A (ticket replay) is kept because Helpdesk has no equivalent and because a "we already lived through this one" comparison is legible to a manager, but it must not delay Arm B. The metric for Arm B is a question put to the asker afterwards — *would this have saved you a trip to a Software Engineer, and how long a trip?* — because their sentence is worth far more in a business case than ours.
+- **2026-07-29 — Replay contamination is controlled by removal, not by instruction** (Joost raised the invocation gap). Two silent failure modes were found while writing the protocol. (1) Invoking a replay with the normal "Solve issue RB-xxx" triggers `skalar-jira-issue`, whose first step refreshes the ticket from Jira — re-downloading the very comments the cut-off removed, after which the run *appears* to succeed. The protocol therefore carries a verbatim prompt block to paste as the first message of a fresh session. (2) Copying the bundle to the frozen location leaves the untrimmed original in `Service Items/<KEY>/`, where any search finds the answer; the bundle is therefore **moved**, not copied, and its absence confirmed before the run. Relying on an instruction not to look somewhere is not a control. The pipeline itself is never modified — on a live ticket, comments are among the best evidence available.
+- **2026-07-29 — "R&D" is called Software Engineering in rollout material** (Joost), except where it names the SSO R&D-approval board or tool, which keeps its own name.
 - **2026-07-29 — All rollout material lives under `Rollout/`** (Joost). The capability overview, its generator and the brand assets moved out of `output/`, which is gitignored scratch space — they were only in version control because they had been force-added. Left behind deliberately: `ROBOTICS_AI_CAPABILITIES_OVERVIEW.md` and the `documents/`/`pdf/` exports of it (a superseded earlier draft), and `pets/` (unrelated).
 - **2026-07-25 — Capability claims must be backed by a case, not by existence** (Joost). Error-code extraction was cut from all three documents: none of the 41 write-ups reference `error-codes.md`, and only 4 mention error codes at all, incidentally. The tables are a real convenience and stay in the workspace — they are just not evidence of value and must not be pitched as such. Apply the same test to every future claim.
 

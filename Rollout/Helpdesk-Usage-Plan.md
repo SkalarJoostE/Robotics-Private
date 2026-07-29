@@ -1,7 +1,7 @@
 # Robotics-AI for Helpdesk — proposed usage plan
 
 **Status:** draft for discussion. Nothing here is decided — the point of this document is for you to correct it.
-**Owner:** Joost (R&D) · **Date:** 2026-07-25
+**Owner:** Joost (Software Engineering) · **Date:** 2026-07-25
 
 ---
 
@@ -11,7 +11,7 @@ An AI assistant that has been taught our robot software: the Sequence/SubSequenc
 
 ## What it does for you today
 
-This is already built and in daily use by R&D. Nothing in this section needs to be developed first.
+This is already built and in daily use by Software Engineering. Nothing in this section needs to be developed first.
 
 | You type | What happens |
 |---|---|
@@ -57,14 +57,14 @@ Numbers to be filled in from the discovery conversations and the replay test —
 | Measure | Today | Target |
 |---|---|---|
 | Time from ticket arriving to a first informed reply | ___ | ___ |
-| Tickets per month escalated to R&D | ___ | ___ |
-| Typical wait for an R&D answer once escalated | ___ | ___ |
+| Tickets per month escalated to Software Engineering | ___ | ___ |
+| Typical wait for a Software Engineer's answer once escalated | ___ | ___ |
 | Time spent gathering evidence before diagnosis starts | ___ | ___ |
 
 ## What I need from you
 
 1. What did you do last week that took longer than it should have — and roughly how long did it take?
-2. How many tickets a month do you hand to R&D, and what are you usually waiting for?
+2. How many tickets a month do you hand to Software Engineering, and what are you usually waiting for?
 3. Walk me through your last genuinely hard ticket, step by step.
 4. Pick three tickets you closed recently. I'll run them through this cold and show you what it produces versus what actually happened — then you tell me whether it would have helped.
 5. If it does look useful: who would be the pilot person, and can we have some of their time?

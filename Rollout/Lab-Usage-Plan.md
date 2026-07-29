@@ -1,7 +1,7 @@
 # Robotics-AI for the Lab — proposed usage plan
 
 **Status:** draft for discussion. Nothing here is decided — the point of this document is for you to correct it.
-**Owner:** Joost (R&D) · **Date:** 2026-07-25
+**Owner:** Joost (Software Engineering) · **Date:** 2026-07-25
 
 ---
 
@@ -11,7 +11,7 @@ An AI assistant that has been taught our robot software: how Sequences and SubSe
 
 ## What it does for you today
 
-Already built and in daily use by R&D. Nothing here needs developing first.
+Already built and in daily use by Software Engineering. Nothing here needs developing first.
 
 | You type | What happens |
 |---|---|
@@ -57,15 +57,15 @@ Numbers to be filled in from the discovery conversations and the replay test —
 
 | Measure | Today | Target |
 |---|---|---|
-| Time lost per week waiting on R&D for a software answer | ___ | ___ |
+| Time lost per week waiting on Software Engineering for a software answer | ___ | ___ |
 | Time to diagnose a build/FAT blocker | ___ | ___ |
-| Questions per month escalated to R&D | ___ | ___ |
+| Questions per month escalated to Software Engineering | ___ | ___ |
 | Time spent setting up before diagnosis can start (checkout, logs, tables) | ___ | ___ |
 
 ## What I need from you
 
 1. What did you do last week that took longer than it should have — and roughly how long did it take?
-2. How often are you blocked waiting for R&D, and what's the usual wait?
+2. How often are you blocked waiting for Software Engineering, and what's the usual wait?
 3. Walk me through the last robot problem that really cost you a day.
 4. Pick two cases you resolved recently. I'll run them through this cold and show you what it produces versus what actually happened — then you tell me whether it would have helped.
 5. If it does look useful: who would be the pilot person, and can we have some of their time?
