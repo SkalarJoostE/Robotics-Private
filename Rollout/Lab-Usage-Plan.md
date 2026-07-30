@@ -20,7 +20,6 @@ Already built and in daily use by Software Engineering. Nothing here needs devel
 | `How should the QC interval be configured on a Soil Single pHEC?` | Reads the Software Setup and "in Details" pages from Confluence directly and answers for that template. |
 | `Is this configured the way the template expects?` | Compares that system's tables against the template it was built from, so a wrong row shows up as a difference rather than something you have to spot by eye. |
 
-**Nothing to type for this one:** an old order that won't run on Windows 11 is handled by `Update-Core.bat`. Drag the software folder onto it and pick "full update" — it performs the whole Confluence core-update procedure, applies the known fixes, and writes a report. You still open the software and click Build once to accept it.
 
 **What you get back:** a written diagnosis with the evidence it examined, the root cause **with a confidence level**, and what's still unknown. If a fix is needed in the tables or action code, it can prepare the change locally and tell you exactly which files it touched — but committing is always your call.
 

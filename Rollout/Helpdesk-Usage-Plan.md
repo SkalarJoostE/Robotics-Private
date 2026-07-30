@@ -45,7 +45,7 @@ Being clear about this up front, because the fastest way to lose your trust is t
 >
 > You read it, agree or don't, and reply.
 
-The realistic win is not that it's always right. It's that the twenty minutes of downloading, unzipping, checking out and hunting through logs is done before you start thinking.
+The realistic win is not that it's always right. It's that the 60 minutes of downloading, unzipping, checking out and hunting through logs is done before you start thinking.
 
 ## What you'd need
 

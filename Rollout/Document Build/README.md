@@ -7,11 +7,17 @@ then rebuild. Never edit a generated `.docx` directly; the next build overwrites
 
 ## Rebuild
 
+Double-click **`Rollout\Build-Docs.bat`**. It installs the `docx` package on first run, then builds
+every document below — no terminal, no Node knowledge, and it works from any folder.
+
+From a terminal, the same thing:
+
 ```bash
-cd Rollout && npm install && npm run build
+cd Rollout && npm install && npm run build && npm run build-capability
 ```
 
 `npm install` is only needed the first time (or after a clone) — `node_modules/` is gitignored.
+Node.js must be installed; the batch file says so plainly if it is not.
 
 ## What it builds
 
@@ -20,6 +26,11 @@ cd Rollout && npm install && npm run build
 | `Helpdesk-Usage-Plan.md` | `Robotics-AI — Helpdesk Usage Plan.docx` |
 | `Lab-Usage-Plan.md` | `Robotics-AI — Lab Usage Plan.docx` |
 | `Replay-Test/PROTOCOL.md` | `Replay-Test/Robotics-AI — Replay and Question Test Protocol.docx` |
+| *(none — content is in the script)* | `Capability Overview/Robotics-AI Capability Overview.docx` |
+
+The first three come from `npm run build`; the capability overview is a separate, older script
+(`npm run build-capability`) whose text lives in the JavaScript rather than in a Markdown file.
+`Build-Docs.bat` runs both.
 
 To add another document, append an entry to the `DOCS` array in `build-rollout-docs.js`.
 
