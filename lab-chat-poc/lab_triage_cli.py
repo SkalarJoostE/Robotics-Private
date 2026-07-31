@@ -26,8 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from prompt_common import build_prompt
-from cost_log import append_run
+from prompt_common import build_opening_prompt
+from cost_log import append_turn
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 MODEL = "claude-opus-5"
@@ -61,7 +61,7 @@ def run(order: str, log_path: str | None, description: str) -> int:
             file=sys.stderr,
         )
 
-    prompt = build_prompt(order, log_path, description)
+    prompt = build_opening_prompt(order, log_path, description)
 
     # Headless, streaming, fully autonomous. --dangerously-skip-permissions mirrors
     # the API build's bypassPermissions so nothing blocks the run. Harden this for a
@@ -128,9 +128,13 @@ def run(order: str, log_path: str | None, description: str) -> int:
         print("\n--- DIAGNOSIS ---\n")
         print(final_evt["result"])
 
-    # Log the API-equivalent cost for this lab question.
+    # Log the API-equivalent cost for this lab question. One-shot, so it is turn 1 of
+    # a one-turn chat and total_cost_usd is that turn's whole cost.
     if final_evt is not None:
-        append_run(
+        append_turn(
+            chat_id=final_evt.get("session_id") or "",
+            turn=1,
+            kind="question",
             engine="cli-subscription",
             order=order,
             model=MODEL,
@@ -138,7 +142,7 @@ def run(order: str, log_path: str | None, description: str) -> int:
             cost_usd=final_evt.get("total_cost_usd"),
             usage=final_evt.get("usage"),
             duration_ms=final_evt.get("duration_ms"),
-            session_id=final_evt.get("session_id"),
+            question=description or f"one-shot triage {order}",
         )
 
     return 0 if proc.returncode == 0 else proc.returncode

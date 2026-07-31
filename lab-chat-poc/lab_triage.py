@@ -36,13 +36,14 @@ from claude_agent_sdk import (
     ResultMessage,
 )
 
-from prompt_common import build_prompt
-from cost_log import append_run
+from prompt_common import build_opening_prompt
+from cost_log import append_turn
 
 # The workspace root = parent of this lab-chat-poc folder.
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 
-MODEL = "claude-opus-4-8"  # ceiling of quality for the POC; try claude-sonnet-5 to compare cost
+# Kept in step with the CLI engines, otherwise the two billing models are not comparable.
+MODEL = "claude-opus-5"  # ceiling of quality for the POC; try claude-sonnet-5 to compare cost
 
 
 async def run(order: str, log_path: str | None, description: str) -> None:
@@ -72,7 +73,7 @@ async def run(order: str, log_path: str | None, description: str) -> None:
     print(f"{'=' * 24}\n", flush=True)
 
     final = None
-    async for message in query(prompt=build_prompt(order, log_path, description), options=options):
+    async for message in query(prompt=build_opening_prompt(order, log_path, description), options=options):
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, TextBlock):
@@ -95,7 +96,10 @@ async def run(order: str, log_path: str | None, description: str) -> None:
         usage = getattr(final, "usage", None)
         if not isinstance(usage, dict):
             usage = None
-        append_run(
+        append_turn(
+            chat_id=getattr(final, "session_id", None) or "",
+            turn=1,
+            kind="question",
             engine="api-sdk",
             order=order,
             model=MODEL,
@@ -103,7 +107,7 @@ async def run(order: str, log_path: str | None, description: str) -> None:
             cost_usd=getattr(final, "total_cost_usd", None),
             usage=usage,
             duration_ms=getattr(final, "duration_ms", None),
-            session_id=getattr(final, "session_id", None),
+            question=description or f"one-shot triage {order}",
         )
     else:
         print("No result message received (connection/process error).")

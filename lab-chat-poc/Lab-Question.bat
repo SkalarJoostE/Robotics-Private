@@ -8,7 +8,8 @@ set "PY=%~dp0.venv\Scripts\python.exe"
 if not exist "%PY%" set "PY=python"
 
 echo ============================================
-echo   Skalar Lab Question - triage a robot issue
+echo   Skalar Lab Question - one-shot triage
+echo   (For follow-up questions use Lab-Chat.bat)
 echo ============================================
 echo.
 
