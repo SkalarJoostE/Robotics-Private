@@ -930,3 +930,308 @@ inventory, `SIM-004` baselines, `SIM-006` SSPL corpus, `SIM-007` virtual-COM fea
 **Recommended next action:** the frozen reference-package snapshot (half a day, not currently a
 numbered backlog item) before any baseline capture, since a `Sync-Templates.ps1` run would
 otherwise invalidate every captured baseline without anyone noticing.
+
+---
+
+## 2026-08-04 — first order test run (99441979), and the shared-table bug it exposed
+
+**Ran:** clean refresh of `99441979 MYS SP2000-1 pH EC Turb Color` (Waters, SVN r39859) via
+`fetch-project.ps1 -NoVerify`, then `Validate-Package.ps1` against it — the validator's first run on
+a real order rather than a template.
+
+### The finding that mattered
+
+The run reported `Measure only COD150` (MethodNumber 29) as an enabled method with no Sequence. The
+engineer could not find that method anywhere in the order, which was correct: **it is not in the
+order's live method list.** `MethodType` exists twice in the package, and the validator was merging
+both copies.
+
+| File | Rows | `TableIsShared` | `TableReference` | Role |
+|---|---|---|---|---|
+| `SkalarPacks/SkalarPack.Robot.Tables.xml` | 18 | `False` | — | **owner — the live table** |
+| `Applications.*.Tables.xml` (×5) | 90 each | `True` | `Type.Robot$MethodType` | mirrored consumer copies |
+
+The 90-row copies are cached payload carried down from a larger template ancestry. The host resolves
+the shared table through `Type.Robot$MethodType`, so those rows never reach a dropdown. **The
+convention is inverted from what the name suggests: `TableIsShared="False"` marks the file that
+OWNS the table; `TableIsShared="True"` plus a non-empty `TableReference` marks a consumer copy.** A
+shared table with an *empty* `TableReference` is still the owner (`SubSequence` is declared this way)
+and must not be skipped.
+
+This closes the "shared versus per-application table placement" item that the 2026-08-03 entry had
+listed as open. It was worse than a counting artefact: merging mirrors **invented methods that do not
+exist and masked the owner's real rows behind duplicates**.
+
+### Changes to `Validate-Package.ps1`
+
+| Change | Effect |
+|---|---|
+| Read each table only from the file that owns it (`Get-MirroredTables`) | Kills the mirror false positives; traversal hits on 99441979 fell 318 → 121 |
+| **SKV012** (new) — coordinate row exists but X/Y/Z is empty | Catches the Z=0 silent-move case that an existence check walks straight past |
+| **SKV013** (new, Information) — row targets a manipulator with `Enabled=false` | Geometry checks skipped for hardware this system does not have; reference stays visible |
+| `$ConditionalFieldReads` — per-action exclusion for fields read only inside a condition | Removes the `Action01x00` / `LOCATION` false positive |
+| Action code now shown on every finding's detail line | Two findings differing only by action no longer print identically |
+
+**Watch out for the manipulator-`Enabled` suppression.** An unconfigured template ships with *every*
+manipulator disabled — the lab enables them per order. Suppressing on that flag blinded the geometry
+rules on exactly the packages where template defects live (Waters template: SKV007 went 9 → 0). The
+script now honours the flag only once at least one manipulator is enabled, i.e. the package is
+configured. Anyone touching this rule must re-check both a template and a configured order.
+
+**PowerShell trap** (same family as the existing BOM/encoding note): `return $hashSet` from a
+function unrolls the enumerable, so an *empty* `HashSet` returns `$null` and the caller's
+`.Contains()` throws. Use `return , $hashSet`.
+
+### Regression: old vs new across all five templates plus the order
+
+| Package | Errors old → new | Warnings old → new | Cleared |
+|---|---|---|---|
+| BOD | 2 → 1 | 14 → 36 | COD150 mirror |
+| Waters | 3 → 2 | 13 → 58 | COD150 mirror |
+| Testkit | 1 → 1 | 77 → 180 | — |
+| Soil | 1 → 0 | 29 → 34 | COD150 mirror |
+| Lutum | 1 → 0 | 13 → 36 | COD150 mirror |
+| 99441979 | 3 → 2 | 13 → 14 | COD150 mirror |
+
+**No new Error-level finding was introduced anywhere.** The only cleared finding across every package
+is the `Measure only COD150` mirror artefact — so of the 7 SKV001 errors in the 2026-08-03 baseline,
+**6 were false positives from merged mirrors.** Warning growth is almost entirely the new SKV012.
+
+**Correction to the 2026-08-03 baseline table:** it recorded BOD as 1 error. BOD has always had 2 —
+the second is `SKV010: Settings.MethodToRun = 'Measure pH' in Applications.MeasurePH.Tables.xml does
+not match any MethodType DisplayName`. Verified by re-running the previous script version from git.
+The string `Measure pH` appears in no `MethodType` row in any BOD table, owner or mirror.
+
+### Result for 99441979
+
+2 errors, both **real and both inherited from the Waters template**, neither introduced by this
+order:
+
+- `SKV001` — `Fluoride calibration` (14) and `Chloride calibration` (15) are `Enabled=true` in the
+  18-row owner table, and Sequence methods present are 1–13, 16, 17. Both appear in this SP2000-1's
+  method dropdown and do nothing when selected.
+
+The order is otherwise cleaner than its own template: the lab filled in
+`STANDARD RIGHT / GROUP: PH / PumpAwayHeight` and `WASTE / GROUP: EC / StirOffHeight`, which the
+Waters template still lacks. **Diffing an order against its template is the most useful way to run
+this tool** — it separates what the order broke from what it inherited.
+
+### Seeded-defect test on 99441979 — Phase 0 exit criterion met
+
+Same day, the engineer seeded four defects into the order's `SkalarPack.Robot.Tables.xml` without
+telling the validator author what they were. Re-running and diffing against the pre-edit JSON found
+**4 new findings, 0 lost, and no collateral false positives anywhere else in the package.**
+
+| uid | Seeded change | Detected as | Right severity? |
+|---|---|---|---|
+| 21 | removed `<TargetHeight>MeasureHeight</TargetHeight>` | `SKV005` Warning, action 20x00, method 5 (pH calibration) | yes |
+| 311 | `SequenceAction` `11x00` → `45x00` | `SKV004` **Error** — no `Action45x00` class exists | yes |
+| 329 | removed `<LOCATION>WASTE</LOCATION>` | `SKV005` Warning, action 20x00, method 12 (Purge titrator) | yes |
+| 379 | removed `<IOToUse>FlowcellBypassValve</IOToUse>` | `SKV011` **Information** only | **no — under-reported** |
+
+Every finding named the exact uid. Two of the four (21, 329) removed a field that the traversal has
+to resolve through the parent chain, and both were reported without the validator misreporting
+values that legitimately *are* inherited elsewhere — which is the Phase 0 exit criterion
+"finds seeded broken references without misreporting values inherited through a parent subsequence".
+**Consider that criterion met.**
+
+#### The miss, and what it changed
+
+`IOToUse` was not in `$EnforcedFields`, so removing it only produced Information. But
+`Action30x00_ToggleIO.cs` passes `SequenceInfo.IOToUse` straight into `Robot.ToggleIO`, which
+dereferences `rIO.Name` on the first line — an unset value is a NullReferenceException at runtime,
+not a value supplied later.
+
+Promoting `IOToUse` globally would have been wrong: `Action34x00_ToggleSprayerIO.cs` names
+`SequenceInfo.IOToUse` **only in its `logger.Info` line** and toggles `Manipulator.ddSprayerIO`
+instead, so an unset value there is harmless — and that is the only shape `IOToUse` takes in the
+Waters, Soil and BOD templates.
+
+**The general lesson: whether an unset field is a defect depends on what the action DOES with the
+value, not on the field name.** `$EnforcedFields` is therefore now three lists:
+
+- `$EnforcedFields` — enforced for every action (`LOCATION`, `TargetHeight`, `Manipulator`).
+- `$EnforcedFieldsByAction` — enforced only where the action hard-dereferences it (`30x00`/`IOToUse`).
+- `$ConditionalFieldReads` — read but not consumed: guarded by a condition (`01x00`/`LOCATION`) or
+  log-only (`34x00`/`IOToUse`). Reported as Information, never dropped.
+
+Every entry in the latter two must cite the source line that proves it. After the change all four
+seeded defects report at Error/Warning and **all five templates are byte-identical to before**
+(+0/-0 findings each), so the new rule costs no noise.
+
+### Population sweep — all 27 checked-out orders
+
+With the validator trusted, it was run across every order on disk. Minutes, read-only. First
+population-level data the project has.
+
+**18 of 27 orders carry at least one Error.** Totals by rule: `SKV009` 237, `SKV007` 136, `SKV005`
+102, `SKV006` 87, `SKV012` 40, `SKV001` 20, `SKV010` 18, `SKV004` 3, `SKV014` 3, `SKV000` 2,
+`SKV002` 1, `SKV003` 1.
+
+The sweep found two script defects that a single-package run never would:
+
+- `Get-KnownActions` had the same enumerable-unroll bug as `Get-MirroredTables` — an empty `HashSet`
+  returns `$null` and the caller throws. Fixed with the leading comma.
+- **The validator silently assumed a package generation.** Three orders (`99369149`, `99317958`,
+  `99319278`) predate the `ActionNNxNN` framework — their `SequenceAction` values are plain integers
+  (`0`, `1`, `30`…) and no `Action` class exists to scan. Without a guard, every action-aware rule
+  would flag every row. New **SKV014** detects this and reports SKV004/005/006/007/012 as
+  **NotEvaluated** for that package, which is the plan's invariant-tiering principle applied to the
+  static layer: a rule without its required input must never read as Pass.
+
+#### The five hard reference errors — candidate findings, need domain judgement
+
+These are the sweep's actual yield. A missing or malformed action reference is **not** benign:
+`Action00x00_SubSequence.cs` resolves the class with `Type.GetType(..., throwOnError: false)`, and on
+`null` sets `ErrorCode = 1`, logs an error and **breaks out of the subsequence** — the run aborts.
+
+| Order | Finding | Where |
+|---|---|---|
+| `99444244` | `SequenceAction` cell contains `'(00xA'` — malformed. Description says `Action(00xAI) Pump sample for color via PBF`; its neighbours are correctly `00x0I` and `00xAI`. Enabled (`SequenceNumber` 4), no `ExecuteCondition`. | SubSequence 110 step 4, Color calibration |
+| `99434862` | References `Action12x00` ("Spray probes"). No `Action12x00` exists anywhere in the package — not in `TreeDatabase.Xml`, `AllScripts.cs`, or the mirror, while e.g. `Action11x00` is in all three. | SubSequence 46 step 4, reached from Rinse manipulator (simple), Rinse manipulator (intelligent), pH EC Turbidity Color measurement QC |
+| `99396829` | `SubMethodNr` 33 referenced, no `SubSequence` rows have `SequenceMethod = 33` | Turbidity calibration |
+| `99434984` | Cycle `1 -> 1` in SubSequence traversal | Measure Only, COD, COD Direct, COD ALS, Total Nitrogen LR (MN) |
+| Testkit template | Same cycle `1 -> 1` | — |
+
+**Treat these as candidates, not confirmed field defects.** The traversal is unconditional, so a
+subsequence that is only reached when specific hardware is configured will still be walked — a
+domain engineer has to say whether each path is genuinely reachable on that system.
+
+### Two domain corrections that changed the rules
+
+Reviewing the sweep with an engineer produced two corrections worth more than the findings.
+
+**1. `MethodType.Enabled` is close to meaningless. The Settings table is the authority.** The lab
+habitually enables every method so it appears in the dropdown, so "Enabled with no Sequence" says
+almost nothing on its own. What a package *actually runs* comes from the `Settings` table of each
+application, whose method-bearing columns each name a `MethodType` by DisplayName —
+`MethodToRun`, `ManipulatorRinse`, `QCStandardRackMethod`, `TitratorPurgeMethod`,
+`TurbidityFillingCellMethod`, and so on.
+
+Those columns are **discovered, not hardcoded**: any Settings column whose value matches a
+MethodType DisplayName counts, so new columns and per-template differences come for free. Same
+principle as deriving required fields from the action code. On 99434862 that resolves to 8 of 19
+MethodType rows actually selected.
+
+`SKV001` is re-tiered accordingly:
+
+- Method **is** selected by a Settings column but has no Sequence → **Error**, citing the exact
+  `application/column`. A setting that does nothing is a real defect.
+- Method enabled, no Sequence, **not** selected by anything → **Information**.
+
+The rule is deliberately kept rather than deleted — a `MethodToRun` can still name a method that
+does not exist, which is what `SKV010` catches 19 times across the sweep.
+
+**2. An `ExecuteCondition` must be reported by NAME ONLY — never resolved to its stored value.**
+The first implementation looked the condition up in `SettingsBoolean` and printed
+`gated by SprayProbes=false`, which reads as "dead branch, ignore". That is wrong: these settings
+are **per-run and per-application**. An operator turns a feature on for one run and off for the
+next, so a stored `false` means "off by default right now", not "this system cannot do it".
+
+The gate is still worth reporting, because it tells the reviewer which *feature* a finding belongs
+to. It must never downgrade the finding. 99434862 is the worked example: its missing `Action12x00`
+sits under `ExecuteCondition SprayProbes`, and that system has no spray pump — but the right
+outcome is still to add the action, because sprayers may be fitted later and the code would fail
+the moment someone switched the feature on. Findings now carry `Gate` (condition names) and `InUse`
+(is the root method selected by a Settings column), both surfaced as a `reachability:` line and in
+the JSON, purely as triage context.
+
+`ExecuteCondition` also had to start **accumulating down the traversal** — the gate that matters for
+99434862 sits on the caller in method 101/102, six rows above the defect.
+
+### Reworking SKV010: read the dropdown source from the schema
+
+Triaging the 19 `SKV010` findings split them into two very different things, and only one is a
+defect. `Generated/TypedRow/Settings.cs` resolves the method with:
+
+```csharp
+Tables["MethodType"].LocateExpr("DisplayName='" + MethodToRun + "'")
+```
+
+**No `Enabled` filter.** So:
+
+- **Name matches nothing** → returns null, and the only trace is a `logger.Trace("Cannot find
+  DisplayName with the specified MethodToRun in table MethodType")`. It **fails silently**. That is
+  a real defect and precisely what a static check should catch. → **Error**
+- **Name matches a `Enabled=false` MethodType** → resolves and runs perfectly well. `Enabled` only
+  governs whether the entry appears in the dropdown. This was **14 of the original 19 findings**,
+  all false. → **Information** (it does mean the value cannot be re-picked in the UI, which is worth
+  knowing, but it is not a fault).
+
+`SKV010` also only ever checked `MethodToRun`, missing `ManipulatorRinse`, `QCStandardRackMethod`
+and the rest. Two attempts at fixing that:
+
+1. **Discover method columns by value** — treat any column whose value matches a MethodType
+   DisplayName as a method column. **Wrong, and badly:** `InitializationMethod` and
+   `FinalizationMethod` hold values like `Flush` and `Park` that collide with method names but
+   resolve against a different table. This produced **346 false errors**.
+2. **Read the declared dropdown source** — correct. Every table carries
+   `<TableName_HiddenDefinition>` blocks, one per column, whose `<colUnits>` holds the expression:
+
+   ```
+   Dropdown(MethodType.DisplayName);Select(Enabled=True and isnull(DisplayName,'')<>'')
+   ```
+
+   `Get-TableRows` was skipping those blocks as metadata; `Get-DropdownColumns` now reads them. This
+   is the authority for "does this column name a method", and it revealed that method references are
+   **not confined to Settings** — `Probes.CalibrationMethod`,
+   `FlowcellConfiguration.FlushMethodName` and `TitrationVesselConfiguration.FlushMethodName` all
+   name methods, and a bad value there fails identically.
+
+**The general lesson, twice over in one session: read the package's declared schema, don't infer
+from values.** Same shape as the `TableIsShared` discovery.
+
+One scoping decision: those non-Settings references are **validated** by `SKV010` but deliberately
+**excluded from the in-use judgement** that sets `SKV001` severity. A probe that is not fitted still
+carries a calibration-method name, which made `Fluoride calibration` look in-use on a system with no
+fluoride probe. In-use means Settings, as the engineer specified.
+
+### Sweep result after the corrections
+
+Across 27 orders + 5 templates: **errors fell from 45 to 37, and from 18 packages to 14.**
+
+| Rule | Count | Nature |
+|---|---:|---|
+| `SKV010` | 29 | a method-name column naming a method that does not exist. Concentrated: 10 each in 99440305 / 99440436 (Korea Soil, a renamed method set), 3 in 99429786 and Lutum template, 2 in 99440816 |
+| `SKV004` | 3 | missing/malformed action class (one is the seeded 99441979 defect) |
+| `SKV000` | 2 | pre-ActionNNxNN packages with no Sequence rows at all |
+| `SKV003` | 2 | `1 -> 1` cycle (99434984 + Testkit template) |
+| `SKV002` | 1 | dangling `SubMethodNr` 33 (99396829) |
+| `SKV001` | 0 | every remaining case is a method nothing selects → Information |
+
+Only one error in the whole sweep is gated by an `ExecuteCondition` (99434862). The rest are on
+ungated paths.
+
+**Worked example of what to check** — 99440305 (Korea Soil) has 9 methods total: `Rinse`,
+`Flush addition pump`, `Calibrate pump`, `Calibrate pH`, `Calibrate EC`, `Waters`, `Soil`,
+`Stir off KCL`. Its `Applications.SyringeCheck` selects `'Syringe check in sample bottle'` and the
+pack-level Settings row selects `'pH EC'` — neither exists. This is a renamed method set where the
+referring values were not updated, so the question for each is: was the method renamed, dropped
+deliberately, or is the whole application vestigial?
+
+**PowerShell trap, second instance:** index-assigning `$PSDefaultParameterValues['Cmd:Param']`
+inside a function mutates the **global** automatic variable — the values leak into every later call
+in the script. `SKV009` was inheriting a stale gate from an unrelated finding. Assign
+`$PSDefaultParameterValues = $PSDefaultParameterValues.Clone()` first to get a local copy.
+
+### Still open
+
+- **Triage the 19 `SKV010` errors** across 8 orders plus the BOD template (`Measure pH`). Now the
+  largest error class and the highest-value next conversation: every one is a Settings column
+  naming a method that does not resolve.
+- **Triage the remaining SKV001 errors** — now only Waters `Fluoride calibration` (14) and
+  `Chloride calibration` (15). Deliberately parked, or a real gap?
+- **Testkit `SKV003`** — `Cycle detected in SubSequence traversal: 1 -> 1`. Pre-existing, untriaged.
+- **Calibrate SKV012.** Brand new and firing heavily (Testkit 109, Waters 47, BOD 26). It reports
+  only on combinations the traversal actually reaches, but that traversal's inherited-`LOCATION`
+  merging is itself the uncalibrated part — so a share of these are likely context-merging artefacts.
+  Same status as SKV005–008: Warning until a domain engineer walks them.
+- **Calibrate SKV005–008.** The seeded-defect half is now done (above). What remains is the second
+  half: walk the *existing* warnings on each template with a domain engineer to separate real gaps
+  from context-merging artefacts. Still blocking `-Strict` as the default.
+- **Audit the other actions for hard-dereferenced fields.** The `30x00`/`IOToUse` case was found by
+  accident. A pass over the remaining actions asking "which `SequenceInfo` fields does this
+  dereference without a guard?" would turn the rest of SKV011 into enforced rules — that is where
+  the next real detections are.
+- **Cross-table coherence rules** not yet implemented (unchanged).
+- Machine-readable rule catalogue, CI wiring, evidence bundle (`SIM-015`, Phase 1) — unchanged.
