@@ -16,6 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pricing
 import usage_limits
 from cost_log import EUR_PER_USD, append_turn, to_eur
 
@@ -125,6 +126,12 @@ class Chat:
             turn_usd = max(0.0, cumulative - self.cumulative_usd)
             self.cumulative_usd = cumulative
 
+        # The CLI's figure prices these tokens at the wrong model's card (see pricing.py),
+        # so the money we show and total is recomputed from the turn's own tokens.
+        usage = result.get("usage")
+        model_usage = result.get("modelUsage")
+        api_usd, models = pricing.price_turn(MODEL, usage, model_usage)
+
         self.chat_id = result.get("session_id") or self.chat_id
         turn_number = len(self.turns) + 1
         record = {
@@ -132,6 +139,8 @@ class Chat:
             "kind": kind,
             "label": label or prompt,
             "usd": turn_usd,
+            "api_usd": api_usd,
+            "models": models,
             "deltas": deltas,
             "status": result.get("subtype", "unknown"),
             "duration_ms": result.get("duration_ms"),
@@ -148,10 +157,11 @@ class Chat:
             model=MODEL,
             status=record["status"],
             cost_usd=turn_usd,
-            usage=result.get("usage"),
+            usage=usage,
             duration_ms=result.get("duration_ms"),
             question=record["label"],
             limit_deltas=deltas,
+            model_usage=model_usage,
         )
         self._print_turn_footer(record, after)
         return result
@@ -181,19 +191,23 @@ class Chat:
         return None  # stdout closed without a result -- the process died
 
     def _print_turn_footer(self, record: dict, after: dict) -> None:
-        usd, eur = record["usd"], to_eur(record["usd"])
-        cost = f"€{eur:.2f} (${usd:.2f})" if usd is not None else "cost unavailable"
+        api_usd, api_eur = record["api_usd"], to_eur(record["api_usd"])
+        cost = f"€{api_eur:.2f} (${api_usd:.2f})" if api_usd is not None else "cost unavailable"
         limits = usage_limits.format_delta(record["deltas"])
         seconds = (record["duration_ms"] or 0) / 1000
         print(f"\n\n[turn {record['turn']}] {cost} · {seconds:.0f}s"
               + (f" · {limits}" if limits else ""))
         if after and not after.get("unavailable"):
             print(f"           {usage_limits.format_windows(after)}")
+        elif after and after.get("unavailable"):
+            # Say why, rather than going silent -- a missing limits line otherwise reads
+            # as a lost feature instead of a temporary outage of the usage endpoint.
+            print(f"           limits: {after['unavailable']}")
 
     def summary(self) -> str:
         """The per-question breakdown, in the shape you actually want to read."""
-        priced = [t for t in self.turns if t["usd"] is not None]
-        total_usd = sum(t["usd"] for t in priced)
+        priced = [t for t in self.turns if t["api_usd"] is not None]
+        total_usd = sum(t["api_usd"] for t in priced)
         lines = [
             "",
             "=" * 66,
@@ -204,12 +218,18 @@ class Chat:
             label = " ".join(turn["label"].split())
             if len(label) > 38:
                 label = label[:37] + "…"
-            eur = to_eur(turn["usd"])
+            eur = to_eur(turn["api_usd"])
             money = f"€{eur:>6.2f}" if eur is not None else "     ?"
             tag = "wrap-up" if turn["kind"] == "wrapup" else f"Q{turn['turn']}"
             lines.append(f"  {tag:<8} {label:<40} {money}")
         lines.append("  " + "-" * 62)
         lines.append(f"  {'total':<8} {'':<40} €{to_eur(total_usd):>6.2f}  (${total_usd:.2f})")
+
+        # Worth surfacing: if a turn quietly fanned out to a second model, the per-model
+        # rate difference is the whole reason the total is what it is.
+        ran = sorted({t["models"] for t in self.turns if t["models"]})
+        if ran and ran != [MODEL]:
+            lines.append(f"  models that ran: {', '.join(ran)}")
 
         chat_deltas: dict[str, float] = {}
         for turn in self.turns:
@@ -225,7 +245,8 @@ class Chat:
             # cost 0pp -- that is a measurement floor, not a missing measurement.
             lines.append("  subscription cost of this chat: under 1pp (the endpoint's resolution)")
         lines.append(f"  (euros converted at {EUR_PER_USD} EUR/USD; on a subscription the")
-        lines.append("   money figure is what this WOULD have cost on the API)")
+        lines.append("   money figure is what this WOULD have cost on the API, priced from")
+        lines.append("   this chat's own tokens at published list rates — see pricing.py)")
         lines.append("=" * 66)
         return "\n".join(lines)
 

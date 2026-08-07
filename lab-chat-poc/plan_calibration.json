@@ -1,0 +1,46 @@
+{
+  "pp_per_mtok": {
+    "five_hour": {
+      "output": 289.5929391055062,
+      "cache_write": 75.40306259132437
+    },
+    "seven_day": {
+      "output": 45.91117278643376,
+      "cache_write": 0.9911618498008072
+    }
+  },
+  "fitted_at": "2026-08-06T10:21:44+00:00",
+  "method": "lower envelope over fully-measured chats; cache_read and input pinned to 0",
+  "samples": {
+    "five_hour": 6,
+    "seven_day": 6
+  },
+  "binding": {
+    "five_hour": [
+      "4537661f-f453-4395-a992-3cea8a7b36a7",
+      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842"
+    ],
+    "seven_day": [
+      "4537661f-f453-4395-a992-3cea8a7b36a7",
+      "93f96083-14ea-4472-8493-d88da5628b7f"
+    ]
+  },
+  "headroom": {
+    "five_hour": {
+      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 12.14,
+      "4537661f-f453-4395-a992-3cea8a7b36a7": 0.0,
+      "93f96083-14ea-4472-8493-d88da5628b7f": 7.83,
+      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 7.16,
+      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 2.2,
+      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 0.0
+    },
+    "seven_day": {
+      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 0.5,
+      "4537661f-f453-4395-a992-3cea8a7b36a7": 0.0,
+      "93f96083-14ea-4472-8493-d88da5628b7f": 0.0,
+      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 0.68,
+      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 0.07,
+      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 1.07
+    }
+  }
+}

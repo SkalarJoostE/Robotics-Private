@@ -143,6 +143,7 @@ def run(order: str, log_path: str | None, description: str) -> int:
             usage=final_evt.get("usage"),
             duration_ms=final_evt.get("duration_ms"),
             question=description or f"one-shot triage {order}",
+            model_usage=final_evt.get("modelUsage"),
         )
 
     return 0 if proc.returncode == 0 else proc.returncode

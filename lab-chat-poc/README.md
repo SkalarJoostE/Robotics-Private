@@ -98,8 +98,13 @@ Every **turn** appends a row to `cost_log.csv` with both:
 
 | | |
 |---|---|
-| **API-equivalent money** (`cost_usd` / `cost_eur`) | what that turn would cost on the API at list prices — the "should we buy API access?" number |
+| **API-equivalent money** (`api_cost_usd` / `api_cost_eur`) | what that turn would cost on the API at **published list rates**, computed from the turn's own tokens — the "should we buy API access?" number |
 | **Subscription limits** (`five_hour_pp` / `seven_day_pp`) | percentage points of the 5-hour and 7-day windows the turn consumed — the "how many seats would we need?" number |
+
+Two supporting columns exist because the obvious source for each of those turned out to be
+unreliable: `cost_usd` / `cost_eur` is the CLI's *own* cost figure, kept as the raw
+observation but **not** what the report reads (it misprices Opus 5 — see below); and
+`est_plan_pp` is the plan cost derived from tokens instead of measured account-wide.
 
 ```powershell
 python cost_report.py            # per-chat breakdown + monthly totals
@@ -137,6 +142,34 @@ session** while `usage` is **per turn**. A turn's own cost is therefore the *inc
 over the previous result; logging the raw total double-counts every turn after the first.
 Verified 2026-07-30.
 
+> **Do not use the CLI's cost figure for Opus 5.** Measured 2026-08-06, `total_cost_usd`
+> prices `claude-opus-5` tokens at Sonnet 5's rate card — $3/$15 per MTok instead of
+> $5/$25, with cache rates scaled to match. Reconciling the whole log by model shows it is
+> one model's rate entry, not a systemic problem:
+>
+> ```
+> model                   rows      CLI $   published $   ratio
+> claude-opus-4-8            2     2.7299        2.7283   0.999
+> claude-opus-5             20    26.2631       43.6961   1.664   <- disagrees
+> ```
+>
+> Opus 4.8 is right to a tenth of a percent; Opus 5 is off by exactly 5/3, the signature of
+> a rate table that does not yet know the model and falls back to a Sonnet-tier default.
+> `pricing.py` therefore recomputes cost from each turn's own tokens at published rates,
+> and that is what `api_cost_*` and every report hold. Re-check at any time — if a future
+> CLI release fixes its table, the ratio moves to 1.000 and this note can go:
+>
+> ```powershell
+> python pricing.py --audit
+> ```
+
+**Cache writes are most of the bill.** This workload is ~95% cache reads by volume, but
+cache *writes* dominate cost, and Claude Code writes **1-hour** cache entries — billed at
+2× the input rate against 1.25× for 5-minute ones. The split is logged separately
+(`cache_write_5m_tokens` / `cache_write_1h_tokens`) because it is the largest single lever
+on the money figure. A turn that fans out to a second model is priced per model from the
+result JSON's `modelUsage`, and the models that ran are recorded in `models`.
+
 **Limits.** The result JSON carries no quota data at all, so `usage_limits.py` fetches it
 from `GET /api/oauth/usage` — the endpoint behind the CLI's own `/usage` screen — and
 snapshots it before and after each turn. Three things to know:
@@ -153,6 +186,64 @@ Check it any time — this prints percentages only, never the token:
 ```powershell
 python usage_limits.py
 ```
+
+### Why the measured pp figure is an upper bound
+
+The usage endpoint is **account-wide**. It has no session, chat or process dimension, so a
+before/after delta is really *everything the account consumed during that turn's wall-clock
+span*. Run two chats at once and each bills itself for both; an interactive Claude Code
+session, Claude Desktop or claude.ai in a browser all land in the same bucket. Because
+`delta()` discards negative differences, contamination can only ever **inflate** — which,
+for a "how many seats do we need?" number, errs toward buying too many.
+
+Tokens have no such problem: they come from the turn's own process. So the fix is to stop
+measuring plan cost per turn and measure the **conversion** once instead:
+
+```powershell
+python plan_calibration.py          # fit from the log, show the evidence, save nothing
+python plan_calibration.py --save   # store it; new turns then fill est_plan_pp
+```
+
+**One weight per token type, not one scalar.** The first version converted through money
+(`est_pp = api_cost_usd × k`), which assumes the plan weights token types the way the rate
+card does. Measured against the log, it doesn't — that model explains almost none of the
+variance:
+
+| model form | R² | adj R² |
+|---|---|---|
+| price-proportional (1 scalar) | 0.067 | — |
+| output + cache_write (2 weights) | 0.633 | 0.388 |
+| all three (3 weights) | 0.895 | 0.738 — but `cache_read` fits **negative** |
+
+Cost and plan consumption are different functions of the same tokens. Cache reads are ~95%
+of token volume and a large share of the bill, yet contribute nothing measurable to plan
+usage — their weight goes negative whenever fitted, which is physically impossible and
+means "indistinguishable from zero". Plan windows track **generation and cache writes**,
+not re-reading cached context. So `cache_read` and `input` are pinned at 0 and the model is:
+
+```
+est_pp = output_tokens × w_output  +  cache_write_tokens × w_cache_write
+```
+
+**Fitted against one-sided noise.** Contamination only inflates, so the true surface lies
+at or *below* every observation. Least squares splits the difference; the right estimator is
+the **lower envelope** — the largest weights whose prediction never exceeds an observed
+value. That is a tiny linear program solved by enumerating which chats bind. The result is
+conservative by construction (it sits at or above the truth in aggregate), so it errs
+toward too many seats rather than too few, and tightens as cleaner data arrives.
+
+`plan_calibration.py` prints the per-chat **headroom** — how much of each chat's measured pp
+its own tokens don't explain, i.e. the most concurrent work could have added. Chats with
+zero headroom are the ones the fit rests on.
+
+Two caveats keep it provisional: the endpoint reports **whole** percentage points, so the
+7-day totals (1–3pp a chat) are coarse; and as of 2026-08-06 only 6 chats are fully
+measured. **Re-fit once a few chats have run with nothing else touching the account.**
+
+> A chat is only usable if **every** turn has a measured pp. A blank means the endpoint was
+> unavailable, which is not the same as zero — summing blanks as zeros makes an unmeasured
+> chat look like a large chat that consumed nothing, and that alone inverted an earlier
+> version of this fit.
 
 ### The access token
 
@@ -176,6 +267,21 @@ All four share `prompt_common.py`, and the two chats share `chat_engine.py`, so 
 identical — only the prompts, engine and billing differ. All default to `claude-opus-5`
 (override with `LAB_CHAT_MODEL`); keep them on the same model or the billing comparison is
 meaningless.
+
+The measurement side is four small modules, each with one job:
+
+| Module | Job |
+|---|---|
+| `cost_log.py` | one CSV row per turn; migrates the schema in place when it grows |
+| `pricing.py` | published rate card; turns a turn's tokens into money (`--audit` re-checks the CLI against it) |
+| `usage_limits.py` | reads the live subscription windows from the OAuth usage endpoint |
+| `plan_calibration.py` | fits tokens → percentage points, so plan cost survives concurrent chats |
+
+> **Editing these while a chat is open:** `cost_log.py` migrates `cost_log.csv` to whatever
+> schema the *running* process holds in memory. A chat started before a schema change will
+> therefore try to migrate the log **backwards** when it writes. `_write` now refuses that
+> and appends to the on-disk header instead — but finish open chats before pulling changes
+> if you can.
 
 > **Licensing reality:** a subscription is scoped to one person. Anthropic does not allow
 > routing many users through your subscription login. So the CLI engine is perfect for **you**;
