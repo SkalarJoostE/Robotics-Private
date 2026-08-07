@@ -75,18 +75,49 @@ def _redact(text: str) -> str:
     return _TOKEN_RE.sub(r"\1<redacted>", str(text))
 
 
-def _find_token(obj) -> tuple[str | None, int | None]:
-    """Depth-first search for an accessToken/expiresAt pair.
+# A Claude subscription token. Anything else in the credential store belongs to someone
+# else and must never be sent to api.anthropic.com.
+_CLAUDE_TOKEN_PREFIX = "sk-ant-"
 
-    Searching rather than hardcoding `claudeAiOauth.accessToken` means a future
-    reshuffle of the credentials file degrades to "no limit data" instead of a crash.
+# Subtrees holding third-party credentials. `claude` stores MCP server logins in the same
+# file, so a plain search for "accessToken" can surface an Atlassian, GitHub or other
+# provider's token instead of ours.
+_FOREIGN_KEYS = {"mcpoauth"}
+
+
+def _node_token(node) -> tuple[str | None, int | None]:
+    if not isinstance(node, dict):
+        return None, None
+    token = node.get("accessToken") or node.get("access_token")
+    if not isinstance(token, str) or not token.startswith(_CLAUDE_TOKEN_PREFIX):
+        return None, None
+    expires = node.get("expiresAt") or node.get("expires_at")
+    return token, expires if isinstance(expires, (int, float)) else None
+
+
+def _find_token(obj) -> tuple[str | None, int | None]:
+    """Find the CLAUDE accessToken/expiresAt pair, ignoring third-party credentials.
+
+    The canonical location is `claudeAiOauth`, so that is tried first; the search below is
+    the fallback that lets a future reshuffle of the file degrade to "no limit data"
+    instead of a crash.
+
+    Two guards make the fallback safe, and both are load-bearing (learned 2026-08-06, when
+    an Atlassian MCP login landed ahead of `claudeAiOauth` in the file and a bare
+    depth-first search started returning ITS token -- which then went to api.anthropic.com
+    and came back 401). Subtrees holding another provider's credentials are skipped, and a
+    candidate must carry the Claude token prefix.
     """
     if isinstance(obj, dict):
-        token = obj.get("accessToken") or obj.get("access_token")
-        if isinstance(token, str) and token:
-            expires = obj.get("expiresAt") or obj.get("expires_at")
-            return token, expires if isinstance(expires, (int, float)) else None
-        for value in obj.values():
+        found = _node_token(obj.get("claudeAiOauth"))
+        if found[0]:
+            return found
+        found = _node_token(obj)
+        if found[0]:
+            return found
+        for key, value in obj.items():
+            if str(key).split("|", 1)[0].lower() in _FOREIGN_KEYS:
+                continue
             found = _find_token(value)
             if found[0]:
                 return found
