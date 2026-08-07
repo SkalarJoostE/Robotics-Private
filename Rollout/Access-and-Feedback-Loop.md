@@ -11,7 +11,11 @@
 > mechanism it relies on (hooks, the capture script) is described here only to the depth a reader
 > needs to evaluate it; the parity rules governing instruction files live in `AI_WORKSPACE_PLAN.md`.
 
-**Last updated:** 2026-08-07 — first version, written ahead of the Helpdesk pilot conversation.
+**Last updated:** 2026-08-07 — revised the same day against `lab-chat-poc/`, which was built in
+parallel on the other PC and lands most of what §5 originally described as future work. §2 now uses
+measured cost and plan-limit data instead of estimates, and records the licensing constraint that
+decides seats-vs-API; §4 defers to the `md documents\Lab Questions\` rules; §5 is rewritten around
+what exists.
 
 ---
 
@@ -36,21 +40,64 @@ to approve "seats" and believe the distribution and logging questions are settle
 | **A1 — Personal seats** | Each user has their own Claude login; flat per-seat cost | Daily users. Predictable budget, per-user visibility, no per-question cost anxiety |
 | **A2 — API keys** | Pay per token, one key per person, per-key spend caps | Unattended/automated paths where volume is predictable and attribution matters |
 | **A3 — Cloud tenancy** (Bedrock / Vertex / Foundry) | Claude runs inside the company's own cloud account | The answer to a security objection, not a cost option. Costs more than A1; some features unavailable |
-| **A4 — No individual access** | One shared instance behind a request channel | Occasional users who will never open a terminal. See §5 |
+| **A4 — No individual access** | One shared instance behind a request channel | Occasional users who will never open a terminal. **Necessarily API-billed** — a shared service cannot run on one person's subscription. See §5 |
 
-**Decision: seats, sized as a pilot.** Helpdesk pilot = 1–2 named people = 1–2 seats.
+**Decision: seats for named individuals; API for anything shared.** Helpdesk pilot = 1–2 named
+people = 1–2 seats.
 
-The reasoning is not that seats are cheaper in the abstract — it is that **per-token billing makes
-pilot users cost-conscious at exactly the moment the pilot needs them to use the tool heavily enough
-to produce evidence.** A Helpdesk engineer who hesitates before asking a follow-up question generates
-no data. Flat cost removes that hesitation entirely.
+### The licensing constraint that decides it
 
-The scale is worth stating plainly so nobody is surprised later: a single real diagnosis in this
-workspace — a `.glf` log through Loupe, a case-base search, a Sequence CSV trace, some
-`SkalarPackSolution` reading — is hundreds of thousands of input tokens before follow-up turns. Light
-days cost pennies; heavy days do not. That variance is precisely what a seat removes.
+A subscription is **scoped to one person**. Routing several users through one subscription login is
+not permitted. This is not a cost judgement, it is a hard boundary, and it settles the shape of the
+whole rollout:
 
-**API keys are still the right shape for the unattended paths** — the ticket scraper's AI step
+- A named individual who works with the assistant daily → **a seat**.
+- A shared service many people talk to (the chat front door, §5) → **API**, structurally. It cannot
+  be a seat no matter how few questions it handles.
+
+`lab-chat-poc/` already reflects this: the CLI-driven chats bill against one person's subscription
+and are labelled a prototype, while `lab_triage.py` runs on the Agent SDK with an API key and is
+described in its own README as *"the future multi-user shared service."* Subscription gets the
+prototype; it cannot be the product.
+
+### What it costs — measured, not estimated
+
+`lab-chat-poc/cost_log.csv` has logged every turn since 2026-07-28. Numbers below are from
+`python cost_report.py --totals` over 11 conversations / 16 questions, and are **API-equivalent at
+published list rates** — what this work would cost to buy on the API:
+
+| | Per conversation | |
+|---|---|---|
+| **Average** | **€3.91** | 9m 44s start to finish |
+| Service ticket (RB/ES) | €5.98 | 17m 33s — carries scraper intake, customer software, logs |
+| Lab question | €3.45 | 8m 00s |
+
+And what one seat actually supports, from the fitted token → plan-usage conversion
+(`plan_calibration.json`):
+
+> **~7 conversations in a working day, and the 5-hour session window is what binds — not the weekly
+> allowance.** The week would permit ~12/day; the 5-hour window permits ~5 per session. Spreading
+> work across the week does not help; waiting for the session window to roll over does.
+
+Two consequences for the pitch:
+
+1. **Seat-vs-API is no longer an argument, it is arithmetic.** A Helpdesk engineer running 3–4
+   conversations a day is ~€250–330/month of API-equivalent work. Compare that against a seat price
+   directly.
+2. **Seat count is driven by the 5-hour window, not by headcount.** A second person is a second seat
+   not because of cost but because they would otherwise contend for the same session window.
+
+Both figures carry caveats the POC states plainly and this document inherits: the plan conversion is
+fitted from 6 fully-measured chats via a deliberately conservative lower-envelope estimator (it errs
+toward *too many* seats), the usage endpoint reports whole percentage points so per-chat 7-day
+figures are coarse, and it should be re-fitted once more chats have run with nothing else touching
+the account. **Re-run `python cost_report.py` before quoting any of this** — the log grows.
+
+> **Do not use the CLI's own cost figure.** Measured 2026-08-06, it prices `claude-opus-5` at Sonnet
+> rates — out by 5/3. `pricing.py` recomputes from each turn's tokens at published rates, and that is
+> what the numbers above use. `python pricing.py --audit` re-checks it.
+
+**API keys are also the right shape for the unattended paths** — the ticket scraper's AI step
 (`AI_WORKSPACE_PLAN.md` F13 / Phase 3) and anything scheduled. Volume there is predictable and
 per-run attribution is genuinely useful.
 
@@ -98,6 +145,34 @@ agreed to be git-ignored.
 
 So: **Tier 1 captures everything, outside the repository. Tier 2 is the curated case base, and
 entries reach it only when a Software Engineer decides they earned it.**
+
+### This pattern is already running for chats — reuse it, do not reinvent it
+
+`md documents\Lab Questions\` is the same two-tier shape, already built and already governed by
+rules worth copying rather than paraphrasing:
+
+- **The scope line is drawn on verification, not on topic.** *"A chat is not a resolution. Nobody
+  confirmed the answer on the robot, no fix was verified, and the conversation may have ended on a
+  hypothesis. Mixing that into the case base would dilute logs whose value depends on every entry
+  being something that actually worked."*
+- **One hard rule, stated as an absolute.** A chat may write **only** inside that folder — never the
+  five `AI_*_Log.md` files, the Template Known Issues pages, a `verified-features` dossier,
+  `AI_WORKSPACE_PLAN.md`, or memory.
+- **Promotion is an explicit, human step.** When a chat finds something real, the entry records it
+  under **Escalation**, naming the log it belongs in. A human confirms and files it — *"the moment an
+  unverified answer becomes an institutional fact."*
+
+**The two capture surfaces are complementary, not competing:**
+
+| Surface | Covers | Tier 1 lands in |
+|---|---|---|
+| `md documents\Lab Questions\` | Chat sessions via `lab-chat-poc` | The folder itself (committed) |
+| Hook capture (below) | Interactive seat sessions on a colleague's own machine | Internal-share inbox (not committed) |
+
+They differ in where Tier 1 lives because they differ in what it contains: a Lab Questions entry is a
+written-up answer a human chose to keep, whereas a raw session transcript is unfiltered and names
+customers and sites. **The escalation and promotion rules should be identical, and are taken from
+Lab Questions rather than invented here.**
 
 ### How it works — specification, nothing built yet
 
@@ -201,59 +276,81 @@ worth a review. Once B1 lands, that is a Bitbucket PR against an account they al
 
 ---
 
-## 5. The chat front door (A4), staged
+## 5. The chat front door (A4) — the engine already exists
 
-The idea: an always-on machine with the repo, VPN, SVN and Loupe; colleagues ask in a chat channel;
-answers come back. Mechanically this is `claude -p` — Claude Code's headless mode, which loads
-`CLAUDE.md`, the skills and the MCP servers exactly as an interactive session does. It is the same
-unattended path already planned as `AI_WORKSPACE_PLAN.md` F13, pointed at people instead of tickets.
+**This is further along than a plan.** `lab-chat-poc/` is a working multi-turn chat, in use since
+2026-07-28, with 11 conversations logged. It is not a mock-up and not a parallel implementation: it
+drives the workspace's own context — `CLAUDE.md`, every `.claude/skills`, the Loupe MCP from
+`.mcp.json` — with no re-implementation, so an answer it gives is the answer the interactive session
+would give.
 
-Three layers, only one of which is difficult:
+Two channels, one engine (`chat_engine.py`):
 
-| Layer | Effort |
+| Channel | Launcher | Runs | Files findings to |
+|---|---|---|---|
+| Lab question about an order | `Lab-Chat.bat` | `skalar-lab-issue` | `md documents\Lab Questions\` |
+| Helpdesk ticket (RB / ES) | `Helpdesk-Chat.bat` | `skalar-jira-issue` | `Service Items\<KEY>\analysis.md` |
+
+Both are multi-turn — follow-ups keep everything already read — and both are read-mostly by
+construction: the helpdesk channel **never writes to Jira**, stated as an absolute in both the
+opening and wrap-up prompts so a later message cannot talk it into posting. `done` produces a
+*draft* reply for a human to send.
+
+It also carries the measurement layer §2 depends on: per-turn cost logging, live subscription-window
+sampling, and a fitted token → plan-usage conversion.
+
+### What is therefore already answered
+
+- **Does an agent-driven conversation reach the answer a Software Engineer would?** Being tested, on
+  real cases, with the write-ups in `md documents\Lab Questions\` as the record.
+- **What does it cost, in money and in plan limits?** §2 — measured.
+- **Does a shared service need seats or API?** Settled by licensing, not preference — see §2.
+
+### What is actually missing
+
+The gap is narrower and more specific than "build a bot", and the POC's own README states it:
+
+| Gap | Note |
 |---|---|
-| The machine | A VM with the workspace prerequisites. `Setup-Workspace.ps1` does most of it |
-| The agent | `claude -p "<question>"` in the repo directory, capture the output |
-| **The Teams bridge** | **The hard one.** Posting *out* to Teams is a webhook. Reading *in* needs an Azure app registration, a Bot Framework resource, a reachable HTTPS endpoint and tenant-admin consent — an IT project with a queue, not a Friday afternoon |
+| **Transport** | Launched by `.bat` on one machine. Nothing accepts a question from elsewhere |
+| **Hosting** | Runs on *this* machine's workspace, VPN, SVN and Loupe. A lab-facing service needs one central always-on box so lab PCs need none of that |
+| **Permission hardening** | The POC runs `--dangerously-skip-permissions` so nothing blocks mid-answer. A lab-facing bot must tighten to a read-mostly allowlist first |
+| **Billing engine** | The CLI engine bills one person's subscription and cannot be shared. `lab_triage.py` (Agent SDK + API key) is the multi-user path |
+| **File drop** | A log is passed as a local path today; a chat UI needs an upload |
 
-**Jira is a message bus the workspace already automates.** `Process-ServiceTickets.ps1` polls Jira on
-a loop, authenticates from `jira-config.json`, has an `AiCommand` hook to shell out to a CLI, and has
-a post-back path. A dedicated project or issue type where colleagues file a question is roughly a day
-of work on already-running code, with no IT approval, because every credential involved is already
-approved. Less pleasant than Teams. Available now.
+**Transport is still the expensive part, and Jira is still the cheap way in.** A Teams bot needs an
+Azure app registration, a Bot Framework resource, a reachable HTTPS endpoint and tenant-admin
+consent. `Process-ServiceTickets.ps1` already polls Jira, authenticates from `jira-config.json` and
+can post back — every credential involved is already approved.
 
-### Why it is not a replacement for seats
+### Why it still does not replace seats
 
-1. **No back-and-forth.** The write-ups in `md documents\` are iterative — look at the log, check the
-   tables, ask a follow-up. One question, one answer is a much weaker product.
+1. **Licensing.** A shared service cannot run on a subscription (§2). It is an API cost centre from
+   day one, at roughly €3.91 per conversation.
 2. **Concurrency.** Two people asking about the same order means two processes running
    `fetch-project.ps1` against the same folder, and that script does `svn revert -R` unconditionally.
    A queue serialised per order is a prerequisite, not a nicety.
 3. **It worsens §6.1.** An always-on box that fails silently at 2am is one more thing only one person
    can fix.
-4. **It is the highest-risk surface for the failure already flagged in §7** — *"first wrong answer
-   kills adoption."* With a seat the user watches the reasoning and catches the wrong turn. With a bot
-   they get a confident paragraph in a public channel. The confidence gate that would mitigate this
-   (F13) is not built.
+4. **It is the highest-risk surface for the failure flagged in §7** — *"first wrong answer kills
+   adoption."* A seat user watches the reasoning and catches the wrong turn; a channel reader gets a
+   confident paragraph.
 
 ### The staged plan
 
-**Stage 1 — a channel with a human backend, starting now.** A Teams channel where colleagues post
-questions; a Software Engineer runs them in a real interactive session and posts the answer back. No
-infrastructure, no approvals. It delivers, immediately:
+**Stage 1 — triage-and-draft, with a human in front.** Colleagues send questions; the chat answers;
+**a Software Engineer reviews before the asker sees it.** This is the POC's own recommended next
+step, and it is the honest form of "stage 1" now that the engine exists — the review step, not the
+manual running of the tool, is what mitigates §7 while no confidence gate is built. It still produces
+the **Arm B evidence** the replay protocol calls the stronger arm (PROJECT.md §8, 2026-07-29), and
+`md documents\Lab Questions\` is already the folder that record lands in.
 
-- the **Arm B evidence** the replay protocol already calls the stronger arm (PROJECT.md §8,
-  2026-07-29) — Lab has offered to send exactly these questions
-- the real volume and shape of questions, which is what determines whether a bot is worth building
-- a public record of every answer — the logging loop for the non-seat audience
-- a human in the loop while the confidence gate does not exist
+**Stage 2 — graduate well-understood case types to direct answers**, keeping review on everything
+else. This is where a confidence gate (F13) earns its keep.
 
-If the channel makes a Software Engineer the bottleneck, **that is the business case** for automating
-it — with a corpus of real questions to test the unattended path against first.
-
-**Stage 2 — Jira as transport.** Cheap, no approvals, reuses proven code.
-
-**Stage 3 — a Teams bot**, only once Stages 1 and 2 have shown it is worth an IT ticket.
+**Stage 3 — real transport and hosting.** Jira first (cheap, approved, reuses the scraper); a central
+box with VPN/SVN/Loupe; a minimal internal web page with an order field and log upload. A Teams bot
+only once the earlier stages justify the IT ticket.
 
 ---
 
@@ -291,15 +388,24 @@ answers.
 > folder for review — nothing enters the shared knowledge base until a Software Engineer verifies it.
 > Customer data stays in the local workspace and on the internal share; if IT wants it inside our own
 > cloud tenancy, that is a configuration change, not a redesign.
+>
+> We have measured this rather than estimated it: 11 real conversations logged since 2026-07-28, at
+> **€3.91 of API-equivalent work each**, and one seat supports about **seven conversations a working
+> day**. A shared service for occasional users is a separate, API-billed decision — a subscription
+> cannot be shared between people.
 
 Licences remain the secondary line item. The headline ask is still allocated development time
-(PROJECT.md §8, 2026-07-25).
+(PROJECT.md §8, 2026-07-25). The difference from a month ago is that the licence line is now
+defensible to a finance question rather than a guess.
 
 ---
 
 ## 8. Open items
 
-- [ ] Confirm current Claude seat tiers and what each includes, before any number is quoted.
+- [ ] Confirm current Claude seat tiers and what each includes, then compare against the measured
+      €3.91/conversation and ~7 conversations/seat/day from §2.
+- [ ] Re-run `python cost_report.py` and re-fit `plan_calibration.py` once more chats have run with
+      nothing else on the account — the current fit rests on 6 fully-measured chats.
 - [ ] Agree the inbox share path.
 - [ ] Add the capture disclosure (§4) to `Helpdesk-Usage-Plan.md` and `Lab-Usage-Plan.md`.
 - [ ] **At pilot start, and not before:** build the capture script and register its hooks from the
@@ -308,6 +414,9 @@ Licences remain the secondary line item. The headline ask is still allocated dev
       `Bootstrap-RoboticsAI.bat` when it happens.
 - [ ] Open the data-governance question with IT/security, leading with A3 as the available answer
       (already PROJECT.md §9).
-- [ ] Create the Stage 1 questions channel and start collecting Arm B evidence.
+- [ ] Harden `lab-chat-poc` permissions (drop `--dangerously-skip-permissions` for a read-mostly
+      allowlist) before anyone outside Software Engineering uses it.
+- [ ] Run Stage 1 — triage-and-draft with a Software Engineer reviewing before the asker sees the
+      answer — and keep filing to `md documents\Lab Questions\`.
 - [ ] Measure whether an onboarding seed bundle on the share meaningfully beats a cold
       `Sync-Templates.ps1` run.
