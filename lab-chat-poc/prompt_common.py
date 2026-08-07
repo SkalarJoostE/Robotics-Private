@@ -29,8 +29,11 @@ and do NOT treat it as a precondition for answering.
 
 Follow the skalar-lab-issue workflow, taking its no-log branch:
 1. Get the order's software into the workspace (fetch/refresh from SVN, or say so plainly if VPN is unreachable).
-2. Answer from the software itself: the Sequence/SubSequence CSVs, the application's tables,
-   the action code, the case base, and the template's known issues.
+2. Answer from the software itself, cheapest evidence first: `Sequences\\<order> Profile.md`
+   (the enabled hardware and every application's Settings row -- read this BEFORE opening any
+   Applications.*.Tables.xml or hunting config tables), then the Sequence/SubSequence CSVs,
+   then the action code, the case base, and the template's known issues. Fall back to the raw
+   XML only when the profile is missing, stale, or contradicts what you are seeing.
 3. Give a clear answer, or -- if the evidence genuinely does not settle it -- your best hypothesis
    with the reasoning behind it, written so I can relay it to the lab.
 4. Only THEN, if a log would resolve what is still open, say which log you want and exactly what
