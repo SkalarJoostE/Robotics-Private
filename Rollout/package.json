@@ -8,6 +8,11 @@
     "build-capability": "node \"Capability Overview/build-capability-doc.js\" \"Capability Overview/Robotics-AI Capability Overview.docx\""
   },
   "dependencies": {
-    "docx": "^9.0.0"
+    "docx": "^9.0.0",
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-icons": "^5.7.0",
+    "sharp": "^0.35.3"
   }
 }
