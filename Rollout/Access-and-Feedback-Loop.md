@@ -93,6 +93,13 @@ toward *too many* seats), the usage endpoint reports whole percentage points so 
 figures are coarse, and it should be re-fitted once more chats have run with nothing else touching
 the account. **Re-run `python cost_report.py` before quoting any of this** — the log grows.
 
+> **These are un-optimised figures.** Every logged conversation predates the context-cost analysis in
+> [Token-Usage-Analysis.md](Token-Usage-Analysis.md), which found over half a session's cost paid on
+> a 71k-token floor before any work started, and one skill load accounting for 31% of a session.
+> Quote €3.91 as what unoptimised use costs, not as an irreducible unit cost. The **seat-count**
+> argument below is unaffected — the 5-hour window tracks output and cache writes, which are exactly
+> the tokens those levers move least.
+
 > **Do not use the CLI's own cost figure.** Measured 2026-08-06, it prices `claude-opus-5` at Sonnet
 > rates — out by 5/3. `pricing.py` recomputes from each turn's tokens at published rates, and that is
 > what the numbers above use. `python pricing.py --audit` re-checks it.
