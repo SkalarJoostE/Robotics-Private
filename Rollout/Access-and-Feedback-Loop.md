@@ -63,20 +63,26 @@ prototype; it cannot be the product.
 ### What it costs — measured, not estimated
 
 `lab-chat-poc/cost_log.csv` has logged every turn since 2026-07-28. Numbers below are from
-`python cost_report.py --totals` over 11 conversations / 16 questions, and are **API-equivalent at
-published list rates** — what this work would cost to buy on the API:
+**recomputed from each turn's token counts** over 14 costed conversations / 29 turns, and are
+**API-equivalent at published list rates** — what this work would cost to buy on the API:
 
 | | Per conversation | |
 |---|---|---|
-| **Average** | **€3.91** | 9m 44s start to finish |
-| Service ticket (RB/ES) | €5.98 | 17m 33s — carries scraper intake, customer software, logs |
-| Lab question | €3.45 | 8m 00s |
+| **Average** | **€4.44** | 10m 43s start to finish |
+| Service ticket (RB/ES) | €6.23 | 16m 30s — carries scraper intake, customer software, logs |
+| Lab question | €3.73 | 8m 25s |
+
+> **Do not re-derive these with `cost_report.py` until its logger is fixed.** In the three most
+> recent chats the `api_cost_*` column records a **running session total** rather than that turn's
+> own cost, and `cost_report.py:143` sums the column — so it double-counts them. The figures above
+> come from token counts, which are per-turn and correct in every row. See PROJECT.md §8, 2026-08-19.
+> These supersede the earlier €3.91 / €5.98 / €3.45.
 
 And what one seat actually supports, from the fitted token → plan-usage conversion
 (`plan_calibration.json`):
 
 > **~7 conversations in a working day, and the 5-hour session window is what binds — not the weekly
-> allowance.** The week would permit ~12/day; the 5-hour window permits ~5 per session. Spreading
+> allowance.** The week would permit ~11/day; the 5-hour window permits ~4 per session. Spreading
 > work across the week does not help; waiting for the session window to roll over does.
 
 Two consequences for the pitch:
@@ -96,7 +102,7 @@ the account. **Re-run `python cost_report.py` before quoting any of this** — t
 > **These are un-optimised figures.** Every logged conversation predates the context-cost analysis in
 > [Token-Usage-Analysis.md](Token-Usage-Analysis.md), which found over half a session's cost paid on
 > a 71k-token floor before any work started, and one skill load accounting for 31% of a session.
-> Quote €3.91 as what unoptimised use costs, not as an irreducible unit cost. The **seat-count**
+> Quote €4.44 as what unoptimised use costs, not as an irreducible unit cost. The **seat-count**
 > argument below is unaffected — the 5-hour window tracks output and cache writes, which are exactly
 > the tokens those levers move least.
 
@@ -286,7 +292,7 @@ worth a review. Once B1 lands, that is a Bitbucket PR against an account they al
 ## 5. The chat front door (A4) — the engine already exists
 
 **This is further along than a plan.** `lab-chat-poc/` is a working multi-turn chat, in use since
-2026-07-28, with 11 conversations logged. It is not a mock-up and not a parallel implementation: it
+2026-07-28, with 15 conversations logged. It is not a mock-up and not a parallel implementation: it
 drives the workspace's own context — `CLAUDE.md`, every `.claude/skills`, the Loupe MCP from
 `.mcp.json` — with no re-implementation, so an answer it gives is the answer the interactive session
 would give.
@@ -333,7 +339,7 @@ can post back — every credential involved is already approved.
 ### Why it still does not replace seats
 
 1. **Licensing.** A shared service cannot run on a subscription (§2). It is an API cost centre from
-   day one, at roughly €3.91 per conversation.
+   day one, at roughly €4.44 per conversation.
 2. **Concurrency.** Two people asking about the same order means two processes running
    `fetch-project.ps1` against the same folder, and that script does `svn revert -R` unconditionally.
    A queue serialised per order is a prerequisite, not a nicety.
@@ -396,8 +402,8 @@ answers.
 > Customer data stays in the local workspace and on the internal share; if IT wants it inside our own
 > cloud tenancy, that is a configuration change, not a redesign.
 >
-> We have measured this rather than estimated it: 11 real conversations logged since 2026-07-28, at
-> **€3.91 of API-equivalent work each**, and one seat supports about **seven conversations a working
+> We have measured this rather than estimated it: 14 real conversations logged since 2026-07-28, at
+> **€4.44 of API-equivalent work each**, and one seat supports about **seven conversations a working
 > day**. A shared service for occasional users is a separate, API-billed decision — a subscription
 > cannot be shared between people.
 
@@ -410,7 +416,7 @@ defensible to a finance question rather than a guess.
 ## 8. Open items
 
 - [ ] Confirm current Claude seat tiers and what each includes, then compare against the measured
-      €3.91/conversation and ~7 conversations/seat/day from §2.
+      €4.44/conversation and ~7 conversations/seat/day from §2.
 - [ ] Re-run `python cost_report.py` and re-fit `plan_calibration.py` once more chats have run with
       nothing else on the account — the current fit rests on 6 fully-measured chats.
 - [ ] Agree the inbox share path.
