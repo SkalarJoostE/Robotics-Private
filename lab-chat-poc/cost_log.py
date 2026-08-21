@@ -23,8 +23,13 @@ Per-turn cost is a DELTA, and that matters
 ------------------------------------------
 In a multi-turn session the CLI's `total_cost_usd` is CUMULATIVE for the whole
 session, while `usage` is per turn. Logging `total_cost_usd` as if it were the turn's
-cost double-counts every turn after the first. `lab_chat.py` therefore subtracts the
+cost double-counts every turn after the first. `chat_engine.py` therefore subtracts the
 previous result's cumulative total before calling `append_turn`.
+
+`modelUsage` is cumulative in exactly the same way, and `model_usage` here must therefore
+ALREADY be this turn's share -- `chat_engine.py` runs it through
+`pricing.per_turn_model_usage()` first. Skipping that step is what inflated the
+multi-model rows logged between 2026-08-10 and 2026-08-20.
 
 Read it back with cost_report.py.
 """

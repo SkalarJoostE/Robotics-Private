@@ -117,6 +117,49 @@ def split_cache_creation(usage: dict | None) -> tuple[int, int]:
     return 0, total
 
 
+# The numeric fields of a `modelUsage` entry. Anything else in there (context window,
+# the CLI's own cost figure, service tier) is not a running count and must not be
+# subtracted.
+_MODEL_USAGE_COUNTERS = (
+    "inputTokens", "outputTokens", "cacheReadInputTokens",
+    "cacheCreationInputTokens", "webSearchRequests",
+)
+
+
+def per_turn_model_usage(
+    cumulative: dict | None, previous: dict | None
+) -> dict[str, dict]:
+    """This turn's own `modelUsage`, given the running total and the previous one.
+
+    `modelUsage` in the result JSON is CUMULATIVE for the whole session, exactly like
+    `total_cost_usd` -- it is the session's per-model ledger, not the turn's. Pricing a
+    turn straight from it therefore charges turn 2 for turn 1 as well, turn 3 for turns
+    1+2, and a chat summary that sums the turns then adds the whole session in again on
+    every line. Observed 2026-08-20: on chat 747fb02b the wrap-up turn priced at $9.33
+    against its own tokens' $2.69, the difference being the first turn's $6.63.
+
+    `usage` in the same event IS per turn, which is why single-model turns were never
+    affected -- they are priced from `usage` and take only the model NAME from here.
+
+    Models whose counters did not move are dropped, so a turn that used one model is
+    reported as one model even when an earlier turn in the session fanned out.
+    """
+    cumulative = cumulative or {}
+    out: dict[str, dict] = {}
+    for name, entry in cumulative.items():
+        if not isinstance(entry, dict):
+            continue
+        before = (previous or {}).get(name) or {}
+        delta = {}
+        for field in _MODEL_USAGE_COUNTERS:
+            # A counter can only go up; clamp at zero so a reset or a reordered field
+            # cannot produce a negative charge.
+            delta[field] = max(0, int(entry.get(field) or 0) - int(before.get(field) or 0))
+        if any(delta.values()):
+            out[name] = delta
+    return out
+
+
 def price_turn(
     model: str, usage: dict | None, model_usage: dict | None = None
 ) -> tuple[float | None, str]:
@@ -124,7 +167,9 @@ def price_turn(
 
     `model_usage` is the CLI's per-model breakdown (`modelUsage` in the result JSON). It
     exists so a turn that quietly fans out to a second model is priced per model instead
-    of having every token billed at the main model's rate.
+    of having every token billed at the main model's rate. It must ALREADY BE THIS TURN'S
+    SHARE -- the raw field is cumulative for the session, so pass it through
+    `per_turn_model_usage()` first.
 
     One turn, one model is the common case, and it is also the accurate one: the flat
     `usage` block carries the 5m/1h cache split while `modelUsage` does not, so we price

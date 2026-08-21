@@ -294,20 +294,28 @@ def delta(before: dict | None, after: dict | None) -> dict[str, float]:
 
 
 def format_windows(snap: dict | None) -> str:
-    """One-line human summary of a snapshot."""
+    """One-line human summary of a snapshot: where the ACCOUNT stands right now.
+
+    The wording matters and was got wrong once (reported 2026-08-20). This is the
+    standing total of every window -- everything the whole account has consumed since
+    each window opened, including work that has nothing to do with the chat printing it.
+    Labelled "limits used" it read as "this chat used 60% of your 5-hour window", which
+    is a completely different and much larger claim. What the chat itself consumed is
+    `format_delta()`; this is only the backdrop it ran against.
+    """
     if not snap:
-        return "limits: unavailable"
+        return "account limit standing: unavailable"
     if snap.get("unavailable"):
-        return f"limits: unavailable ({snap['unavailable']})"
+        return f"account limit standing: unavailable ({snap['unavailable']})"
     windows = snap.get("windows") or {}
     if not windows:
-        return "limits: none reported"
+        return "account limit standing: none reported"
     ordered = [w for w in KNOWN_WINDOWS if w in windows] + [w for w in windows if w not in KNOWN_WINDOWS]
     # `spend` is overage credit, not plan usage -- only interesting once it moves.
     ordered = [w for w in ordered if w != "spend" or windows[w]["percent"] > 0]
-    return "limits used: " + "  ".join(
-        f"{WINDOW_LABELS.get(w, w)} {windows[w]['percent']:.1f}%" for w in ordered
-    )
+    return "account now sitting at: " + "  ".join(
+        f"{WINDOW_LABELS.get(w, w)} {windows[w]['percent']:.0f}% full" for w in ordered
+    ) + "  (whole account, all work — not this chat)"
 
 
 def format_delta(deltas: dict[str, float]) -> str:

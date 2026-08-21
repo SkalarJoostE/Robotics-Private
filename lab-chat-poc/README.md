@@ -142,6 +142,15 @@ session** while `usage` is **per turn**. A turn's own cost is therefore the *inc
 over the previous result; logging the raw total double-counts every turn after the first.
 Verified 2026-07-30.
 
+> **`modelUsage` is cumulative too** — same trap, second field, found 2026-08-20. Turns
+> that fanned out to a second model were priced straight from it, so turn 2 was charged
+> for turns 1+2, turn 3 for 1+2+3, and the chat summary then added those inflated lines
+> together. On chat `747fb02b` the wrap-up priced at **$9.33** against its own tokens'
+> **$2.69**. `pricing.per_turn_model_usage()` now subtracts the previous result first, the
+> four affected rows in `cost_log.csv` were repaired (backup: `cost_log.csv.cumulative.bak`,
+> Aug-2026 total €62.42 → €43.19), and `cost_report.py` warns on any row priced more than
+> `OVERCHARGE_TOLERANCE` above what its own tokens can cost.
+
 > **Do not use the CLI's cost figure for Opus 5.** Measured 2026-08-06, `total_cost_usd`
 > prices `claude-opus-5` tokens at Sonnet 5's rate card — $3/$15 per MTok instead of
 > $5/$25, with cache rates scaled to match. Reconciling the whole log by model shows it is
@@ -180,6 +189,12 @@ snapshots it before and after each turn. Three things to know:
   Per-chat and per-week totals are meaningful; per-question ones are coarse.
 - It is **rate-limited** (429 after a handful of rapid calls — measured). The module caches
   for 15s and backs off on 429, honouring `Retry-After`.
+- It is **account-wide**, and the line printed under each turn is the **standing total of
+  the whole account**, not what the chat consumed. `account now sitting at: 5-hour session
+  60% full` means 60% of that window is gone in total — the chat itself may have caused a
+  fraction of it. What the chat cost is the `this turn cost …pp` figure on the turn line
+  and the `subscription cost of this chat` line in the summary. (The old wording, `limits
+  used:`, read as the opposite and was corrected 2026-08-20.)
 
 Check it any time — this prints percentages only, never the token:
 

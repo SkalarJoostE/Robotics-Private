@@ -67,6 +67,7 @@ class Chat:
         self.turns: list[dict] = []
         self.chat_id = ""
         self.cumulative_usd = 0.0  # the CLI reports a running total; we log deltas
+        self.cumulative_model_usage: dict = {}  # `modelUsage` is a running total too
         self.limits_note = ""      # why limit data is missing, if it is
 
         command = [
@@ -128,8 +129,15 @@ class Chat:
 
         # The CLI's figure prices these tokens at the wrong model's card (see pricing.py),
         # so the money we show and total is recomputed from the turn's own tokens.
+        #
+        # `usage` is per turn, but `modelUsage` is cumulative for the session just like
+        # `total_cost_usd` above -- so it gets the same treatment. Without the subtraction
+        # a fanned-out turn is charged for every earlier turn as well, and the summary
+        # then adds those inflated lines together (see pricing.per_turn_model_usage).
         usage = result.get("usage")
-        model_usage = result.get("modelUsage")
+        model_usage = pricing.per_turn_model_usage(
+            result.get("modelUsage"), self.cumulative_model_usage)
+        self.cumulative_model_usage = result.get("modelUsage") or self.cumulative_model_usage
         api_usd, models = pricing.price_turn(MODEL, usage, model_usage)
 
         self.chat_id = result.get("session_id") or self.chat_id
@@ -196,7 +204,7 @@ class Chat:
         limits = usage_limits.format_delta(record["deltas"])
         seconds = (record["duration_ms"] or 0) / 1000
         print(f"\n\n[turn {record['turn']}] {cost} · {seconds:.0f}s"
-              + (f" · {limits}" if limits else ""))
+              + (f" · this turn cost {limits}" if limits else ""))
         if after and not after.get("unavailable"):
             print(f"           {usage_limits.format_windows(after)}")
         elif after and after.get("unavailable"):

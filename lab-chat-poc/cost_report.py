@@ -20,6 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import plan_calibration
+import pricing
 from cost_log import EUR_PER_USD
 
 LOG_PATH = Path(__file__).resolve().parent / "cost_log.csv"
@@ -96,9 +97,66 @@ def _produced_work(row: dict) -> bool:
     )
 
 
+# How far above its own token ceiling a row may sit before it is called wrong. Not zero,
+# because the logged token columns come from the result's flat `usage` block, which does
+# not carry a sub-agent's tokens while `modelUsage` does -- measured on this log, that
+# gap reaches 7% on a turn that fanned out to Haiku. Anything beyond this is not a
+# missing sub-agent, it is another turn's tokens.
+OVERCHARGE_TOLERANCE = 1.25
+
+
+def _overcharged(row: dict) -> float | None:
+    """How many times its own tokens a row is priced at, when that is implausibly high.
+
+    The invariant: a turn priced at the model it asked for, from its OWN token counts, is
+    about the most that turn can have cost -- a turn that fanned out to a cheaper model
+    costs less per token, not more. A row priced well ABOVE that ceiling is being charged
+    for tokens that are not its own.
+
+    This is here because exactly that happened (found 2026-08-20). `modelUsage` in the CLI
+    result is cumulative for the session, and multi-model turns were priced straight from
+    it, so every turn after the first carried the whole session: one wrap-up turn logged
+    $9.33 against its own tokens' ceiling of $2.69. The per-model reconciliation in
+    `pricing.audit` did not catch it -- the inflation there was under a percent. This does,
+    per row, because it compares a row only against itself.
+    """
+    priced = _f(row.get("api_cost_usd") or "")
+    if not priced:
+        return None
+    tokens = plan_calibration.tokens_from_row(row)
+    five = _f(row.get("cache_write_5m_tokens") or "")
+    hour = _f(row.get("cache_write_1h_tokens") or "") or (
+        tokens["cache_write"] if not five else 0)
+    ceiling = pricing.cost_usd(
+        row.get("model") or "",
+        input_tokens=tokens["input"],
+        output_tokens=tokens["output"],
+        cache_read_tokens=tokens["cache_read"],
+        cache_write_5m_tokens=int(five),
+        cache_write_1h_tokens=int(hour),
+    )
+    if not ceiling:
+        return None
+    ratio = priced / ceiling
+    return ratio if ratio > OVERCHARGE_TOLERANCE else None
+
+
+def _warn_overcharged(rows: list[dict]) -> None:
+    bad = [(r, ratio) for r in rows if (ratio := _overcharged(r))]
+    if not bad:
+        return
+    print(f"WARNING: {len(bad)} row(s) are priced above what their own tokens can cost —")
+    print("  the figures below are inflated. See _overcharged() for what causes this.")
+    for row, ratio in bad[:5]:
+        print(f"    {(row.get('chat_id') or '')[:8]} turn {row.get('turn')}: "
+              f"${_f(row.get('api_cost_usd')):.2f}, {ratio:.1f}x its own tokens")
+    print()
+
+
 def _load(month_filter: str | None) -> list[dict]:
     with LOG_PATH.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
+    _warn_overcharged(rows)
     if month_filter:
         rows = [r for r in rows if (r.get("timestamp_utc") or "")[:7] == month_filter]
     dropped = [r for r in rows if not _produced_work(r)]
