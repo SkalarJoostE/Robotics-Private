@@ -1,175 +1,268 @@
-# Why an AI subscription and AI credits cost such different amounts
+# Why dedicated AI seats and GitHub Copilot credits cost so differently
 
 *A plain-language explainer. No technical knowledge assumed.*
-*Written August 2026 · Robotics-AI · Software Engineering*
+
+*Verified 20 August 2026 · Robotics-AI · Software Engineering*
 
 ---
 
 ## The short version
 
-There are two completely different ways to pay for AI, and for the kind of work we do they
-differ by more than **thirty times** at the same monthly price.
+For the kind of work performed in the Robotics-AI workspace, a dedicated Claude seat appears
+to provide roughly **thirty times more investigation capacity** than the standard AI-credit
+allowance included with a GitHub Copilot Business seat at almost the same seat price.
 
-| | How you pay | What €20 a month buys us |
+| | How the allowance works | What approximately $20 buys for our measured workload |
 |---|---|---|
-| **GitHub Copilot** (what we use today) | **Metered.** You buy a pot of credits, and every word the AI reads or writes takes some out. | about **4** of our conversations, **per month** |
-| **A Claude or ChatGPT subscription** | **Flat rate.** You pay per person, and you are limited by how heavily you use it — not by how much text is involved. | about **150** of our conversations, **per month** |
+| **GitHub Copilot Business** | A $19 seat includes a $19-equivalent monthly AI-credit allowance. Agent usage is deducted token by token from a shared company pool. | about **4–5 investigations** |
+| **Claude subscription** | A named person receives access under rolling five-hour and weekly limits. There is no $20 token balance. | about **147 investigations per 22-working-day month** |
 
-Same money. Very different amount of work. This document explains why, because the reason
-is not "one company is greedier than the other" — it is that the two systems measure
-completely different things, and our work happens to be terrible for one of them.
+That is approximately **32 times the capacity** at approximately the same seat price.
 
-**One thing to be clear about up front:** where this document says "a conversation", it does
-not mean a quick question. It means a full investigation — the assistant opening a robot's
-log file, tracing its program step by step, pulling the customer's software, comparing it
-against the template and against past cases, and then reporting back. Done by hand that is
-anywhere from **one to four hours** of an engineer's work — not a chat message. Four of those
-a month is not a meaningful allowance.
+This does **not** mean that the AI is thirty times cheaper to operate. It means the products
+sell different things. Copilot sells a transferable, dollar-denominated amount of model
+consumption. A subscription sells non-transferable access for one person, with time-based
+limits and fair-use controls.
 
----
-
-## First, what actually costs money
-
-When we put a problem to the assistant, it does not just read the question. It re-reads
-**everything it needs in order to investigate it** — every time.
-
-For our robot work that means: the instructions describing how our software is built, the
-relevant procedure, past cases we have written up, and then the actual evidence — a robot's
-log file, its program tables, the customer's software. That can be several million words of
-reading for one question.
-
-Then it writes an answer, which might be one page.
-
-So a single conversation is:
-
-- an **enormous** amount of reading (about 95% of the total)
-- a **small** amount of writing (about 5%)
-
-Hold on to that 95/5 split. It is the whole story.
+Where this document says “an investigation,” it does not mean one short chat message. It
+means a full service-ticket or lab investigation: opening logs, retrieving customer software,
+tracing robot sequences and action code, comparing the order with its template and previous
+cases, and reporting the findings. Done manually, that is commonly one to four hours of an
+engineer's work.
 
 ---
 
-## The two payment models
+## What we actually measured
 
-### Metered: GitHub Copilot credits
+The proof of concept logged **14 real Robotics-AI conversations** containing 19 questions.
+They included both lab questions and service-ticket investigations.
 
-Since 1 June 2026 Copilot bills in **AI Credits**. One credit is one dollar-cent. Credits are
-consumed based on the amount of text involved — **the reading and the writing both count**.
+Across those conversations:
 
-So Copilot charges us for that 95%.
+- 94.7% of all token traffic was cached context being read again;
+- an average investigation used about 4.0 million cached-input tokens;
+- the current Claude allowance calibration estimates 23.9% of a five-hour window and 1.61%
+  of the weekly allowance per investigation;
+- that corresponds to about 4.2 investigations per five-hour window, 6.7 in a normal working
+  day, and **147 in a 22-working-day month**.
 
-One of our conversations averages about **€4.44**. On a €19/month Copilot plan — which comes
-with about €19 of credits — that is roughly **four conversations a month**.
+The 147 figure is an estimate, not a contractual provider limit. It is fitted from eight
+fully measured conversations using the account-level allowance information behind Claude's
+usage display. The endpoint is undocumented and reports whole percentage points, so the
+result should be refreshed as more clean measurements are collected. The model is deliberately
+conservative: where concurrent Claude activity could have inflated a measurement, it assumes
+the Robotics-AI conversation consumed no more than the observed total.
 
-Two further things make it worse in practice:
+### What the same token mix would cost in Copilot
 
-- **The pot is shared.** Our organisation's credits go into one pool for everyone. A
-  developer using AI for ordinary code suggestions consumes a trickle. One of our
-  robot-diagnosis conversations consumes roughly **2.5% of the entire company's monthly AI
-  budget** on its own. So we either drain the pool for our colleagues, or we get cut off
-  when someone else drains it. Both have already happened.
-- **When the pool is empty, it stops.** Not "slower" — unavailable, until the next month.
+Applying GitHub's published Claude Opus 5 rates to the same 14 logged token profiles gives:
 
-### Flat rate: a Claude or ChatGPT subscription
+- $57.75 total;
+- **$4.13 per investigation**, or about **€3.80** at the 0.92 EUR/USD rate used by the proof
+  of concept;
+- approximately **4.6 investigations** from the standard $19 allowance included with one
+  Copilot Business seat.
 
-A subscription works like a gym membership rather than a taxi meter. You pay per person, and
-instead of counting words, the provider limits **how heavily you can use it over time**.
+The calculation uses GitHub's rates for normal input, cached input, cache writes and output.
+It is not the €5.55 direct-Anthropic-API equivalent shown by the local cost report: Claude
+Code uses a more expensive one-hour cache-write rate, while GitHub's Copilot rate card lists
+the lower cache-write rate applicable to Copilot.
 
-Crucially, the limits are driven almost entirely by how much the assistant **writes**, not by
-how much it **reads**. That 95% of reading is essentially not counted.
+This is a re-pricing of measured Claude Code runs, not a controlled test in which every case
+was rerun through Copilot. Copilot's agent could make somewhat different tool calls or use a
+different number of tokens. An export from the company's GitHub AI-usage dashboard is the
+best final check against actual Copilot consumption.
 
-This is not a discount. It is a different meter measuring a different thing — and our work
-happens to be very heavy on exactly the part that subscriptions don't charge for.
+### The resulting comparison
 
-**To be clear about what a subscription is not:** it is not unlimited. There is a real
-ceiling — on the €20 plan roughly **150 of our investigations a month** — and on a heavy day
-you can reach it and be asked to ease off for a while. It is simply a far higher ceiling than
-four a month, and it never leaves us stopped for weeks.
+| | Copilot Business standard allowance | Measured Claude subscription capacity |
+|---|---:|---:|
+| Seat price | $19/user/month | approximately $20/user/month |
+| Investigations | approximately 4.6/month | approximately 147/working month |
+| Capacity ratio | 1× | approximately **32×** |
+| Allowance belongs to | pooled company balance | one named person |
+| At the limit | paid overage or blocked until reset, depending on company policy | wait for a rolling limit to reset or enable paid credits |
 
----
-
-## The comparison, using our own measurements
-
-These are not estimates. We logged 14 real conversations — service tickets and lab questions —
-and priced every one.
-
-| | Copilot credits (€19/mo) | Claude subscription (€20/mo) |
-|---|---|---|
-| What is counted | every word read and written | roughly, only what is written |
-| Our capacity | **~4 investigations / month** | **~150 investigations / month** |
-| What happens at the limit | stops until next month | briefly throttles, then resumes |
-| Shared with colleagues? | yes — one company pool | no — one named person |
-
-Put the other way round: **one €20 subscription delivers roughly €650 a month of usage if you
-had to buy it by the word.** That is more than three times our company's entire shared credit
-pool, from a single seat.
-
----
-
-## The three providers, briefly
-
-All three offer both models. The names differ; the shapes are the same.
-
-| Provider | Flat-rate personal | Flat-rate heavier | Pay-per-word |
-|---|---|---|---|
-| **Claude** (Anthropic) | Pro, ~€20/mo | Max, ~€100 or ~€200/mo (5× and 20× Pro) | API, billed per word |
-| **ChatGPT** (OpenAI) | Plus, ~€20/mo · Business ~€20–25/user/mo | Pro, ~€100 or ~€200/mo | API, billed per word |
-| **GitHub Copilot** | — | — | AI Credits — **this is what we have** |
-
-The important row is the last one. **Copilot only sells the metered model.** Its plans are
-priced in credits, which is why our usage burns through them.
-
-*Figures are current as of August 2026 and should be re-confirmed before anything is signed.*
+GitHub is giving existing Copilot Business customers a temporary promotional allowance of
+3,000 credits per seat from 1 June through 1 September 2026. During that promotion the same
+calculation gives about 7.3 investigations per seat. The ongoing purchasing comparison above
+uses the normal 1,900-credit allowance that applies after the promotion.
 
 ---
 
-## Three fair objections, answered honestly
+## Why can a $20 seat provide so much more?
 
-**"So Copilot is overcharging us?"**
-No, and we should not say that. Copilot's credits are billed at the same published rates the
-AI providers charge everyone. Per word it is not marked up. The problem is that *any*
-pay-per-word plan is the wrong instrument for work that involves this much reading.
+The two products transfer different risks to the supplier.
 
-**"Isn't Copilot cheaper for everyone else?"**
-For most people, yes — genuinely. Someone using AI for code suggestions while they type may
-never notice the limit. Our work is simply a different shape: fewer, much larger questions.
-Both can be true at once, and that is the actual finding here.
+### Copilot is a prepaid consumption balance
 
-**"Could we just buy more credits?"**
-We could, and it would work. It would just cost several times more for the same output than
-buying subscriptions, and it keeps the shared-pool problem where one heavy user affects
-everyone else.
+Copilot Business is a $19/user/month seat subscription, but its chat and agent workloads are
+consumption-metered. Each seat contributes 1,900 AI credits to the company's shared pool,
+and one credit equals one US cent. Input, cached input, cache writes and output all reduce
+that balance at the selected model's published rates.
+
+The pool is transferable across licensed users. A heavy user can consume credits contributed
+by light users, and an administrator can allow paid overage so usage continues indefinitely.
+Because this is flexible, transferable consumption, GitHub cannot let one $19 seat consume
+hundreds of dollars of model usage without either reducing the pool or charging more.
+
+Copilot is not entirely metered: code completions and next-edit suggestions remain unlimited
+on paid plans. The metering applies to Copilot Chat, CLI, agents, code review and other
+agentic features—the features used for Robotics-AI investigations.
+
+### A dedicated seat is access for one person
+
+A Claude or ChatGPT seat is closer to a gym membership. It does not contain a $20 token
+balance. Instead, one named person may use the service within rolling usage limits.
+
+The provider can include much more API-list-price capacity because:
+
+- the allowance cannot be transferred to another person;
+- unused capacity disappears rather than rolling over or entering a company pool;
+- most subscribers do not use every available five-hour window every working day;
+- heavy users are constrained by session, weekly, model and fair-use limits;
+- the seat cannot be shared or used as the login behind a multi-user internal service;
+- after the included limits, the user waits, upgrades, or purchases usage credits;
+- the provider may adjust limits and model availability as demand and economics change.
+
+In other words, the subscription price is based on average use across many people, while
+credits price the consumption of the particular user who is doing the work. Robotics-AI is
+the equivalent of the gym member who actually attends every working day.
+
+### Why Robotics-AI benefits unusually strongly
+
+Our investigations repeatedly load the same large body of context: workspace instructions,
+skills, case history, robot software, logs, tables and action code. In the pilot, cached
+re-reading accounted for 94.7% of token volume.
+
+Copilot assigns a monetary price to every one of those cached tokens. Claude's subscription
+allowance does not decrement one-for-one with the API value of the tokens. In our measured
+data, allowance consumption was best explained by generated output and the creation of new
+cached context; cached reads had no separately measurable weight.
+
+This is a finding about our measured Claude workflow, not a published promise that
+subscriptions “only count output.” Anthropic and OpenAI both state that conversation length,
+context, model choice, reasoning, tools and complexity can affect subscription usage. The
+important point is narrower and evidence-based: **our context-heavy workload consumed much
+more dollar-denominated Copilot capacity than it consumed Claude subscription allowance.**
+
+---
+
+## What should we actually buy?
+
+For company work, the relevant products are the business plans, not personal subscriptions.
+
+| Product | Current published price | Relevant characteristics |
+|---|---:|---|
+| **Claude Team Standard** | $20/user/month annually; $25 monthly | More usage than Claude Pro, Claude Code included, central administration, no model training on company content by default; minimum two users |
+| **ChatGPT Business** | $20/user/month annually; $25 monthly | ChatGPT and Codex included, dedicated workspace and administration, no training on business data by default; minimum two users |
+| **Copilot Business** | $19/user/month | IDE integration and unlimited completions, plus 1,900 pooled AI credits per user for metered agent workloads |
+
+The evidence is currently strongest for **Claude Team**, because all 14 Robotics-AI cases
+were measured through Claude Code. ChatGPT Business is also a plausible option, but the
+document cannot honestly assign it the same 147-investigation capacity without running a
+representative pilot. OpenAI states that its included usage depends on the model, context,
+reasoning, tool use, retrieval, caching and task complexity.
+
+The sensible purchasing strategy is therefore selective rather than company-wide
+replacement:
+
+1. Keep Copilot for developers who mainly benefit from IDE completion, small chat questions
+   and ordinary coding assistance.
+2. Buy Claude Team seats for the named engineers performing sustained Robotics-AI
+   investigations.
+3. If ChatGPT Business is preferred for organizational or technical reasons, run the same
+   representative cases and measure its allowance before claiming an equivalent capacity.
+4. Review actual GitHub AI-usage exports and the Claude usage dashboard after a one-month
+   pilot, then decide how many seats are justified.
+
+---
+
+## Fair objections
+
+### “Is Copilot overcharging us?”
+
+No. GitHub's published Claude Opus rates closely follow the provider's published model
+rates. Copilot also provides IDE integration, unlimited completions, administration and a
+shared pool. The issue is not an unreasonable token price; it is that token-priced agent
+usage is a poor fit for our unusually context-heavy investigations.
+
+### “Could we just buy more Copilot credits?”
+
+Yes. That is the simplest option operationally, and it supports transferable usage and
+automation. For the measured workload it is considerably more expensive than named seats,
+and it preserves the shared-pool problem where one heavy Robotics-AI user can affect other
+developers.
+
+### “What if everyone used a subscription this heavily?”
+
+The provider's rolling and weekly limits prevent unlimited use. Most users also consume far
+less than the maximum. The high API-equivalent value available to a heavy user is therefore
+not the provider promising unlimited compute; it is capacity statistically shared across
+the subscriber population and bounded in time.
+
+### “Can one seat power a lab-facing chatbot?”
+
+No. A subscription is licensed to a named person. It is suitable for engineers using the
+Robotics-AI workspace themselves. A central automated service used by many lab or helpdesk
+staff needs individual seats where supported, or a properly approved API/enterprise
+consumption arrangement. One employee's subscription login must not be used as a shared
+backend.
 
 ---
 
 ## What about our data?
 
-A reasonable question, and worth stating clearly because there is a common misconception.
+Claude models used through Copilot are already processed on infrastructure operated by AWS,
+Anthropic and Google. GitHub documents provider agreements that prevent training on the
+data and a zero-data-retention agreement with Anthropic for generally available Claude
+features.
 
-When we run Claude *inside GitHub Copilot* today — which we already do — our prompts already
-go to Anthropic's models, running on Amazon, Google and Anthropic's own infrastructure, under
-an agreement GitHub holds that says the data is **not retained and not used for training**.
+That statement has exceptions: some beta or preview features are not covered by the same
+zero-retention arrangement, and GitHub documents specific retention for some models or
+safety features. Model and feature choices therefore remain part of the security review.
 
-So approving a Claude subscription directly is **not a new question about who sees our data**.
-The data already goes there. It is a question of *which contract governs it* — GitHub's, or
-Anthropic's own commercial terms, which carry the same no-training commitment.
+Buying Claude Team directly does not introduce an entirely unknown model provider, but it
+does change the contract, administration, retention path and which intermediary handles the
+data. Claude Team states that company content is not used for model training by default.
+ChatGPT Business provides the same no-training-by-default commitment for business data.
+These business plans are preferable to personal Pro or Plus accounts, which do not provide
+the same organizational controls.
 
-There is also a third option if IT prefers it: the same tooling can run inside the company's
-own cloud account. That resolves the contractual question entirely — but note it is billed
-**per word again**, so it re-introduces the cost problem this document describes. Worth
-knowing before choosing it.
+Running through the company's AWS, Google Cloud or another approved cloud account can offer
+additional contractual and technical control, but it does not eliminate supplier agreements
+or security review. It also returns the workload to per-token billing, so it does not preserve
+the seat-pricing advantage described here.
 
 ---
 
 ## The one-sentence summary
 
-> Our work is 95% reading. Credits charge for reading; subscriptions charge for writing.
-> That single difference is why the same €20 buys us four deep investigations a month one
-> way, and around a hundred and fifty the other.
+> Copilot gives us a transferable $19 consumption balance; a Claude seat gives one named
+> engineer time-limited access whose unused capacity cannot be shared. Our investigations
+> are 94.7% cached context, so that difference in accounting turns approximately the same
+> seat price into about 4–5 investigations on Copilot versus an estimated 147 on Claude.
 
 ---
 
-*Sources: measured from 14 logged conversations in `lab-chat-poc/`, recomputed from token
-counts on 2026-08-19. Provider terms from GitHub's AI Credits announcement and model-hosting
-documentation, Anthropic and OpenAI published plan pricing. Questions: Joost, Software
-Engineering.*
+## Sources and reproducibility
+
+Local measurements:
+
+- `lab-chat-poc/cost_log.csv` — the 14 logged conversations and their token counts
+- `lab-chat-poc/cost_report.py` — API-equivalent monetary report
+- `lab-chat-poc/plan_calibration.py` — allowance-calibration method and current refit output
+- `lab-chat-poc/README.md` — methodology, assumptions and known limitations
+
+Official product documentation, checked 20 August 2026:
+
+- [GitHub — Choosing a Copilot enterprise plan](https://docs.github.com/en/copilot/tutorials/roll-out-at-scale/assign-licenses/choose-enterprise-plan)
+- [GitHub — Usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises)
+- [GitHub — Models and pricing for Copilot](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing)
+- [GitHub — Hosting of models for Copilot](https://docs.github.com/en/copilot/reference/ai-models/model-hosting)
+- [Anthropic — Claude plans and pricing](https://claude.com/pricing)
+- [Anthropic — How usage and length limits work](https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work)
+- [OpenAI — ChatGPT Work and Codex pricing](https://learn.chatgpt.com/docs/pricing)
+
+Prices, plan limits and data terms can change. Reconfirm the official pages and the company's
+actual invoice, tax treatment and GitHub billing export before signing a contract.
