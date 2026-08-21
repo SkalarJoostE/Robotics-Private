@@ -192,11 +192,11 @@ function slideWhy() {
 
   s.addText(
     [
-      { text: "Every robot ships with its own software. When something goes wrong — in the field, in the lab, during a build — the knowledge of how that software works sits with very few people.", options: { breakLine: true, paraSpaceAfter: 12 } },
-      { text: "So Helpdesk and Lab wait, and Software Engineering spends its time re-deriving answers the evidence already contains: past cases, the setup guides, the robot's own logs and program.", options: { breakLine: true, paraSpaceAfter: 12 } },
+      { text: "Every robot ships with its own software, and the knowledge of how that software works sits with very few people.", options: { breakLine: true, paraSpaceAfter: 12 } },
+      { text: "So the search happens twice. Lab looks first — setup, settings, software they may not know — and only asks when that fails. Then an engineer starts the same search again, re-deriving what the evidence already contains: past cases, setup guides, the robot's own logs.", options: { breakLine: true, paraSpaceAfter: 12 } },
       { text: "Robotics-AI has been taught that evidence.", options: { bold: true, color: NAVY } },
     ],
-    { x: 0.7, y: 2.6, w: 6.35, h: 3.0, margin: 0, fontFace: FONT, fontSize: 14.5, color: GREY, lineSpacing: 23, valign: "top" }
+    { x: 0.7, y: 2.6, w: 6.35, h: 3.4, margin: 0, fontFace: FONT, fontSize: 14.5, color: GREY, lineSpacing: 23, valign: "top" }
   );
 
   s.addShape(pres.ShapeType.roundRect, {
@@ -208,15 +208,22 @@ function slideWhy() {
     fontFace: FONT, fontSize: 60, bold: true, color: SUN, valign: "top",
   });
   s.addText(
-    "Every question Lab and Helpdesk can answer themselves is Software Engineering capacity returned.",
+    "Every question Lab and Helpdesk can answer themselves is time back for them — and capacity returned to Software Engineering.",
     { x: 7.95, y: 3.35, w: 4.25, h: 1.7, margin: 0, fontFace: FONT, fontSize: 19, bold: true, color: W, lineSpacing: 27, valign: "top" }
   );
-  s.addText("The case is not that AI is useful. It is that engineer time is the constraint.", {
+  s.addText("The case is not that AI is useful. It is that the search costs more than the answer — for them and for us.", {
     x: 7.95, y: 5.05, w: 4.25, h: 0.6, margin: 0, fontFace: FONT, fontSize: 11.5, color: AEG, lineSpacing: 16, valign: "top",
   });
   footer(s);
   s.addNotes(
-    "Lead with the constraint, not the technology. In real use by Software Engineering since April 2026."
+    "Lead with the constraint, not the technology. In real use by Software Engineering since April 2026.\n\n" +
+    "SAY THE SEARCH PART OUT LOUD — it is the half people miss. Waiting in a queue is the visible cost; the "  +
+    "invisible one is that Lab spends real time hunting first. They may not know that robot's software, so they " +
+    "check setup, then settings, then the software, and only escalate once they are sure they are stuck. That " +
+    "hunt is time gone before anyone has even been asked. Then the engineer repeats it from the start.\n\n" +
+    "So there are two savings, not one: the search gets shorter for whoever is doing it, and the handover often " +
+    "stops being necessary at all. The quote cuts both ways on purpose — keep both halves; a room of department " +
+    "managers cares about the first one."
   );
 }
 
@@ -263,7 +270,7 @@ function slideEvidence() {
     { fig: "51", label: "cases written up", sub: "April → August 2026. July alone was 24." },
     { fig: "12", label: "features built or ported", sub: "reusable across 6 robot software templates" },
     { fig: "4", label: "lab questions answered", sub: "asked unprompted by Lab — all four since confirmed correct" },
-    { fig: "130 h+", label: "of engineer work those cases represent", sub: "the old way, before counting template bugs and approvals" },
+    { fig: "125+", label: "engineer hours returned by those cases", sub: "Software Engineering's own work — whether Lab sees the same is what the pilot measures" },
   ];
   const cw = 2.93, gx = 0.23;
   stats.forEach((st, i) => {
@@ -286,24 +293,27 @@ function slideEvidence() {
     });
   });
 
-  s.addText("What the 51 are", {
+  s.addText("Where the returned hours come from", {
     x: 0.7, y: 5.02, w: 11.9, h: 0.3, margin: 0,
     fontFace: FONT, fontSize: 12.5, bold: true, color: W,
   });
   s.addText(
-    "13 service tickets · 14 lab cases · 12 features and ports · 7 order approvals · 5 template bugs. Each is a real case with a written-up cause and outcome — not a count of things built. How much of that 130 hours the assistant actually returns is exactly what the pilot is there to measure.",
-    { x: 0.7, y: 5.34, w: 11.4, h: 0.9, margin: 0, fontFace: FONT, fontSize: 12, color: ICE, lineSpacing: 18, valign: "top" }
+    "13 service tickets, 2–4 h → 20 min · 14 lab cases, 0.5–3 h → 10 min · 12 features, 8 h → 20 min to write, with testing unchanged and excluded · 7 order approvals, 1–2 h → 10 min. That is 125 hours at the cautious end and 190 at the top, across 46 of the 51 cases; the 5 template bugs are left out entirely. Each is a real case with a written-up cause and outcome — not a count of things built.",
+    { x: 0.7, y: 5.34, w: 11.4, h: 1.0, margin: 0, fontFace: FONT, fontSize: 12, color: ICE, lineSpacing: 18, valign: "top" }
   );
   footer(s, true);
   s.addNotes(
-    "51 counted from the write-ups in md documents (2026-08-19). The 130 hours is derived from Joost's own " +
-    "before-times: 13 tickets at 2-4 h, 14 lab cases at 0.5-3 h, 12 features at 8 h of writing (testing is " +
-    "unchanged and excluded). Deliberately phrased as work represented, NOT as hours saved — the saved figure " +
-    "is not measured yet and must not be claimed. If asked: that is the pilot's job."
+    "51 counted from the write-ups in md documents (2026-08-19). Both halves are Joost's own estimates, not a " +
+    "measurement: before 2-4 h / 0.5-3 h / 8 h / 1-2 h, after 20 min / 10 min / 20 min / 10 min. Say 'estimated' " +
+    "out loud — the slide leads with the low end (125 h) for that reason. Expect the challenge on features: " +
+    "8 h to 20 min is 24x and carries 92 of the 125 hours on its own. The answer is the next clause on the " +
+    "slide: testing is unchanged, so the assistant is credited only with the writing it actually did. Template " +
+    "bugs are excluded because no before-time was ever recorded for them. Whether these times hold for someone " +
+    "who did not build the tool is exactly what the pilot measures."
   );
 }
 
-/* ========================================================= 5 · who it's for */
+/* ======================================================== 8 · who it's for */
 async function slideDepartments() {
   const s = lightSlide();
   heading(s, "Who it is for", "One department at a time", { ts: 32 });
@@ -354,7 +364,7 @@ async function slideDepartments() {
   );
 }
 
-/* =================================================== 6 · how it knows */
+/* =================================================== 5 · how it knows */
 function slideHowItKnows() {
   const s = lightSlide();
   heading(s, "Nothing is hidden", "The intelligence is off-the-shelf.\nThe expertise is ours.", { th: 1.3, ts: 30 });
@@ -366,7 +376,7 @@ function slideHowItKnows() {
 
   const cw = 3.87, gap = 0.24;
   const cards = [
-    { n: 1, eyebrow: "ALWAYS ON", title: "The ground rules", body: "One core file loads at the start of every conversation: our products, how the robot software is built, our naming, where things live. From the first message it already speaks Skalar." },
+    { n: 1, eyebrow: "ALWAYS ON", title: "The ground rules", body: "One core file loads at the start of every investigation: our products, how the robot software is built, our naming, where things live. From the first message it already speaks Skalar." },
     { n: 2, eyebrow: "OPENED ON DEMAND", title: "The playbooks", body: "For each bigger job — analyse a log, solve a ticket, build a feature — there is a written step-by-step procedure. It opens only the one that matches, so it follows our method instead of improvising." },
     { n: 3, eyebrow: "READ WHEN NEEDED", title: "The knowledge base", body: "Template documentation, error-code tables and every solved-case write-up sit alongside as ordinary text files. When it needs a fact it opens the file — exactly as a colleague would." },
   ];
@@ -383,23 +393,55 @@ function slideHowItKnows() {
   );
 }
 
-/* ========================================================= 7 · the limits */
+/* ========================================================= 6 · challenges */
 async function slideLimits() {
   const s = lightSlide();
-  heading(s, "Being straight about it", "What we are watching for", { ts: 32 });
+  heading(s, "The challenges", "What could go wrong — and how we handle it", { ts: 32 });
   s.addText(
-    "Overselling this is the fastest way to kill it. The first confidently wrong answer costs more trust than ten good ones earn.",
+    "None of these is a reason not to start. They are the four things we are actively managing, and we would rather name them than have you find them.",
     { x: 0.7, y: 1.56, w: 10.9, h: 0.4, margin: 0, fontFace: FONT, fontSize: 13, color: GREY, valign: "top" }
   );
 
+  /* Each card is challenge + how we handle it; the second half is NAVY so the
+     eye lands on the answer rather than the problem. */
+  const fix = (t) => [
+    { text: "How we handle it: ", options: { bold: true, color: NAVY } },
+    { text: t, options: { color: NAVY } },
+  ];
+  const chall = (t) => ({ text: t, options: { breakLine: true, paraSpaceAfter: 5 } });
+
   const items = [
-    { icon: "FiAlertTriangle", title: "It gives a first opinion, not an answer", body: "Everything it produces is checked by a person before it reaches a customer. It prepares the ground; it does not close tickets." },
-    { icon: "FiLayers", title: "Its knowledge is uneven", body: "Deep on some robot templates, thin on others. We say which, up front, and put the depth where the pilot actually works." },
-    { icon: "FiShield", title: "Where our data goes needs a decision", body: "Customer logs and software are sent to an AI service. Note we already do this: running Claude inside GitHub Copilot today sends the same material to the same provider, under a no-retention, no-training agreement. This presentation is what starts that conversation with IT and security." },
-    { icon: "FiUser", title: "One person maintains it", body: "A single maintainer with many dependents is the standard failure mode for internal tools. Cover for absence has to be agreed before anyone relies on it." },
+    {
+      icon: "FiAlertTriangle", title: "It can be confidently wrong",
+      body: [
+        chall("Of the 51 cases we wrote up, 4 needed a real correction afterwards. An answer that sounds certain and is wrong costs more trust than ten good ones earn."),
+        ...fix("everything it produces is checked by a person before it reaches a customer, and the wrong ones get logged as carefully as the right ones."),
+      ],
+    },
+    {
+      icon: "FiLayers", title: "Its knowledge is uneven",
+      body: [
+        chall("Deep on some robot templates, thin on others — it knows most about what we have already written down."),
+        ...fix("we say which, up front, and start the pilot where the depth already is. A thin area is fixed by writing the document, not by retraining anything."),
+      ],
+    },
+    {
+      icon: "FiShield", title: "Where our data goes",
+      body: [
+        chall("Customer logs and software are sent to an AI service, and that needs IT and security to agree."),
+        ...fix("we already do this — Claude inside GitHub Copilot sends the same material to the same provider, no retention, no training. This presentation is what starts that conversation."),
+      ],
+    },
+    {
+      icon: "FiUser", title: "One person maintains it",
+      body: [
+        chall("A single maintainer with many dependents is the standard failure mode for internal tools."),
+        ...fix("everything it knows is plain text in our own repository, so a second person can be brought up to speed. Cover has to be agreed before anyone relies on it."),
+      ],
+    },
   ];
 
-  const cw = 5.83, ch = 1.86, gx = 0.24, gy = 0.22;
+  const cw = 5.83, ch = 2.04, gx = 0.24, gy = 0.2;
   for (let i = 0; i < items.length; i++) {
     await iconCard(s, {
       ...items[i],
@@ -409,38 +451,43 @@ async function slideLimits() {
     });
   }
   s.addText(
-    "We would rather you raise the objection here than discover it after a pilot has started.",
-    { x: 0.7, y: 6.28, w: 11.9, h: 0.35, margin: 0, fontFace: FONT, fontSize: 12.5, italic: true, color: GREY }
+    "Every one of these has an answer today. We would rather you raise the objection here than discover it after a pilot has started.",
+    { x: 0.7, y: 6.54, w: 11.9, h: 0.35, margin: 0, fontFace: FONT, fontSize: 12.5, italic: true, color: GREY }
   );
   footer(s);
   s.addNotes(
-    "Say this slide out loud rather than skipping it. On the data point, the verified fact is that GitHub hosts " +
+    "Say this slide out loud rather than skipping it — naming the four problems yourself is what buys the room's " +
+    "trust for everything else. Do not let it turn into a list of excuses: each card ends on what we already do " +
+    "about it, so finish every card on the navy half. On the data point, the verified fact is that GitHub hosts " +
     "Anthropic's models on AWS, Anthropic's own infrastructure and Google Cloud, under a zero-data-retention " +
     "agreement with no training on business data. So approving Claude directly is not a new question about who " +
     "sees our data — it is a question of which contract governs it. If security prefers, the same tooling runs " +
-    "inside our own cloud tenancy; that is a configuration change, not a redesign."
+    "inside our own cloud tenancy; that is a configuration change, not a redesign. Important asymmetry, since " +
+    "decision one is now vendor-neutral: this whole argument works because Copilot ALREADY runs Anthropic models, " +
+    "so Claude is not a new provider. ChatGPT would be one, and security would have to look at it fresh. Do not " +
+    "reuse this line for OpenAI."
   );
 }
 
-/* =============================================================== 8 · cost */
+/* =============================================================== 7 · cost */
 function slideCost() {
   const s = lightSlide();
   heading(s, "What it costs", "Two ways to pay, and they are not close", { ts: 32 });
   s.addText(
-    "Measured from 14 real conversations, priced turn by turn: an average conversation consumes about €4.44 of AI usage.",
+    "Measured from 14 real investigations — a case worked start to finish, not a quick question — priced turn by turn. The average one consumes about €4.44 of AI usage.",
     { x: 0.7, y: 1.56, w: 11.0, h: 0.4, margin: 0, fontFace: FONT, fontSize: 13, color: GREY, valign: "top" }
   );
 
   const cards = [
     {
       x: 0.7, tone: "grey", eyebrow: "METERED — WHAT WE USE TODAY", title: "GitHub Copilot credits",
-      fig: "≈ 4", figsub: "conversations per month",
+      fig: "≈ 4", figsub: "investigations per month",
       body: "€19 a month buys a pot of credits that drains by the word. Our work drains it fast, and the pot is shared across the company — which is why it runs out.",
     },
     {
-      x: 6.93, tone: "navy", eyebrow: "FLAT RATE — WHAT WE ARE ASKING FOR", title: "A Claude subscription",
-      fig: "≈ 50", figsub: "conversations per week",
-      body: "€20 a month, not metered. You are limited by how much you use it in a day, not by how much text it reads. Same price, roughly fifty times the work.",
+      x: 6.93, tone: "navy", eyebrow: "FLAT RATE — WHAT WE ARE ASKING FOR", title: "An AI subscription",
+      fig: "≈ 50", figsub: "investigations per week",
+      body: "Claude Pro, ChatGPT Plus or equivalent — €20 a month, not metered. You are limited by how much you use it in a day, not by how much text it reads. Same price, roughly fifty times the work.",
     },
   ];
   cards.forEach((c) => {
@@ -473,7 +520,7 @@ function slideCost() {
   });
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: 0.7, y: 5.06, w: 11.93, h: 1.42, rectRadius: 0.1,
+    x: 0.7, y: 5.06, w: 11.93, h: 1.62, rectRadius: 0.1,
     fill: { color: TINT }, line: { color: "DCE4F0", width: 1 }, shadow: shadow(),
   });
   s.addText("Why the gap is that large", {
@@ -481,14 +528,20 @@ function slideCost() {
     fontFace: FONT, fontSize: 13, bold: true, color: NAVY,
   });
   s.addText(
-    "95% of what we consume is the assistant re-reading material it has already been given. Credits charge full price for every word of that re-reading; a subscription does not charge for it at all. One €20 subscription delivers roughly €1,000 a month of metered usage — about five times the company's entire shared credit pool, from one seat.",
-    { x: 1.06, y: 5.58, w: 11.2, h: 0.78, margin: 0, fontFace: FONT, fontSize: 12, color: GREY, lineSpacing: 17, valign: "top" }
+    "95% of what we consume is the assistant re-reading material it has already been given. Credits charge full price for every word of that re-reading; a subscription does not charge for it at all. One €20 subscription delivers roughly €1,000 a month of metered usage — about five times our entire shared credit pool, from one seat. That is a property of how the plan is priced, not of which vendor we pick.",
+    { x: 1.06, y: 5.58, w: 11.2, h: 0.98, margin: 0, fontFace: FONT, fontSize: 12, color: GREY, lineSpacing: 17, valign: "top" }
   );
   footer(s);
   s.addNotes(
     "All figures recomputed 2026-08-19 from lab-chat-poc token counts, not from the logged cost column (which " +
-    "records a running total on the three newest chats and would double-count). €4.44 per conversation replaces " +
-    "the older €3.91. Copilot moved to AI Credits on 1 June 2026: 1 credit = $0.01, billed on tokens at the same " +
+    "records a running total on the three newest chats and would double-count). An 'investigation' is one whole " +
+    "case worked end to end — read the log, read the software, find the cause, write it up. If the room hears " +
+    "'one question' the whole cost slide reads as absurd, so define the unit before you show the numbers. " +
+    "€4.44 per investigation replaces " +
+    "the older €3.91. Every measured figure on this slide comes from Claude usage, because that is what we ran — " +
+    "ChatGPT Plus is the same €20 and the same flat-rate mechanism, but we have not measured its throughput, so " +
+    "do not claim the ≈50/week for it. The vendor-neutral claim is the one on the slide: metering is the wrong " +
+    "instrument for this workload. Copilot moved to AI Credits on 1 June 2026: 1 credit = $0.01, billed on tokens at the same " +
     "published rates as the API — so Copilot is NOT marked up per token. Do not claim it is; the argument is that " +
     "metering is the wrong instrument for this workload, not that GitHub overcharges. The ~50/week is a fitted " +
     "ceiling from a deliberately conservative lower-envelope fit; sustaining it means constant throttling, so " +
@@ -501,14 +554,14 @@ function slideStart() {
   const s = lightSlide();
   heading(s, "If we get a yes", "What we would start with", { ts: 32 });
   s.addText(
-    "Nothing here needs to be built. This is a pilot with a fixed length, a named department and a way to stop.",
+    "Nothing here needs to be built. A pilot with a fixed length, one department, and one question: does it give the Lab back its own time?",
     { x: 0.7, y: 1.56, w: 10.9, h: 0.4, margin: 0, fontFace: FONT, fontSize: 13, color: GREY, valign: "top" }
   );
 
   const cards = [
-    { n: 1, eyebrow: "ALREADY IN PLACE", title: "Three seats", body: "Three people are already lined up to use it. No recruitment, no rollout plan, no training programme needed to begin." },
-    { n: 2, eyebrow: "SIX WEEKS", title: "The Lab pilot", body: "Lab runs it on real work in build, FAT and installation. Every case is logged — including the ones where the answer was wrong." },
-    { n: 3, eyebrow: "WHAT WE BRING BACK", title: "A measured number", body: "Time from problem to informed answer, and how often it saved a trip to a Software Engineer. We ask the person who asked the question." },
+    { n: 1, eyebrow: "WHAT WE ARE ASKING FOR", title: "Three seats", body: "Three people doing this work, one plan each. Who they are is not settled yet — that is part of the ask, and it is the smallest version of it that proves anything." },
+    { n: 2, eyebrow: "SIX WEEKS", title: "The Lab pilot", body: "Lab runs it on real work in build, FAT and installation — answering their own questions instead of queueing for ours. The wrong answers get logged too." },
+    { n: 3, eyebrow: "WHAT WE MEASURE", title: "The Lab's own hours", body: "How long it used to take them to reach an answer — searching first, then asking — against how long it takes now. In their hours, not ours." },
     { n: 4, eyebrow: "HOW IT STOPS", title: "An honest exit", body: "If the Lab does not want to keep it at the end of six weeks, we say so and it stops there. No expansion without evidence." },
   ];
   const cw = 2.93, gx = 0.23;
@@ -517,14 +570,18 @@ function slideStart() {
   );
 
   s.addText(
-    "Enthusiasm without committed time counts as a no — we would rather find that out now than after buying anything.",
+    "Enthusiasm without committed time counts as a no — so decision two is a request for the Lab's hours, not just their permission.",
     { x: 0.7, y: 5.62, w: 11.9, h: 0.35, margin: 0, fontFace: FONT, fontSize: 13, bold: true, italic: true, color: NAVY }
   );
   footer(s);
   s.addNotes(
-    "Keep this concrete. The point of the slide is that saying yes is cheap and reversible: three people already " +
-    "want it, six weeks, and a defined way to end it. Confirm before presenting whether the three seats are " +
-    "Copilot seats being repurposed or three new Claude seats — the wording works either way but you will be asked."
+    "The point of the slide is that saying yes is cheap and reversible: three seats, six weeks, and a defined " +
+    "way to end it. Keep the measurement pointed at THEM. Software Engineering's own saving is already proven " +
+    "and is on the evidence slide; what is unproven is whether the Lab gets its own hours back, and that is the " +
+    "only thing this pilot is for. If you catch yourself talking about your own time here, stop. Do NOT claim anyone is lined up — no seats are assigned and no participants are picked, " +
+    "because this meeting is what decides whether we get that far. If asked 'who exactly?', the honest answer " +
+    "is that it is the next step and we are not doing it before you say yes. Same for whether the three are new " +
+    "subscription seats or repurposed Copilot ones — decision one settles that."
   );
 }
 
@@ -538,8 +595,8 @@ function slideAsk() {
   );
 
   const asks = [
-    { n: 1, eyebrow: "DECISION ONE", title: "How we are licensed", body: "Approve a Claude subscription for the people doing this work, or top up the shared Copilot credits instead. At the same price per person the subscription does roughly fifty times the work — but it needs approving as a tool, which is the real question." },
-    { n: 2, eyebrow: "DECISION TWO", title: "Green light for the Lab", body: "Permission for Lab to run the six-week pilot on real work, with their time committed. They are already asking us the questions; this just lets them ask the tool." },
+    { n: 1, eyebrow: "DECISION ONE", title: "How we are licensed", body: "Approve a flat-rate assistant plan — Claude Pro, ChatGPT Plus or equivalent — for the people doing this work, or top up the shared Copilot credits instead. At the same price per person the subscription does far more work; approving one as a tool is the real question." },
+    { n: 2, eyebrow: "DECISION TWO", title: "Green light for the Lab", body: "Permission for Lab to run the six-week pilot on real work, and the hours for two people to do it. Who those two are and when they start is ours to arrange once you say yes. They are already asking us the questions; this lets them answer their own." },
   ];
   const cw = 5.83, gx = 0.27;
   asks.forEach((a, i) =>
@@ -550,8 +607,8 @@ function slideAsk() {
     x: 0.7, y: 5.52, w: 11.9, h: 0.35, margin: 0, fontFace: FONT, fontSize: 12.5, color: AEG, valign: "top",
   });
   s.addText(
-    "In exchange we bring back a measured number: Software Engineer hours returned to the product chain.",
-    { x: 0.7, y: 6.0, w: 11.9, h: 0.4, margin: 0, fontFace: FONT, fontSize: 15, bold: true, color: SUN, valign: "top" }
+    "In exchange we bring back a measured number: hours the Lab gets back — and the engineering time that stops going into repeat questions.",
+    { x: 0.7, y: 6.0, w: 11.9, h: 0.5, margin: 0, fontFace: FONT, fontSize: 15, bold: true, color: SUN, valign: "top" }
   );
   footer(s, true);
   s.addNotes(
@@ -567,10 +624,10 @@ function slideAsk() {
   slideWhy();
   await slideAiCapabilities();
   slideEvidence();
-  await slideDepartments();
   slideHowItKnows();
   await slideLimits();
   slideCost();
+  await slideDepartments();
   slideStart();
   slideAsk();
   await pres.writeFile({ fileName: path.join(__dirname, OUT) });
