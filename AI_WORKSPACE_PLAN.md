@@ -156,6 +156,47 @@ Sources for skill discovery: [VS Code — Use Agent Skills](https://code.visuals
 - [ ] **Get the real floor split from `/context`.** ~38k of the ~53k average floor is unattributed (client prompt + built-in tools + MCP schemas). Rev 1 of the assessment guessed this by subtraction and got it wrong; do not re-derive it that way. Needed before spending effort on `.mcp.json` or trimming the core.
 - [ ] **Watch the floor's growth rate.** 47k (2026-07-21) → 64k (2026-08-19), +35% in a month, only ~25% of which is our documentation. Anything added to the core should displace something or belong in a skill body.
 
+#### How to undo the batching change — read this before reverting anything
+
+Written 2026-08-26 by the session that made the change, because the person judging it weeks later
+will not have that context, and because the change is **not cleanly revertible by commit**.
+
+**Do NOT run `git revert d522fc0`.** That commit mixes the batching edits with unrelated
+housekeeping — the `Assessments & Plans` folder move, the deletion of the duplicate
+`md documents/CLAUDE.md`, and the corrected `Measure-ContextUsage.ps1`. Reverting it wholesale would
+resurrect the duplicate instructions file and reinstate a measurement script with a 2.11× counting
+bug. (Mixing those in one commit was a mistake; noted so it is not repeated.)
+
+**Baseline:** tag `pre-batching-2026-08-26` (= `681c941`) is the state of every affected file
+immediately before the change. Read the old text with
+`git show pre-batching-2026-08-26:.claude/skills/skalar-log-analysis/SKILL.md`, and diff the current
+state with `git diff pre-batching-2026-08-26 -- .claude/skills .github/copilot-instructions.md`.
+
+**First decide which failure you have — they need opposite responses:**
+
+- **Cost did not drop** (still ~7M for a lab issue). The batching is *ineffective*, not harmful.
+  Reverting gains nothing. Instead re-measure where the turns went: dump the prompt's turn-by-turn
+  tool sequence as was done for `1f498711` and find them. Leave the protocol alone.
+- **Diagnosis got worse** — vaguer, missed the fault, latched onto errors for a hang, stopped
+  narrowing. *That* is what the revert is for. Revert in the order below and stop as soon as quality
+  returns; do not remove all three reflexively.
+
+**Staged revert, most-suspect first:**
+
+| # | Change | Where | Why it is suspect |
+|---|---|---|---|
+| 1 | Batched opening census | `skalar-log-analysis` Step 1 (§"The opening census") — restore the old serial Steps 1–4 and renumber 2/3/4 back to 5/6/7, fixing the three in-file cross-references | Puts an error census in context before the entry point is chosen, against the skill's own Rule 1. The anchoring risk the change knowingly accepted. |
+| 2 | Orientation batch | `skalar-lab-issue` Step 3, item 1 | Mildest of the three; only reorders independent lookups. |
+| 3 | Standing batching rule | `.github/copilot-instructions.md`, the blockquote near the top | Global. If removed, `dad4c7f`'s "about turns, never about rigour" guard goes with it — it exists only to bound this rule. |
+
+`dad4c7f` is a **fix to** the change, not part of the claim being tested: it resolved a contradiction
+with the v0.2.0 fallback rule and a wording risk against the mandated `-WhatIf`. If change 1 is
+reverted its log-analysis half disappears with it. Never keep change 1 while dropping `dad4c7f`.
+
+**Record the outcome either way** — a dated line in §5 below saying what the next lab issue cost,
+whether the diagnosis held, and what was kept. A test that is run and not written down leaves the
+next person exactly where this one started.
+
 ---
 
 ## 5. Decision log
