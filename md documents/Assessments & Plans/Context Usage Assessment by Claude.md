@@ -297,6 +297,9 @@ element is stronger than what was originally proposed and is adopted rather than
 
 ## 10. Open questions
 
+These are **tracked** as `AI_WORKSPACE_PLAN.md` §4 Phase 5 — this section is the reasoning, that
+checklist is the to-do. Keep them in step; do not answer one without ticking the other.
+
 - **The floor's internal split needs `/context`**, not subtraction. Rev 1's subtraction produced a
   confidently wrong answer; the honest state is a ~38k unattributed remainder.
 - **Scoped subagents are unmeasured.** Whether `tools: Read, Grep, Glob` lowers the 60k sidechain
