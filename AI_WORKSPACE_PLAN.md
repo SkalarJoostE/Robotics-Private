@@ -152,9 +152,25 @@ Sources for skill discovery: [VS Code — Use Agent Skills](https://code.visuals
 
 ### Phase 5 — Turn-count cost control (opened 2026-08-26)
 - [ ] **Verify the batching change on the next real lab issue, before trusting it.** The claim — cost grows with the *square* of the turn count, so batching independent tool calls roughly halves a prompt — rests on only two comparable runs: the same lab issue in 56 turns billed **7.5M**, in 36 turns **4.8M**. The protocol changes are already in (`skalar-log-analysis` Step 1 opening census as one batch; `skalar-lab-issue` Step 3 orientation batch; the standing rule at the top of the core). **How to check:** send the next lab issue normally — no special instruction — and confirm the four opening Loupe queries arrive as *one* batch rather than four messages, then run `Tools&Scripts\Measure-ContextUsage.ps1 -ByPrompt`. Baselines to beat: 7.5M / 4.8M for a whole investigation. Under 4M confirms it. If it does not drop, the remaining turns are somewhere unexamined — dump the prompt's turn-by-turn tool sequence and find them, as was done for `1f498711`.
+  - **Result 2026-08-26 (99445796 three-needle port review):** the four opening queries did arrive as
+    one batch, unprompted, and the census framed the whole investigation correctly for ~1.5k tokens —
+    `status: Normal`, 12 errors, the only recurring one immediately identifiable as benign (`EC
+    intelligent rinse`, code 28). No loss of rigour. That session still ran ~35 turns / ~2.0–2.5M
+    estimated, but **none** of the overrun was the census: it was seven reflex `groupBy` sweeps, raw
+    XML and diff dumps, five turns lost to a missing `SkalarPackSolution` mirror, and five more
+    rebuilding tables that `Sequences\<order> Profile.md` already held. Batching holds — **this item
+    can be ticked.** The overrun produced four fixes: `skalar-log-analysis` Rule 8, the core's "One
+    investigation shape" spine, the `skalar-code-reference` TreeDatabase read recipe, and the
+    `Process-SoftwareFolder.ps1` mirror pre-create + assertion.
 - [ ] **Measure a scoped subagent's floor.** Full-toolset `Task` agents start at the parent's floor (59–60k measured, 7 sidechains). Whether `tools: Read, Grep, Glob` lowers it is untested and decides whether delegation is worth it below the "many turns, much evidence, little returned" threshold.
 - [ ] **Get the real floor split from `/context`.** ~38k of the ~53k average floor is unattributed (client prompt + built-in tools + MCP schemas). Rev 1 of the assessment guessed this by subtraction and got it wrong; do not re-derive it that way. Needed before spending effort on `.mcp.json` or trimming the core.
 - [ ] **Watch the floor's growth rate.** 47k (2026-07-21) → 64k (2026-08-19), +35% in a month, only ~25% of which is our documentation. Anything added to the core should displace something or belong in a skill body.
+  - **Debt taken 2026-08-26:** the "One investigation shape" spine added ~26 lines (~450 tokens) to
+    the core without displacing anything, against this item's rule. Justification: it is the only
+    place all three investigation entry points (`skalar-lab-issue`, `skalar-jira-issue`, ad-hoc port
+    review) reliably read, and it targets the ~25-turn overrun measured directly above. If the floor
+    needs trimming, this is a candidate to move into a shared skill body once one exists that all
+    three paths load.
 
 #### How to undo the batching change — read this before reverting anything
 
