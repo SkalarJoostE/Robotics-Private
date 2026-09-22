@@ -2,24 +2,29 @@
 
 *A plain-language explainer. No technical knowledge assumed.*
 
-*Verified 20 August 2026 · Robotics-AI · Software Engineering*
+*Verified 22 September 2026 · Robotics-AI · Software Engineering*
+
+*For the condensed version to take into a meeting, see [AI-Cost-Meeting-Brief.md](AI-Cost-Meeting-Brief.md).*
 
 ---
 
 ## The short version
 
 For the kind of work performed in the Robotics-AI workspace, a dedicated Claude seat appears
-to provide roughly **thirty times more investigation capacity** than the standard AI-credit
+to provide **at least twenty times more investigation capacity** than the standard AI-credit
 allowance included with a GitHub Copilot Business seat at almost the same seat price.
 
 | | How the allowance works | What approximately $20 buys for our measured workload |
 |---|---|---|
 | **GitHub Copilot Business** | A $19 seat includes a $19-equivalent monthly AI-credit allowance. Agent usage is deducted token by token from a shared company pool. | about **4–5 investigations** |
-| **Claude subscription** | A named person receives access under rolling five-hour and weekly limits. There is no $20 token balance. | about **147 investigations per 22-working-day month** |
+| **Claude subscription** | A named person receives access under rolling five-hour and weekly limits. There is no $20 token balance. | at least **101**, and an estimated **145**, investigations per 22-working-day month |
 
-That is approximately **32 times the capacity** at approximately the same seat price.
+That is between **23 and 33 times the capacity** at approximately the same seat price.
+The range is not vagueness: 23x is what the raw measurements give with their known
+upward bias left in, and 33x is the same data once that bias is removed. The lower
+figure is the one to quote.
 
-This does **not** mean that the AI is thirty times cheaper to operate. It means the products
+This does **not** mean that the AI is twenty times cheaper to operate. It means the products
 sell different things. Copilot sells a transferable, dollar-denominated amount of model
 consumption. A subscription sells non-transferable access for one person, with time-based
 limits and fair-use controls.
@@ -39,34 +44,58 @@ They included both lab questions and service-ticket investigations.
 
 Across those conversations:
 
-- 94.7% of all token traffic was cached context being read again;
-- an average investigation used about 4.0 million cached-input tokens;
-- the current Claude allowance calibration estimates 23.9% of a five-hour window and 1.61%
+- 94.9% of all token traffic was cached context being read again;
+- an average investigation used about 4.3 million cached-input tokens;
+- the current Claude allowance calibration estimates 24.2% of a five-hour window and 1.6%
   of the weekly allowance per investigation;
-- that corresponds to about 4.2 investigations per five-hour window, 6.7 in a normal working
-  day, and **147 in a 22-working-day month**.
+- that corresponds to about 4.1 investigations per five-hour window, 6.6 in a normal working
+  day, and **145 in a 22-working-day month**;
+- read raw, without correcting for the measurement bias described below, the same eight
+  conversations give a floor of about 2.9 per five-hour window and **101 per month**.
 
-The 147 figure is an estimate, not a contractual provider limit. It is fitted from eight
+The 145 figure is an estimate, not a contractual provider limit. It is fitted from eight
 fully measured conversations using the account-level allowance information behind Claude's
 usage display. The endpoint is undocumented and reports whole percentage points, so the
 result should be refreshed as more clean measurements are collected. The model is deliberately
 conservative: where concurrent Claude activity could have inflated a measurement, it assumes
 the Robotics-AI conversation consumed no more than the observed total.
 
+### The measurement's one known weakness
+
+The subscription percentages come from an account-level usage endpoint, snapshotted
+before and after every turn. **That endpoint has no per-chat dimension.** Anything else
+running on the same account during a turn -- another Claude Code session, Claude Desktop,
+a browser tab -- is added to the reading.
+
+We measured how large the effect is. Within the log there are **zero** overlapping turns,
+so the tool never measured itself twice; the contamination comes from interactive sessions
+outside it. Across the eight fully measured conversations, **about 20% of recorded usage
+on average is not explained by the conversation's own tokens** -- 41% in the worst case,
+and 0% in the two cleanest, which are fully accounted for by their own tokens.
+
+**The bias runs one way only.** Concurrent work can make a window look more consumed,
+never less. So every measured percentage is an upper bound on what the investigation cost,
+and every capacity figure derived from it is a lower bound. For a "how many seats do we
+need" question that errs toward buying too many, never too few. This is also why the
+calibration uses a lower-envelope fit rather than a least-squares one: the envelope is
+anchored by the least-contaminated conversations instead of splitting the difference
+through the noise.
+
 ### What the same token mix would cost in Copilot
 
 Applying GitHub's published Claude Opus 5 rates to the same 14 logged token profiles gives:
 
-- $57.75 total;
-- **$4.13 per investigation**, or about **€3.80** at the 0.92 EUR/USD rate used by the proof
+- $59.67 total;
+- **$4.26 per investigation**, or about **€3.92** at the 0.92 EUR/USD rate used by the proof
   of concept;
-- approximately **4.6 investigations** from the standard $19 allowance included with one
+- approximately **4.5 investigations** from the standard $19 allowance included with one
   Copilot Business seat.
 
 The calculation uses GitHub's rates for normal input, cached input, cache writes and output.
-It is not the €5.55 direct-Anthropic-API equivalent shown by the local cost report: Claude
+It is not the $4.98 (about €4.58) direct-Anthropic-API equivalent for the same tokens: Claude
 Code uses a more expensive one-hour cache-write rate, while GitHub's Copilot rate card lists
-the lower cache-write rate applicable to Copilot.
+the lower cache-write rate applicable to Copilot. Priced end to end, Copilot is therefore
+14.4% cheaper per token than these runs actually cost on the API.
 
 This is a re-pricing of measured Claude Code runs, not a controlled test in which every case
 was rerun through Copilot. Copilot's agent could make somewhat different tool calls or use a
@@ -78,15 +107,15 @@ best final check against actual Copilot consumption.
 | | Copilot Business standard allowance | Measured Claude subscription capacity |
 |---|---:|---:|
 | Seat price | $19/user/month | approximately $20/user/month |
-| Investigations | approximately 4.6/month | approximately 147/working month |
-| Capacity ratio | 1× | approximately **32×** |
+| Investigations | approximately 4.5/month | approximately 145/working month (floor: 101) |
+| Capacity ratio | 1× | **23×** measured floor, **33×** bias-corrected |
 | Allowance belongs to | pooled company balance | one named person |
 | At the limit | paid overage or blocked until reset, depending on company policy | wait for a rolling limit to reset or enable paid credits |
 
-GitHub is giving existing Copilot Business customers a temporary promotional allowance of
-3,000 credits per seat from 1 June through 1 September 2026. During that promotion the same
-calculation gives about 7.3 investigations per seat. The ongoing purchasing comparison above
-uses the normal 1,900-credit allowance that applies after the promotion.
+GitHub gave existing Copilot Business customers a temporary promotional allowance of 3,000
+credits per seat from 1 June through 1 September 2026, which on the same calculation supported
+about 7.0 investigations per seat. **That promotion has now ended**, so seats are back to the
+standard 1,900-credit allowance used throughout this document.
 
 ---
 
@@ -129,22 +158,53 @@ In other words, the subscription price is based on average use across many peopl
 credits price the consumption of the particular user who is doing the work. Robotics-AI is
 the equivalent of the gym member who actually attends every working day.
 
-### Why Robotics-AI benefits unusually strongly
+### Why the gap is this large
+
+The gap is explained by the two pricing structures above, and the arithmetic is simple:
+
+```
+One Claude seat (~$20/month) supported a measured 145 investigations per month
+    x 426 credits of model consumption each   =   61,770 credits' worth
+One Copilot Business seat ($19/month) supplies    1,900 credits
+                                                  -> about 33x
+```
+
+Every term in that calculation is either a published price or a measured quantity. Using the
+raw, uncorrected measurements instead of the fitted ones gives 101 investigations a month
+and a ratio of 23x -- the floor quoted at the top of this document. Either way the gap would
+hold for almost any sustained heavy workload; it is not specific to Robotics-AI.
+
+#### A possible additional effect we have not been able to isolate
 
 Our investigations repeatedly load the same large body of context: workspace instructions,
 skills, case history, robot software, logs, tables and action code. In the pilot, cached
-re-reading accounted for 94.7% of token volume.
+re-reading accounted for 94.9% of token volume. Copilot assigns a monetary price to every one
+of those cached tokens. In our measured data, allowance consumption was best explained by
+generated output and by the creation of new cached context, and cached reads had no
+separately measurable weight.
 
-Copilot assigns a monetary price to every one of those cached tokens. Claude's subscription
-allowance does not decrement one-for-one with the API value of the tokens. In our measured
-data, allowance consumption was best explained by generated output and the creation of new
-cached context; cached reads had no separately measurable weight.
+**That is not the same as proving cached reads are what causes the gap, and we should not
+claim it is.** Three reasons:
 
-This is a finding about our measured Claude workflow, not a published promise that
-subscriptions “only count output.” Anthropic and OpenAI both state that conversation length,
-context, model choice, reasoning, tools and complexity can affect subscription usage. The
-important point is narrower and evidence-based: **our context-heavy workload consumed much
-more dollar-denominated Copilot capacity than it consumed Claude subscription allowance.**
+- **No control group.** All eight fully measured conversations sit between 91.3% and 97.3%
+  cached re-reading. We never measured a workload with a different profile, so there is
+  nothing to compare against.
+- **Not statistically significant.** Within our data, read-heavier conversations do extract
+  more Copilot money per unit of subscription window (correlation +0.56), but at n = 8 that
+  falls well short of significance (t = 1.67 against a 2.45 threshold).
+- **The effect's direction is not even determined.** Cached reads and generated output move
+  together across our conversations (correlation +0.89), so the fit cannot separate them.
+  Bounding the attribution at both extremes, the same eight measurements are equally
+  consistent with cached reads contributing nothing to plan usage and with cached reads
+  accounting for all of it. A negative fitted coefficient is the classic symptom of exactly
+  this collinearity, not evidence of a zero weight.
+
+So the context-shape story is an **unverified hypothesis**, and the purchasing case does not
+rest on it. Anthropic and OpenAI both state that conversation length, context, model choice,
+reasoning, tools and complexity can affect subscription usage. The defensible claim is
+narrower and evidence-based: **our workload consumed far more dollar-denominated Copilot
+capacity than it consumed Claude subscription allowance, measured on the same eight
+investigations.**
 
 ---
 
@@ -160,7 +220,7 @@ For company work, the relevant products are the business plans, not personal sub
 
 The evidence is currently strongest for **Claude Team**, because all 14 Robotics-AI cases
 were measured through Claude Code. ChatGPT Business is also a plausible option, but the
-document cannot honestly assign it the same 147-investigation capacity without running a
+document cannot honestly assign it the same 145-investigation capacity without running a
 representative pilot. OpenAI states that its included usage depends on the model, context,
 reasoning, tool use, retrieval, caching and task complexity.
 
@@ -238,10 +298,11 @@ the seat-pricing advantage described here.
 
 ## The one-sentence summary
 
-> Copilot gives us a transferable $19 consumption balance; a Claude seat gives one named
-> engineer time-limited access whose unused capacity cannot be shared. Our investigations
-> are 94.7% cached context, so that difference in accounting turns approximately the same
-> seat price into about 4–5 investigations on Copilot versus an estimated 147 on Claude.
+> Copilot resells model usage at cost, so a $19 seat buys about $19 of it; a Claude seat sells
+> one named engineer time-limited access priced on what an average subscriber uses, and unused
+> capacity cannot be shared or carried over. On the same eight measured investigations, that
+> difference turns approximately the same seat price into about 4–5 investigations a month on
+> Copilot versus at least 101 and an estimated 145 on Claude.
 
 ---
 
@@ -254,7 +315,7 @@ Local measurements:
 - `lab-chat-poc/plan_calibration.py` — allowance-calibration method and current refit output
 - `lab-chat-poc/README.md` — methodology, assumptions and known limitations
 
-Official product documentation, checked 20 August 2026:
+Official product documentation, checked 22 September 2026:
 
 - [GitHub — Choosing a Copilot enterprise plan](https://docs.github.com/en/copilot/tutorials/roll-out-at-scale/assign-licenses/choose-enterprise-plan)
 - [GitHub — Usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises)

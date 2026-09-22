@@ -1,46 +1,50 @@
 {
   "pp_per_mtok": {
     "five_hour": {
-      "output": 289.5929391055062,
-      "cache_write": 75.40306259132437
+      "output": 333.2518540272585,
+      "cache_write": 61.25980619668293
     },
     "seven_day": {
-      "output": 45.91117278643376,
-      "cache_write": 0.9911618498008072
+      "output": 15.069222355748792,
+      "cache_write": 5.618888313315651
     }
   },
-  "fitted_at": "2026-08-06T10:21:44+00:00",
+  "fitted_at": "2026-09-22T06:36:55+00:00",
   "method": "lower envelope over fully-measured chats; cache_read and input pinned to 0",
   "samples": {
-    "five_hour": 6,
-    "seven_day": 6
+    "five_hour": 8,
+    "seven_day": 8
   },
   "binding": {
     "five_hour": [
       "4537661f-f453-4395-a992-3cea8a7b36a7",
-      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842"
+      "747fb02b-a625-4fae-8e68-37eefdcd5fe8"
     ],
     "seven_day": [
-      "4537661f-f453-4395-a992-3cea8a7b36a7",
-      "93f96083-14ea-4472-8493-d88da5628b7f"
+      "93f96083-14ea-4472-8493-d88da5628b7f",
+      "d49ab0ff-3291-419d-b861-862d832d05c6"
     ]
   },
   "headroom": {
     "five_hour": {
-      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 12.14,
-      "4537661f-f453-4395-a992-3cea8a7b36a7": 0.0,
-      "93f96083-14ea-4472-8493-d88da5628b7f": 7.83,
-      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 7.16,
-      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 2.2,
-      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 0.0
+      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 12.77,
+      "4537661f-f453-4395-a992-3cea8a7b36a7": -0.0,
+      "747fb02b-a625-4fae-8e68-37eefdcd5fe8": 0.0,
+      "93f96083-14ea-4472-8493-d88da5628b7f": 9.76,
+      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 7.75,
+      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 2.61,
+      "d49ab0ff-3291-419d-b861-862d832d05c6": 13.42,
+      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 4.23
     },
     "seven_day": {
-      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 0.5,
-      "4537661f-f453-4395-a992-3cea8a7b36a7": 0.0,
+      "0f78178f-5dd3-408e-8d2b-e8d5f8f758b8": 0.79,
+      "4537661f-f453-4395-a992-3cea8a7b36a7": 1.01,
+      "747fb02b-a625-4fae-8e68-37eefdcd5fe8": 0.56,
       "93f96083-14ea-4472-8493-d88da5628b7f": 0.0,
-      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 0.68,
-      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 0.07,
-      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 1.07
+      "a3f5e59a-2921-4d27-95c8-91596b7b3d8d": 0.92,
+      "c709c3cf-0b01-4e7f-8ba2-6eb7ac26ab58": 0.24,
+      "d49ab0ff-3291-419d-b861-862d832d05c6": 0.0,
+      "ffb4dbfe-3aa2-465e-b0f9-6ba8d7148842": 0.24
     }
   }
 }
