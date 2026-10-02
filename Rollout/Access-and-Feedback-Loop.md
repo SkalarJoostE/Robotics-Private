@@ -11,11 +11,14 @@
 > mechanism it relies on (hooks, the capture script) is described here only to the depth a reader
 > needs to evaluate it; the parity rules governing instruction files live in `AI_WORKSPACE_PLAN.md`.
 
-**Last updated:** 2026-08-07 — revised the same day against `lab-chat-poc/`, which was built in
-parallel on the other PC and lands most of what §5 originally described as future work. §2 now uses
-measured cost and plan-limit data instead of estimates, and records the licensing constraint that
-decides seats-vs-API; §4 defers to the `md documents\Lab Questions\` rules; §5 is rewritten around
-what exists.
+**Last updated:** 2026-10-02 — new §8 designs the Lab pilot on a colleague's own laptop: how the
+clone stays current (`stable` branch, sparse checkout, a session-start update), what a lab machine may
+write (a role lock, plus drafts to a share instead of the repo), how robot logs reach the laptop, and
+the robot-PC ↔ laptop workflow. Open items move to §9. Previously 2026-08-07 — revised against
+`lab-chat-poc/`, which was built in parallel on the other PC and lands most of what §5 originally
+described as future work. §2 uses measured cost and plan-limit data, and records the licensing
+constraint that decides seats-vs-API; §4 defers to the `md documents\Lab Questions\` rules; §5 is
+rewritten around what exists.
 
 ---
 
@@ -396,7 +399,8 @@ answers.
 
 ## 7. What to put in front of the managers
 
-> Pilot: two Claude seats for named Helpdesk users. The repo moves to company Bitbucket, so no
+> Pilot: one Claude seat for a named Lab engineer, on their own laptop (Lab goes first since
+> 2026-08-19; Helpdesk follows with 1–2 seats). The repo moves to company Bitbucket, so no
 > personal accounts and no new identity system. Every question and answer is captured to an internal
 > folder for review — nothing enters the shared knowledge base until a Software Engineer verifies it.
 > Customer data stays in the local workspace and on the internal share; if IT wants it inside our own
@@ -413,7 +417,193 @@ defensible to a finance question rather than a guess.
 
 ---
 
-## 8. Open items
+## 8. The Lab pilot on a colleague's own laptop
+
+Decided with Joost on 2026-10-02. §4 settled *where* captured knowledge goes. This section settles
+what happens on the machine of someone who **uses** the workspace but never commits to it. Nothing
+here is built: building waits for the Bitbucket move and the IT answers in §8.8 (decision,
+2026-10-02). The scripts do not depend on where the repo is hosted, so the move changes one URL, not
+the design.
+
+### 8.1 Who and where
+
+- **One Lab engineer, on their own laptop.** Not the PC attached to the robot.
+- **Claude Desktop, Code tab**, with the Robotics-AI folder opened as the project. That is Claude
+  Code, so hooks and user-level settings apply. Still to verify on the pilot laptop: that the
+  session-start hook actually fires inside the Desktop app.
+- **Claude Code only** for the pilot. Copilot and Codex get none of the mechanisms below (§4, *Known
+  limitation*).
+
+### 8.2 The problem: a clone that never commits
+
+Three things go wrong on such a clone today. Each was checked against the repo on 2026-10-02.
+
+1. **Nothing updates it.** The only `git pull` is in `Bootstrap-RoboticsAI.bat`, which runs only when
+   setup is re-run. And `main` is where Software Engineering works. Since 2026-09-01 there were 15
+   commits, 5 of them to skills; a lab user tracking `main` would get unfinished skill edits as soon
+   as they are pushed.
+2. **The logging skills write into tracked files.** `skalar-lab-issue`, `skalar-jira-issue` and
+   `skalar-svn-import` end with "offer to log it", which appends to `md documents\AI_*_Log.md`. On a
+   clone that never commits, this breaks things three ways:
+   - The next pull **refuses to run** as soon as `main` changes the same log. The clone then stays on
+     that version and nobody notices.
+   - If the reviewer promotes the draft under the same detail-file name, the leftover untracked copy
+     **also aborts the pull**.
+   - The assistant reads its **own unverified entry** as case-base fact next time. That breaks the
+     "every entry actually worked" rule, on one machine only.
+3. **Promotion depends on one person.** Drafts reach colleagues only once a reviewer commits them.
+   That turns §6.1's bus factor into a daily pipeline. See §8.5 for the second reviewer.
+
+### 8.3 What the laptop gets: one repo, sparse checkout
+
+The workspace also holds material that has no business on a lab machine: rollout decks, the
+`lab-chat-poc` prototype, workspace plans, assessments. That material must still sit **in the same
+workspace** as everything else, because that is what gives it the right context on Joost's machine.
+
+**Decision: sparse checkout.** The lab clone is told which folders to put on disk. The repo and its
+branches stay the same for everyone; the excluded folders are simply absent on the laptop, so its
+assistant neither loads nor searches them. It is plain git, so Bitbucket changes nothing.
+
+| On the lab laptop | Left out |
+|---|---|
+| `CLAUDE.md`, `AGENTS.md`, `.github\`, `.claude\`, `.mcp.json`, `.vscode\`, `.codex\` | `Rollout\`, `lab-chat-poc\` |
+| `md documents\`: the five case-base logs and their detail folders, `Template Known Issues\`, `Lab Questions\` | `AI_WORKSPACE_PLAN.md`, `md documents\Assessments & Plans\`, the loose plan and handover files at the `md documents\` root |
+| `Tools&Scripts\` tools the lab workflow uses: fetch, process, profile, Loupe, core update, tray tools | `Tools&Scripts\SSO R&D Approval\`, `RMT Template Register\` builders, `Historical-B-Feature-Discovery\` (68 MB, 7,659 files; it serves the precedent search, not lab work) |
+
+- **Status of the list:** Joost judged it "about right" (2026-10-02). The exact list is fixed when it
+  is built.
+- **Where it lives:** in a committed file that is re-applied on every update, so changing it is a
+  commit, not a visit to the laptop.
+- **Check when building:** that no instruction on the lab path points at an excluded file.
+
+**Left out is not secret.** Anyone with read access to the repo can still open those files in
+history or in Bitbucket's web view. Material that colleagues must not be able to read does not belong
+in the repo at all. It goes in a git-ignored `_private\` folder inside Joost's workspace: his assistant
+reads it, and he backs up that one folder separately.
+
+Rejected:
+- **A lab branch with those files deleted.** Every update of the branch would bring them back.
+- **A separate personal repo.** It loses the shared context this workspace exists to provide.
+- **Putting the repo in OneDrive.** Sync tools corrupt git working copies.
+
+### 8.4 Staying current: a `stable` branch and a session-start update
+
+- **Lab tracks `stable`, never `main`.** Software Engineering keeps working on `main`.
+- **Publishing is one command on Joost's side** (`Publish-ToLab`). It shows what the lab will receive,
+  separating new case-base entries from skill, instruction and tool changes, then moves `stable` up to
+  `main`. Joost wants an approved entry to reach the lab immediately, so it is run after every
+  promotion, not on a fixed cadence.
+- **The habit this needs:** unfinished skill or tool work goes on a side branch, so it does not ship
+  with the next promotion. The assistant can do that branch switching for Joost.
+- **A `SessionStart` hook on the lab machine** runs `git fetch`. If any tracked file was changed
+  locally, it copies those files to a timestamped backup folder. It then resets the clone to
+  `origin/stable` and tells the user what it did.
+  - **Never `git clean`.** Untracked files stay.
+  - **Exits 0 on every failure.** With no VPN or no network the session starts on the old version,
+    and says so.
+
+**What a reset can and cannot touch.** Git manages only tracked files. Order checkouts, `Template *`
+folders, an order's `Log\` folder, `Sequences\`, `Service Items\` and `B-System Approvals\` are all
+git-ignored (checked with `git check-ignore`, 2026-10-02). So the lab engineer's SVN work is entirely
+separate from git and an update never touches it. Tracked files change only by accident, and the role
+lock (§8.5) stops the assistant causing that accident.
+
+**Back up and reset, rather than warn only** (Joost, 2026-10-02). A warning that a user unfamiliar
+with git cannot act on leaves the clone silently out of date, which is the failure this section exists
+to prevent. The backup keeps the safety that warn-only was meant to give.
+
+### 8.5 What a lab machine may write
+
+- **A role chosen at install.** `Bootstrap-RoboticsAI.bat -Role Lab` writes **user-level** Claude
+  settings that deny edits to tracked content: `md documents\`, `.claude\`, the instruction files and
+  `Tools&Scripts\`. That makes it a lock enforced by the tool, not an instruction the model may or may
+  not follow. It is user-level, so it never affects a Software Engineering machine.
+- **The same hook adds one line to the session's context**: this is a lab machine. The skills'
+  "offer to log it" then writes a **draft to the share** (§8.8) instead of the repo. A draft uses the
+  same template as a case-base entry, so promoting it is copy, check, commit.
+- **Claude's personal memory is turned off** on lab machines. Anything useful belongs in the shared
+  documents, and it reaches Software Engineering through the captured transcripts (§4). Joost verifies
+  it before any skill or instruction changes.
+
+**Review rules** (Joost, 2026-10-02). These refine §4 for drafts written by the people who did the
+work:
+- **Drafts are visible to other lab users before review, clearly labelled unreviewed.** On a lab
+  machine the search order is: case base first, then `Drafts\`, with the label carried into the answer.
+- **A Lab engineer's "fixed on the robot" counts as verified.** A confirmed draft is therefore
+  Lab-Resolution grade. Review checks quality, format and duplicates; it does not re-verify. That is
+  what keeps "approved means available immediately" realistic.
+- **Two reviewers:** Joost, plus a colleague with more robot knowledge (still to be asked). That is
+  the first concrete step on PROJECT.md §6.1.
+- **Raw transcripts stay in per-user folders.** Only drafts are shared between lab users.
+
+### 8.6 Robot logs to the laptop
+
+**Where the logs are.** The robot application writes Loupe logs to `<folder it runs from>\Log`
+(`robotics-core\SkalarRobotics\MainForm.cs:4101`). The Lab checks the order software out to the robot
+PC's Desktop, so the logs sit in `Desktop\<software>\99xxxxxx xxxxxx\Log\`, under a folder that
+carries the order number. Loupe's own setting for sending logs to a server is **not** enabled in the
+core.
+
+**Today** the engineer copies the one log by hand to a network share to read it on the laptop, and
+often doesn't know which log it was.
+
+**Decision: a copy job on the robot PC.**
+- A small script, installed once by double-click. Windows Task Scheduler runs it every few minutes.
+- It copies new `.glf` files from every `99*\Log` folder on the Desktop to
+  `\\<share>\RobotLogs\<order>\`.
+- The robot keeps logging locally exactly as now. The job only copies, and catches up after a network
+  drop.
+- On the laptop the engineer just names the order and roughly when it happened. Every log is already
+  there, and the skill finds the session by time or scans the recent ones for errors.
+
+**Still to test:** copying the `.glf` that is still being written, which may be locked or partial.
+
+Rejected:
+- **Loupe Server upload.** It needs a Loupe Server (licence and hosting) and a core change that would
+  ship to customers.
+- **Windows file sharing on the robot PC.** That is per-PC setup and firewall rules, and the laptop
+  would need each PC's name.
+- **Running the software from the share.**
+
+**The copy job must never ship.** The robot PC goes to the customer in about 70% of orders. Lab
+discipline is not relied on, so there are three layers:
+1. The job does nothing when the lab share is unreachable, so at a customer site it is inert.
+2. It is removed, and its removal verified, as a mandatory step of the delivery tool.
+3. The delivery report written onto the installer USB records that it was removed.
+
+The delivery tool is a separate project:
+[Installer USB Builder - Plan.md](../md%20documents/Assessments%20&%20Plans/Installer%20USB%20Builder%20-%20Plan.md).
+
+### 8.7 The robot PC ↔ laptop workflow
+
+The Lab commits to SVN themselves, and is expected to.
+
+| Where | Who | Step |
+|---|---|---|
+| Robot PC | Engineer | Commit the software to SVN, as they already do. The log reaches the share by itself (§8.6) |
+| Laptop | Engineer | One message: order number and symptom. The skill refreshes from SVN and picks up the log |
+| Laptop | Assistant | Diagnoses; if a fix is needed, prepares it in the laptop's checkout, runs a compile check and shows the change |
+| Laptop | Engineer | Says "commit". The assistant commits only after that explicit yes, the same rule as the SVN import |
+| Robot PC | Engineer | `svn update`, Build, test |
+
+- **One rule for the Lab:** don't edit on the robot PC while the fix is being made on the laptop, or
+  the `svn update` conflicts.
+- **Still to confirm:** that the headless build loop inside `Update-CoreVersion.ps1` can be run on
+  its own as a compile check.
+- **A side benefit:** the robot's working copy and the workspace are on different machines, so the
+  "never touch `C:\SPD_Projects\`" rule holds by construction.
+
+### 8.8 Questions for IT (meeting 2026-10-06)
+
+| Topic | What we need |
+|---|---|
+| **Transcript inbox** | Full session transcripts (1–3 MB each, measured from local transcripts; roughly 5–10 MB a day for one user) plus short draft write-ups. They contain customer names, site names and log content. Each lab user writes only their own folder; Joost and the second reviewer read everything; `Drafts\` is readable by all lab users. Reachable over VPN? Backup, and retention (suggest 12 months) |
+| **Robot log share** | Lab robot PCs write, the pilot laptop and Software Engineering read. Retention at least 60 days (the core keeps 30 locally, `maxLocalFileAge="30"`). Same share as the inbox or separate |
+| **Robot PCs** | Domain-joined company PCs? Which account do they run under, and may it write to a share? May they run a scheduled task, or must IT install it? |
+| **Bitbucket** | Who creates the repo, in which project. Permissions: Joost and the reviewer write, lab read-only; a branch restriction so only Joost pushes `stable`. Laptop authentication (as `Setup-Workspace.ps1` already does for `robotics-core`). About 130 MB of history, 78 MB of binaries in `Tools&Scripts\`: is Git LFS (their system for large files) wanted? A mirror push keeps the full history |
+| **"Stack"** | Joost may have heard "Stack" mentioned. If that was Stack Overflow for Teams (an internal Q&A knowledge base), it bears on where the case base itself lives, not just on the inbox. Ask what was meant |
+
+## 9. Open items
 
 - [ ] Confirm current Claude seat tiers and what each includes, then compare against the measured
       €4.44/conversation and ~7 conversations/seat/day from §2.
@@ -433,3 +623,23 @@ defensible to a finance question rather than a guess.
       answer — and keep filing to `md documents\Lab Questions\`.
 - [ ] Measure whether an onboarding seed bundle on the share meaningfully beats a cold
       `Sync-Templates.ps1` run.
+
+Lab pilot (§8). Everything below waits for the Bitbucket move and the IT answers (§8.8):
+
+- [ ] IT meeting 2026-10-06: inbox and robot-log share paths and permissions, scheduled tasks on
+      robot PCs, Bitbucket permissions, and what "Stack" meant (§8.8).
+- [ ] Ask the colleague to be second reviewer (§8.5).
+- [ ] Fix the sparse-checkout list and check that no lab-path instruction points at an excluded file
+      (§8.3).
+- [ ] Build `Publish-ToLab` (Joost's side) and the lab `SessionStart` update hook (back up, then
+      reset to `origin/stable`) (§8.4).
+- [ ] Add `-Role Lab` to `Bootstrap-RoboticsAI.bat`: sparse checkout, user-level deny rules,
+      memory off, hook registration (§8.5).
+- [ ] Lab-role branch in the logging skills: draft to the share's `Drafts\`; search `Drafts\` after
+      the case base, labelled unreviewed (§8.5).
+- [ ] Build the robot-PC log copy job; test copying a `.glf` that is still being written (§8.6).
+- [ ] Confirm the `Update-CoreVersion.ps1` headless build can run on its own as a compile check
+      (§8.7).
+- [ ] Rehearse the whole setup on Joost's second PC as a stand-in lab laptop, including that hooks
+      fire in Claude Desktop, before the pilot engineer gets it (§8.1).
+- [ ] Delivery tool removes the copy job: Installer USB Builder plan, separate project (§8.6).
