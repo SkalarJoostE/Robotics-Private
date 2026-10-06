@@ -149,6 +149,15 @@ duplicate of the one under Domino) and `Thumbs.db`.
    `Enabled` column. A PBF-manual rule built on the profile would put the wrong manual on every
    test-kit USB. Before any rule uses a table, check that the table has a real enable signal, and
    fix `Extract-SystemProfile.ps1` so it doesn't report "enabled" for tables without one.
+   **Fixed 2026-10-06.** The diagnosis above was half right: the table *does* have an `Available`
+   column in its schema, but no row sets it, and a DataSet leaves a null cell out of the XML. The
+   script read "no value in this row" as "no enable column" and counted the row. It now takes the
+   flag from the table's inline schema and counts an empty flag as off, which is how the runtime
+   reads a null boolean (`SkDataRow.Field<T>` returns `default(T)`). 99435554 now reads
+   "0 of 1 enabled", as do the 27 other checked-out orders and templates that had the same false
+   PBF. Every `PaperbandFilterConfiguration` checked has the `Available` column, so the PBF rule
+   can use it. Tables that really have no flag (`MotorConfiguration` on six older orders,
+   `DeviceConfiguration` on 99341889) are now headed "N rows, no enable flag".
 5. **Device IDs aren't document names.** `HachDR900` → `Hach DR3900 UserManual.pdf` needs an explicit
    row in the rules table, keyed on `DeviceID`. A folder-per-brand rule would add TU5200 to a
    DR3900 system.
