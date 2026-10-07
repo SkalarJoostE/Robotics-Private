@@ -22,6 +22,7 @@ Exit code: 0 Succeeded, 2 Warning, 1 Failed or Cancelled.
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string]$OrderNumber,
+    [switch]$Check,
     [switch]$UpgradeUsb,
     [string]$Target,
     [string]$PluginVersion,
@@ -45,6 +46,23 @@ function ConvertTo-TargetRoot {
 # =============================================================================================
 # Headless mode
 # =============================================================================================
+if ($Check) {
+    if (-not $OrderNumber) { throw '-Check needs -OrderNumber.' }
+    $captions = @{}
+    foreach ($s in @(Get-IubCheckSteps)) { $captions[$s.Id] = $s.Caption }
+    $r = Invoke-IubCheckOnly -OrderNumber $OrderNumber -ApplicationFolders $ApplicationFolder -KeepStaging:$KeepStaging `
+        -OnStep { param($id, $status, $detail) if ($status -ne 'running') { Write-Host ('{0,-8} {1,-38} {2}' -f $status, $captions[$id], $detail) } } `
+        -OnLog { param($line) Write-Verbose $line }
+    Write-Host ''
+    Write-Host "Outcome: $($r.Outcome)"
+    foreach ($i in $r.Items) {
+        Write-Host ("  [{0}] {1}" -f $i.Severity, $i.Text)
+        if ($i.Detail) { Write-Host "          $($i.Detail)" }
+    }
+    if ($r.ReportPath) { Write-Host ''; Write-Host "Report: $($r.ReportPath)" }
+    switch ($r.Outcome) { 'Succeeded' { exit 0 } 'Warning' { exit 2 } default { exit 1 } }
+}
+
 if ($UpgradeUsb) {
     if (-not $OrderNumber -or -not $Target) { throw '-UpgradeUsb needs -OrderNumber and -Target.' }
     $root = ConvertTo-TargetRoot -Value $Target -IsFolder:$TargetIsFolder
@@ -191,7 +209,8 @@ function Get-CheckedApplications {
 # Progress + results window (U5, U6)
 # ---------------------------------------------------------------------------------------------
 function New-ProgressForm {
-    param([string]$Title, [object[]]$Steps)
+    # Kind: 'Upgrade' (writes a stick) or 'Check' (Check only, writes nothing but a report).
+    param([string]$Title, [object[]]$Steps, [string]$Kind = 'Upgrade')
     $f = New-Object System.Windows.Forms.Form
     $f.Text = $Title
     $f.Size = New-Object System.Drawing.Size(640, 520)
@@ -227,12 +246,14 @@ function New-ProgressForm {
     $details.Visible = $false
 
     $btnDetails = New-Control Button 16 428 130 28 'Show details  v'
+    $btnReport = New-Control Button 396 428 110 28 'Open report'
+    $btnReport.Visible = $false
     $btnClose = New-Control Button 516 428 100 28 'Cancel'
 
-    $f.Controls.AddRange(@($header, $sub, $list, $results, $details, $btnDetails, $btnClose))
+    $f.Controls.AddRange(@($header, $sub, $list, $results, $details, $btnDetails, $btnReport, $btnClose))
     $ctx = @{
-        Form = $f; Header = $header; Sub = $sub; List = $list; Rows = $rows; Results = $results
-        Details = $details; BtnDetails = $btnDetails; BtnClose = $btnClose; Tick = 0; LogIndex = 0
+        Form = $f; Header = $header; Sub = $sub; List = $list; Rows = $rows; Results = $results; Kind = $Kind
+        Details = $details; BtnDetails = $btnDetails; BtnReport = $btnReport; BtnClose = $btnClose; Tick = 0; LogIndex = 0
         Done = $false; Writing = $false; Sync = $null; PowerShell = $null; Handle = $null; Timer = $null
     }
     $f.Tag = $ctx
@@ -243,6 +264,11 @@ function New-ProgressForm {
         $c.Details.Visible = $show
         $c.BtnDetails.Text = if ($show) { 'Hide details  ^' } else { 'Show details  v' }
         $c.Form.Height = if ($show) { 700 } else { 520 }
+    })
+    $btnReport.Add_Click({
+        $c = $this.FindForm().Tag
+        $r = $c.Sync.Result
+        if ($r -and $r.ReportPath -and (Test-Path -LiteralPath $r.ReportPath)) { Start-Process -FilePath $r.ReportPath }
     })
     $btnClose.Add_Click({
         $c = $this.FindForm().Tag
@@ -310,7 +336,19 @@ function Show-Outcome {
     }
     $written = $r -and $r.Written
     $testRun = $r -and $r.TestMode
+    if ($Ctx.Kind -eq 'Check') {
+        # Check only writes nothing, so the texts are about the USB that would be made.
+        switch ($outcome) {
+            'Succeeded' { $Ctx.Header.ForeColor = $colorGreen; $Ctx.Header.Text = 'CHECK OK - nothing missing'; $Ctx.Sub.Text = 'Nothing was written. The report lists everything the USB would contain.' }
+            'Warning'   { $Ctx.Header.ForeColor = $colorOrange; $Ctx.Header.Text = 'CHECK - with warnings'; $Ctx.Sub.Text = 'Look at the items below; the report has the full USB contents.' }
+            'Cancelled' { $Ctx.Header.ForeColor = $colorGray; $Ctx.Header.Text = 'CHECK CANCELLED'; $Ctx.Sub.Text = '' }
+            default     { $Ctx.Header.ForeColor = $colorRed; $Ctx.Header.Text = 'CHECK FAILED - this USB cannot be made yet'; $Ctx.Sub.Text = 'Fix what is listed below and check again.' }
+        }
+        $outcome = '(shown)'
+    }
+    if ($r -and $r.PSObject.Properties['ReportPath'] -and $r.ReportPath) { $Ctx.BtnReport.Visible = $true }
     switch ($outcome) {
+        '(shown)' { }
         'Succeeded' {
             $Ctx.Header.ForeColor = $colorGreen
             if ($testRun) { $Ctx.Header.Text = 'TEST RUN OK - nothing was written'; $Ctx.Sub.Text = 'Everything above the line ran for real; the USB stick was not touched.' }
@@ -346,21 +384,36 @@ function Show-Outcome {
 }
 
 function Start-UpgradeRun {
-    # Runs Invoke-IubUpgradeUsb in a background runspace so the window stays responsive.
     param($Ctx, [string]$Order, [string]$TargetRoot, [string]$Plugin, [string[]]$Applications, [bool]$TestMode)
+    Start-BackgroundRun -Ctx $Ctx -Function 'Invoke-IubUpgradeUsb' -Parameters @{
+        OrderNumber = $Order; TargetRoot = $TargetRoot; PluginVersion = $Plugin; ApplicationFolders = $Applications; WhatIf = $TestMode
+    }
+}
+
+function Start-CheckRun {
+    param($Ctx, [string]$Order, [string[]]$Applications)
+    Start-BackgroundRun -Ctx $Ctx -Function 'Invoke-IubCheckOnly' -Parameters @{ OrderNumber = $Order; ApplicationFolders = $Applications }
+}
+
+function Start-BackgroundRun {
+    # Runs one engine function in a background runspace so the window stays responsive; the
+    # timer copies its progress into the window (Update-ProgressView).
+    param($Ctx, [string]$Function, [hashtable]$Parameters)
     $sync = [hashtable]::Synchronized(@{
         Steps = [hashtable]::Synchronized(@{}); Log = [System.Collections.ArrayList]::Synchronized((New-Object System.Collections.ArrayList))
         Done = $false; Cancel = $false; Result = $null; Error = $null
     })
     $Ctx.Sync = $sync
     $bg = {
-        param($EnginePath, $Order, $TargetRoot, $Plugin, $Applications, $TestMode, $Sync)
+        param($EnginePath, $Function, $Parameters, $Sync)
         try {
             . $EnginePath
-            $onStep = { param($id, $status, $detail) $Sync.Steps[$id] = @{ Status = $status; Detail = [string]$detail } }.GetNewClosure()
-            $onLog = { param($line) [void]$Sync.Log.Add(('{0:HH:mm:ss}  {1}' -f (Get-Date), $line)) }.GetNewClosure()
-            $Sync.Result = Invoke-IubUpgradeUsb -OrderNumber $Order -TargetRoot $TargetRoot -PluginVersion $Plugin `
-                -ApplicationFolders $Applications -OnStep $onStep -OnLog $onLog -CancelToken $Sync -WhatIf:$TestMode
+            $p = @{}
+            foreach ($k in $Parameters.Keys) { if ($null -ne $Parameters[$k] -and $Parameters[$k] -ne '') { $p[$k] = $Parameters[$k] } }
+            $p.OnStep = { param($id, $status, $detail) $Sync.Steps[$id] = @{ Status = $status; Detail = [string]$detail } }.GetNewClosure()
+            $p.OnLog = { param($line) [void]$Sync.Log.Add(('{0:HH:mm:ss}  {1}' -f (Get-Date), $line)) }.GetNewClosure()
+            $p.CancelToken = $Sync
+            $Sync.Result = & $Function @p
         } catch {
             $Sync.Error = $_.Exception.Message
         } finally {
@@ -371,7 +424,7 @@ function Start-UpgradeRun {
     $rs.Open()
     $ps = [powershell]::Create()
     $ps.Runspace = $rs
-    [void]$ps.AddScript($bg).AddArgument($ui.EnginePath).AddArgument($Order).AddArgument($TargetRoot).AddArgument($Plugin).AddArgument($Applications).AddArgument($TestMode).AddArgument($sync)
+    [void]$ps.AddScript($bg).AddArgument($ui.EnginePath).AddArgument($Function).AddArgument($Parameters).AddArgument($sync)
     $Ctx.PowerShell = $ps
     $Ctx.Handle = $ps.BeginInvoke()
 
@@ -416,7 +469,7 @@ function New-MainForm {
 
     $btnCheck = New-Control Button 120 210 160 32 'Check only'
     $btnCreate = New-Control Button 290 210 160 32 'Create installer'
-    $btnCheck.Enabled = $false; $btnCreate.Enabled = $false
+    $btnCheck.Enabled = $false; $btnCreate.Enabled = $false   # Check only: enabled once an order is looked up
 
     $sep = New-Control Label 16 256 514 2 ''
     $sep.BorderStyle = 'Fixed3D'
@@ -428,11 +481,11 @@ function New-MainForm {
     $btnUpgrade = New-Control Button 120 306 200 28 'Software upgrade USB'
     $btnUpgrade.Enabled = $false
 
-    $status = New-Control Label 16 352 514 34 'Phase 2b: only "Software upgrade USB" is available. Check only comes in Phase 1, the delivery functions in Phase 3.'
+    $status = New-Control Label 16 352 514 34 'Available: Check only and Software upgrade USB. Create installer, Prepare PC for shipping and Verify installation come in Phase 3.'
     $status.ForeColor = $colorGray
 
     $tip = New-Object System.Windows.Forms.ToolTip
-    $tip.SetToolTip($btnCheck, 'Not built yet (Phase 1).')
+    $tip.SetToolTip($btnCheck, 'What the delivery USB would contain and what is missing. Writes nothing; no stick needed.')
     $tip.SetToolTip($btnCreate, 'Not built yet (Phase 3).')
     $tip.SetToolTip($btnPrepare, 'Not built yet (Phase 3).')
     $tip.SetToolTip($btnVerify, 'Not built yet (Phase 3).')
@@ -441,7 +494,8 @@ function New-MainForm {
     $f.Controls.AddRange(@($txt, $btnLookup, $info, $cmb, $btnRefresh, $erase, $btnCheck, $btnCreate, $sep, $btnPrepare, $btnVerify, $btnUpgrade, $status))
     $f.AcceptButton = $btnLookup
 
-    $ui.Main = @{ Form = $f; Order = $txt; Lookup = $btnLookup; Info = $info; Drive = $cmb; Erase = $erase; Upgrade = $btnUpgrade; Refresh = $btnRefresh }
+    $ui.Main = @{ Form = $f; Order = $txt; Lookup = $btnLookup; Info = $info; Drive = $cmb; Erase = $erase; Upgrade = $btnUpgrade; Check = $btnCheck; Refresh = $btnRefresh }
+    $btnCheck.Add_Click({ Invoke-CheckFlow })
 
     $btnLookup.Add_Click({ Invoke-OrderLookup })
     $txt.Add_TextChanged({
@@ -505,6 +559,22 @@ function Update-EraseText {
 
 function Update-MainButtons {
     $ui.Main.Upgrade.Enabled = [bool]$ui.Order -and ($ui.TestMode -or $ui.Main.Drive.SelectedIndex -ge 0)
+    $ui.Main.Check.Enabled = [bool]$ui.Order   # writes nothing, so no stick is needed
+}
+
+function Invoke-CheckFlow {
+    # Check only (U10): every application folder of the order, no confirmation needed.
+    $o = $ui.Order
+    if (-not $o) { return }
+    $progress = New-ProgressForm -Title "Check only - $($o.OrderNumber)" -Steps @(Get-IubCheckSteps) -Kind 'Check'
+    $ui.Poll.Stop()
+    try {
+        Start-CheckRun -Ctx $progress.Tag -Order $o.OrderNumber -Applications @($o.ApplicationFolders)
+        [void]$progress.ShowDialog($ui.Main.Form)
+    } finally {
+        $progress.Dispose()
+        $ui.Poll.Start()
+    }
 }
 
 function Invoke-OrderLookup {
@@ -604,8 +674,30 @@ if ($SmokeTest) {
         "smoke $outcome : '$($ctx.Header.Text)'"
         $p.Dispose()
     }
-    # With -OrderNumber: a real test-mode run through the background runspace, as the window does it.
+    # Check only rendering from fake data.
+    $p = New-ProgressForm -Title 'smoke check' -Steps @(Get-IubCheckSteps) -Kind 'Check'
+    $ctx = $p.Tag
+    $ctx.Sync = @{ Steps = @{ network = @{ Status = 'ok'; Detail = '' }; report = @{ Status = 'ok'; Detail = 'x.html' } }
+                   Log = [System.Collections.ArrayList]@('line 1', 'line 2'); Done = $true; Error = $null
+                   Result = [pscustomobject]@{ Kind = 'Check'; Outcome = 'Warning'; Written = $false; TestMode = $false; ReportPath = 'C:\nowhere.html'
+                                               Items = @((New-IubItem Warning 'To check (not on the USB): x' 'rule')) } }
+    Update-ProgressView -Ctx $ctx
+    if ($ctx.Header.Text -ne 'CHECK - with warnings') { throw "smoke check: header '$($ctx.Header.Text)'" }
+    "smoke check render: '$($ctx.Header.Text)'"
+    $p.Dispose()
+
+    # With -OrderNumber: a real Check only run and a real test-mode upgrade run through the
+    # background runspace, as the window does them.
     if ($OrderNumber) {
+        $p = New-ProgressForm -Title 'smoke live check' -Steps @(Get-IubCheckSteps) -Kind 'Check'
+        $ctx = $p.Tag
+        Start-CheckRun -Ctx $ctx -Order $OrderNumber -Applications @()
+        $deadline = (Get-Date).AddMinutes(5)
+        while (-not $ctx.Done -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; Update-ProgressView -Ctx $ctx }
+        if (-not $ctx.Done) { throw 'smoke live check: did not finish within 5 minutes' }
+        "smoke live check: '$($ctx.Header.Text)', report: $($ctx.Sync.Result.ReportPath)"
+        foreach ($id in $ctx.Rows.Keys) { "   {0,-9} {1,-2} {2}" -f $id, $ctx.Rows[$id].Text, $ctx.Rows[$id].SubItems[2].Text }
+        $p.Dispose()
         $p = New-ProgressForm -Title 'smoke live' -Steps @(Get-IubUpgradeSteps)
         $ctx = $p.Tag
         Start-UpgradeRun -Ctx $ctx -Order $OrderNumber -TargetRoot 'Z:\' -Plugin '' -TestMode $true

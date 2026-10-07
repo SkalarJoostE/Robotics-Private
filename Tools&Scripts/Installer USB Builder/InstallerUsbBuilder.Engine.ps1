@@ -818,6 +818,9 @@ function Invoke-IubUpgradeUsb {
     $result
 }
 
+# The delivery USB (Check only, Phase 1) lives in its own file.
+. (Join-Path $PSScriptRoot 'InstallerUsbBuilder.Delivery.ps1')
+
 function Remove-IubStaleStaging {
     # Staging folders are a few hundred MB; drop any left behind by a crashed or -KeepStaging run
     # more than a day ago.

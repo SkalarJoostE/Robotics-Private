@@ -4,13 +4,46 @@ Builds the USB sticks that go out with a robot. The design, the decisions behind
 and what is still open are in
 [`md documents\Assessments & Plans\Installer USB Builder - Plan.md`](../../md%20documents/Assessments%20&%20Plans/Installer%20USB%20Builder%20-%20Plan.md).
 
-**Status (2026-10-07): Phase 2b.** Only the **Software upgrade USB** side function works. The other
-buttons are in the window but disabled:
+**Status (2026-10-07): Phases 1 and 2b.** **Check only** and **Software upgrade USB** work.
+*Create installer*, *Prepare PC for shipping* and *Verify installation* (Phase 3) are in the window
+but disabled.
 
-| Button | Phase |
+## Check only (Phase 1)
+
+Look up the order, press **Check only**. No stick needed, and nothing is written except a report. It
+works out what the order's **delivery** USB would contain and where every file comes from:
+
+| Part | Source |
 |---|---|
-| Check only | 1 |
-| Create installer, Prepare PC for shipping, Verify installation | 3 |
+| Template | The order's SVN copy history; renames are followed back to `/templates/Template <name>/` |
+| Software | A fresh `svn export` of the application folder(s) and `bin` |
+| Core | Must be a released core (U7) |
+| Plugin installer | The order's own `Plugins:` version (D1) |
+| Hardware | `DeviceConfiguration`, `DiluterConfiguration`, `Probes` and `PaperbandFilterConfiguration`, read the way `Extract-SystemProfile.ps1` reads them |
+| Calibration certificates | The serial-number folder |
+| Signed test certificates | The order folder |
+| Method PDFs | Keyed on the certificate names |
+
+The result is Succeeded, Warning or Failed (U7). **Open report** shows a self-contained HTML page with
+the full USB contents. Reports go to `%TEMP%\InstallerUsbBuilder\Reports\`.
+
+All choices come from **`installer-rules.json`**. That file is the allowlist (principle 5), and every
+row records its evidence (`basis`). `status: toCheck` rows are proposed but not copied (principle 8):
+they show up as warnings until the Lab answers the open questions. A new meter type gives *Failed:
+"No rule for device X"*; adding a row to `devices` fixes it. That's a data change, not a code change.
+
+**Checked against the Lab's own USBs** (`Compare-IubManifestToBackup`, 2026-10-07):
+- **99445277:** identical (31 of 31 files).
+- **Every other difference** comes from a known finding:
+  - LoupeClient and the Metrohm documents are *to check*;
+  - calibration certificates go in `Certificate of Calibration\` (finding 18);
+  - the Lab copied the whole WTW folder on 99445861 (finding 17);
+  - the Lab's leaked files on 99445669 are left off;
+  - the tool **adds the signed certificates missing from 99445669 (5) and 99445796 (2)** (finding 13);
+  - 99445796 gets the correct application zip name (D3).
+
+Check only is for new deliveries. Older software (no enable flag in `DeviceConfiguration`, no SVN
+copy history) gives findings that may not apply, and the result says so.
 
 ## Starting it
 
@@ -65,6 +98,7 @@ E:\  (label 99445669)
 ## Headless (no window)
 
 ```powershell
+.\InstallerUsbBuilder.ps1 -Check -OrderNumber 99445669                     # Check only; prints the findings and the report path
 .\InstallerUsbBuilder.ps1 -UpgradeUsb -OrderNumber 99445669 -Target E: [-PluginVersion 1.79.3] [-WhatIf]
 .\InstallerUsbBuilder.ps1 -UpgradeUsb -OrderNumber 99445669 -Target C:\Temp\usb -TargetIsFolder   # a folder instead of a stick
 .\InstallerUsbBuilder.ps1 -SmokeTest [-OrderNumber 99445669]   # builds the forms; with an order also a live test-mode run
@@ -77,6 +111,8 @@ Exit code: 0 Succeeded, 2 Warning, 1 Failed or Cancelled.
 | File | |
 |---|---|
 | `InstallerUsbBuilder.Engine.ps1` | All logic, as functions that can be used on their own (dot-source it). Network check, order lookup and export, release lookup, drive listing, erase, label, write, verify, and `Invoke-IubUpgradeUsb`. |
+| `InstallerUsbBuilder.Delivery.ps1` | The delivery USB: rules, template from SVN history, hardware tables, certificates, the manifest, the HTML report, the comparison with a backup zip, and `Invoke-IubCheckOnly`. Dot-sourced by the engine. |
+| `installer-rules.json` | The rules table (plan principle 3): what goes on a delivery USB, from where, with the evidence for each row. |
 | `InstallerUsbBuilder.ps1` | The WinForms window, the headless mode and the smoke test. The run happens in a background runspace so the window stays responsive. |
 
 ## Verified (2026-10-07, order 99445669)
