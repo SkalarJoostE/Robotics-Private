@@ -9,7 +9,9 @@
 > now have known sources, findings 11–19 are new, a **draft rules table** exists, D1 is revised
 > (the order's own plugin version) and D5 is confirmed.
 > Per-order maps: `Installer USB Builder - Reference USBs\usb-map-<order>.md`.
-> What remains: J2 (Joost and a colleague) and a Lab session (L1, L3–L9).
+> **2026-10-07:** the UI and the Lab's workflow are designed (**How the Lab uses it**, U1–U13), plus
+> a side function for R&D's own software-upgrade USBs (U14–U17, Phase 2b).
+> What remains: J2 (Joost and a colleague), U-a to U-d, and a Lab session (L1, L3–L9).
 > Owner: Joost. Users: Lab.
 
 ## Why
@@ -363,7 +365,7 @@ evidence backs each row: *practice 6/6* means all six USBs agree, *Lab* means it
    - a read-only plan first, then an explicit yes, then writes;
    - `-WhatIf` on every write.
 
-   Phases 1–2 can run as plain scripts. The UI is needed by Phase 3.
+   The window exists from Phase 1 (see **How the Lab uses it**).
 3. **Rules in one table, not in code.** A single data file maps template / device ID / test kit to
    documents, drivers, certificates and methods. Joost maintains it; the Lab can read it.
 4. **Derive, don't ask.** The template comes from the order's SVN copy-from path (finding 11; not
@@ -379,14 +381,285 @@ evidence backs each row: *practice 6/6* means all six USBs agree, *Lab* means it
 8. **Better nothing than wrong** (the guide's rule for methods). When a rule can't pick a document
    with confidence, the tool leaves it out and lists it under *to check*. It never guesses.
 
+## How the Lab uses it (UI design, 2026-10-07)
+
+Worked out with Joost on 2026-10-07; the choices are recorded as U1–U12 under **Decisions**. The
+starting point (U1): **the Lab only opens the tool when they are ready to make the USB.** So it is
+not a dashboard to keep open during the build. It is one action, *Create installer*, followed by two
+smaller ones that happen later: *Prepare PC for shipping*, and the second person's *Verify
+installation*.
+
+### Starting it
+
+A `.bat` on the share opens the window (U2). There is nothing to install. It runs **on the robot or
+test PC itself**, where the software was tested (U3), started from the share, never from the software
+folder it will later remove (D8). That PC therefore needs to reach the share, `\\build` and SVN.
+The tool checks all three first and says which one it can't reach, rather than failing halfway.
+
+```
++--------------------------------------------------+
+| Installer USB Builder                            |
++--------------------------------------------------+
+| Order number:  [99445669        ]                |
+|   99445669 Germany ROB                           |
+|   sn 266698 . Waters . SP2000-2                  |
+|                                                  |
+| USB stick:     [E:  SanDisk 32 GB  "OLD"    v]   |
+|                ! everything on E: is erased      |
+|                                                  |
+|        [ Check only ]   [ Create installer ]     |
+|--------------------------------------------------|
+| Later:  [ Prepare PC for shipping ]              |
+|         [ Verify installation ]                  |
++--------------------------------------------------+
+```
+
+- **Order number:** typed or pasted. The tool shows the order folder, serial, template and frame it
+  resolved, so a typo is visible before anything runs.
+- **USB stick (U4):** a dropdown of **removable drives only**, pre-selected when exactly one is
+  plugged in. Each entry shows its size and current label, so the Lab sees what will be erased.
+  There is no stick choice in *Check only*.
+- **Check only (U10)** runs the same process and opens the same results window, but writes no USB,
+  no backups and deletes nothing. In Phase 1 it is the only enabled button. It stays afterwards, for
+  example to check "are the certificates signed yet?" a few days before shipping.
+- **The two *Later* buttons** are described below. They are disabled until their conditions are met.
+
+### Create installer: the progress window
+
+Every step has a spinner or a tick, plus a one-line result. *Show details* opens the full log of
+what was fetched from where (U6).
+
+```
++--------------------------------------------------+
+| Creating installer - 99445669  SKR266698         |
++--------------------------------------------------+
+|  v Network: share, build server, SVN             |
+|  v Software checkout          r40050             |
+|  v Core 1.143.2               release (Archive)  |
+|  v Plugin installer 1.79.3    Archive            |
+|  > Documents                  12 / 23            |
+|    Certificates                                  |
+|    Methods                                       |
+|    Pre-commit checks                             |
+|    ---------------- nothing written above ----   |
+|    Backups to order folder                       |
+|    Write USB                                     |
+|    Verify USB                                    |
+|    Report                                        |
+|                                                  |
+|  [ Show details v ]                [ Cancel ]    |
++--------------------------------------------------+
+```
+
+**Everything is collected and checked first, in a local staging folder (U5).** Only when nothing
+critical is missing does the tool write the backups and then erase and write the stick. On *Failed*
+the stick is untouched and no backup is written. *Cancel* is safe up to the line; after it the tool
+finishes the step in progress and reports what was written.
+
+The written half does this:
+- **Backups** (U9) go to the order folder (finding 7): the run data on this PC, and a zip of exactly
+  what goes on the stick.
+- **Write USB:** erase the stick and set the label `SKR<serial>`.
+- **Verify USB:** re-read every file on the stick and compare it with the staging folder.
+- **Report:** the delivery report goes on the stick and in `Installer Backup\` (U12).
+
+### The results window
+
+There are three outcomes. Each item says what is wrong and where the tool looked.
+
+```
++--------------------------------------------------+
+|  WARNING - installer created                     |
+|  USB E: SKR266698 written and verified           |
+|  Backups saved to the order folder               |
++--------------------------------------------------+
+|  ! No signed certificates found (0 of 5)         |
+|      looked in: Undersigned docs\certificates... |
+|  ? Metrohm electrode documents          [ Add ]  |
+|  ? 266698ST.pdf (serial-number folder)  [ Add ]  |
+|  i Plugin 1.79.4 is released; this system was    |
+|    tested on 1.79.3 (installed: 1.79.3)          |
++--------------------------------------------------+
+| [ Open report ]  [ Prepare PC for shipping > ]   |
+|                                     [ Close ]    |
++--------------------------------------------------+
+```
+
+| Outcome | Meaning | Buttons |
+|---|---|---|
+| **Succeeded** (green) | Everything the rules name was found, the stick is written and verified | Open report, Prepare PC for shipping, Close |
+| **Warning** (orange) | Installer created, but something should be looked at | Same, plus *Add* per *to check* item |
+| **Failed** (red) | Something critical is missing. **Stick untouched, nothing backed up**; each item says what to fix | Open report, Retry, Close |
+
+**Failed (U7)** means any of these:
+- the SVN checkout fails;
+- the order's core is not a release (beta check);
+- the order's plugin version is in no archive;
+- the stick is too small, a write fails, or the read-back differs;
+- an enabled `DeviceConfiguration` device has no `… serial <serial>.pdf` in the serial-number folder;
+- no rule names a manual for the template or for an enabled device. This is how a new meter type
+  shows up: someone has to add it to the rules table.
+
+**Warning** covers the rest:
+- no signed certificates (D5);
+- *to check* items (principle 8);
+- a pre-commit check that needs a look (D9);
+- a newer plugin release than the one installed (D1, for information).
+
+**Items the tool can't decide (U8)** are left off the stick, following principle 8. The Lab can still
+add one from the results window: *Add* copies that file to the stick and into the backup, and the
+report records it as *added by operator*. Nothing has to be rerun.
+
+### Running it again
+
+Every run is a **full rebuild** (U11): no updating in place. Earlier backups are kept, each with a
+date in its name (and the time when there are two on one day). The new report has a **"changed since
+the previous backup"** section, for example `+ 5 signed certificates`, `~ software r40048 → r40050`.
+This is the re-check finding 14 asks for.
+
+### Prepare PC for shipping
+
+Available from the results window and from the main window, and **only when a backup made by the
+tool exists for this order with no run data newer than it** (U9). Concretely, no file in `Analyses`,
+`DeletedAnalyses`, `Log` or `Backup XML Files` is newer than the backup. Otherwise the button says
+"make the installer again first". One confirmation lists exactly what will be removed:
+
+```
++--------------------------------------------------+
+| Prepare PC for shipping - 99445669               |
+|  Backup found: 2026-10-06 10:14             v    |
+|  Will delete:  Analyses, DeletedAnalyses, Log,   |
+|                Backup XML Files                  |
+|  Then remove the software and uninstall          |
+|  SkalarPackage (for the second check, D8)        |
+|                                                  |
+|     [ Delete and uninstall ]     [ Cancel ]      |
++--------------------------------------------------+
+```
+
+After the cleanup the tool says: *ask a colleague to install from USB SKR266698, then press Verify
+installation*. Removing the log copy job joins this step once that job exists (D6). L5 settles what
+else belongs here.
+
+### Verify installation (the second check)
+
+A second person installs from the stick, opens the tool from the share and presses *Verify
+installation* (U12). The tool reads the installed core and plugin versions and compares the
+installed application files with the file list and hashes in the report. Then it asks for that
+person's name. The outcome (who checked, when, match or mismatch per item) is added to the report in
+`Installer Backup\`, and to the copy on the stick if the stick is plugged in.
+
+```
++--------------------------------------------------+
+| Verify installation - 99445669                   |
+|  v Core 1.143.2            = report              |
+|  v Plugins 1.79.3          = report              |
+|  v Application files       = report (r40050)     |
+|  Checked by: [                ]                  |
+|                               [ Record ]         |
++--------------------------------------------------+
+```
+
+### The delivery report
+
+One self-contained **HTML** file (U12), colour-coded like the results window and printable. It goes
+on the stick's root (`Delivery report <order>.html`) and next to the backup in `Installer Backup\`.
+The customer will see it on the stick, so it is written as a delivery record, not as a log. Its
+content is principle 7, the "changed since the previous backup" section, and the second-check
+outcome. The full step log goes into the order-folder copy only.
+
+### Under the window
+
+**One PowerShell 5.1 script with a WinForms window (U13)**, started by the `.bat`. It is the same
+stack as the workspace's other tools and needs no install on any lab or robot PC. The engine is a set
+of functions the window calls, one per step, each runnable on its own with `-WhatIf` (principle 2).
+The rules table is a separate data file (principle 3), so a new meter type is a data change, not a
+code change.
+
+### Side function: Software upgrade USB
+
+For R&D's own field upgrades (a Win11 upgrade, a diluter upgrade, new functionality in an installed
+system), Joost makes a much smaller USB by hand today:
+1. get the latest plugins;
+2. put the installer and the order's software on a stick, with no documents;
+3. rename the stick to the order number.
+
+The tool automates this with a **small side button on the same window** (U14). It reuses the order
+number and the stick dropdown.
+
+```
+| Order number: [99445669   ]                      |
+| USB stick:    [E:  16 GB   v]                    |
+|   [ Check only ]   [ Create installer ]          |
+|--------------------------------------------------|
+| Later:  [ Prepare PC ]  [ Verify installation ]  |
+| Other:  [ Software upgrade USB ]                 |
+```
+
+The button opens one small confirmation, then the usual progress and results windows:
+
+```
++--------------------------------------------------+
+| Software upgrade USB - 99445669                  |
+|  Software:  SVN r40112, 2026-10-07, Joost        |
+|             "Diluter upgrade Kloehn -> Hamilton" |
+|  Plugin installer: [1.79.4 (latest)        v]    |
+|      order's software says: Plugins 1.78.3       |
+|  USB E: will be erased and labelled 99445669     |
+|                                                  |
+|          [ Create upgrade USB ]   [ Cancel ]     |
++--------------------------------------------------+
+```
+
+- **Content (U15): exactly the plugin release zip's layout, at the root of the stick.** The tool
+  unpacks `Robotics Plugin <ver> Release.zip`, which gives `SkalarPackageInstaller.exe` plus empty
+  `Application\` and `Core\` folders. Then it adds `Application\<order> <serial>.zip` and
+  `Core\bin.zip`, built as for the delivery USB, from a fresh SVN checkout at HEAD. There are no
+  documents, certificates, drivers, tools or methods.
+
+  ```
+  E:\  (label 99445669)
+    SkalarPackageInstaller.exe
+    Application\99445669 266698.zip
+    Core\bin.zip
+  ```
+- **The software is SVN HEAD.** The confirmation shows the latest commit's revision, date, author and
+  message, so it is visible before writing whether the upgrade commit is in. The upgrade work itself
+  stays in `C:\SPD_Projects\`, which the tool never reads; whatever isn't committed isn't on the stick.
+- **Plugin installer (U16):** the latest release is pre-selected, as today. The dropdown also lists
+  the archive versions, in case an upgrade needs a specific one. The order's own `Plugins:` line is
+  shown beside it, for information.
+- **Label:** the order number (8 characters, within the label limit), not `SKR<serial>`.
+- **Same safety as Create (U5):** collect and check first, then erase, write and read back.
+- **Not part of it:** no backups, no delivery report, no pre-commit checks, no cleanup or second
+  check. The results window is the only record.
+- **Failed vs Warning (U17):** the SVN checkout or a USB write or verify problem is *Failed*. A bin
+  that is not a released core is only a **warning** here ("bin 1.144.0.3 is not a released core"),
+  because upgrades can legitimately use a newer or test core. On a delivery USB it stays *Failed* (U7).
+
+It runs on whatever PC it is started on: Joost's own PC, not a robot PC.
+
+### Still to settle for the UI
+
+- **U-a** Should `RobotSettings.BypassCoverLock = true` be *Failed* rather than a warning? It is a
+  safety setting on a machine that is about to ship. D9 lists it read-only today.
+- **U-b** Where the `.bat` and the script live on the share, and how a new version gets there from
+  `Tools&Scripts\` (by hand, or a small publish script).
+- **U-c** Whether erasing the stick (format) and setting its label need admin rights on the robot
+  PC. If they do, the fallback is to delete the stick's contents and set the label, if that works
+  without admin. To verify on a real robot PC in Phase 3.
+- **U-d** Whether every robot or test PC can actually reach the share, `\\build` and SVN. The design
+  assumes it can (U3).
+
 ## Proposed phases
 
 | Phase | Delivers | Writes |
 |---|---|---|
 | **0 — Ground truth** | *Started 2026-10-02. Six reference USBs mapped by 2026-10-06; draft rules table written. Left: J2 and the Lab session.* Confirm today's real procedure with the Lab (the guide is from 2022). Collect 2–3 more reference USBs; the `Installer Backup\` folders make this cheap. Good candidates: 99444892 / 99445277 / 99445861 (BOD), 99445669 (Waters, five parameters), 99445796 (Soil pH/EC). Derive the rules table from them | Nothing |
-| **1 — Manifest only** | `<order>` → "this is what the USB would contain, from where, and what's missing". Run it on the reference orders and diff it against their `Installer Backup\` zips. No need to wait for the Lab to make a new USB | Nothing |
-| **2 — Build to a folder** | Same, assembled into a local folder; diff it against the hand-made USB | Local folder only |
-| **3 — Full delivery (interactive UI)** | Write to the USB and set its label, write the backups to the order folder, run the pre-commit checks (D9), run the cleanup (plus removing the log copy job, once it exists), then orchestrate the second check (D8). Write the delivery report | USB, order folder, the PC being cleaned |
+| **1 — Manifest only, in the window** | The window with **Check only** as the only enabled button (U10): `<order>` → the progress and results windows say what the USB would contain, from where, and what's missing, and the report is written to a temporary folder. Run it on the reference orders and diff it against their `Installer Backup\` zips. No need to wait for the Lab to make a new USB, and the Lab can try the window early | Nothing (temporary report only) |
+| **2 — Build to a folder** | *Check only* also keeps the staging folder and offers *Open staged folder*; diff it against the hand-made USBs | Local staging folder only |
+| **2b — Software upgrade USB** | The side button (U14–U17). It needs only the checkout, core, plugin and write-and-verify steps, so it can ship before Phase 3. That makes it the **first real USB write, with Joost as the operator**: a low-risk place to settle U-c (admin rights for formatting and labelling) before the Lab relies on it | The stick |
+| **3 — Full delivery** | **Create installer** (backups, write the stick and its label, verify it, report), **Prepare PC for shipping** (the cleanup, plus removing the log copy job once it exists) and **Verify installation** (the second check, D8). Pre-commit checks (D9) run inside Create | USB, order folder, the PC being cleaned |
 
 ## Decisions (Joost, 2026-10-02)
 
@@ -401,7 +674,29 @@ evidence backs each row: *practice 6/6* means all six USBs agree, *Lab* means it
 | D7 | Cover-lock bypass location | `RobotSettings.BypassCoverLock` in `SkalarPack.Robot.Tables.xml` (`false` in 99435554). It appears twice in that file; check which row the application reads before building a check on it |
 | D8 | Second check (guide §6) | **Still done, and the tool orchestrates it.** Last step: remove the software and uninstall SkalarPackage, so a second person can reinstall from the USB. The tool then guides that reinstall and records the outcome (who checked, whether the installed versions match the report) in the delivery report. It follows that **the tool must not run from the folder it removes**: it runs from the workspace, the share or the USB |
 | D9 | Pre-commit checks (guide §2.2) | **Wanted, read-only, listed in the report:** `RobotSettings.BypassCoverLock` is off; only Analysis, Planner and Options are visible on the main screen; each application's default `Settings` row is listed for the Lab to confirm, since "right" can't be judged statically. **The `DD-MM-YYYY` date in `ApplicationInfo.txt` is fine and is not checked.** Not yet looked up: where the main-screen visibility is stored |
-| D10 | Form of the tool | **An interactive UI**, not a `.bat` menu (principle 2) |
+| D10 | Form of the tool | **An interactive UI**, not a `.bat` menu (principle 2). Worked out on 2026-10-07: see **How the Lab uses it** and U1–U13 |
+
+### UI decisions (Joost, 2026-10-07)
+
+| # | Question | Decision |
+|---|---|---|
+| U1 | Shape of the tool | **One action, not a dashboard.** The Lab opens it only when ready to make the USB: order number, *Create installer*, a progress window, then a results window that says Succeeded, Warning or Failed |
+| U2 | How it starts | A **`.bat` on the share**; the order number is typed in the window |
+| U3 | Where it runs | **On the robot or test PC itself**, from the share (D8) |
+| U4 | Which stick | A **dropdown of removable drives**, pre-selected when exactly one is plugged in, showing size and label, with a "will be erased" warning |
+| U5 | On a critical problem | **Collect and check first, write nothing.** The stick is untouched and no backup is written; the result says what to fix |
+| U6 | Progress window | **Steps with a tick each, plus an expandable detail log** |
+| U7 | What is *Failed* | Software, core or plugin installer missing or not a release; USB write or verify problems; a missing meter certificate; no manual rule for the template or an enabled device. Everything else is a warning |
+| U8 | Items the tool can't decide | **Left off and listed as a warning**, with an *Add* button per item in the results window |
+| U9 | Backups, cleanup, second check | **Backups are part of Create**. *Prepare PC for shipping* is a separate button, offered after Succeeded or Warning, and enabled only when a tool-made backup exists with no newer run data |
+| U10 | The read-only mode | **A *Check only* button that stays**, the only enabled button in Phase 1 |
+| U11 | Running it again | **A full rebuild every time; earlier backups are kept** (dated), and the report says what changed since the previous one |
+| U12 | Second check and report | ***Verify installation*** compares the installed versions and files with the report and records the checker's name. The report is **self-contained HTML, on the stick and in `Installer Backup\`** |
+| U13 | Technology | **PowerShell 5.1 + WinForms**, one script plus a rules data file, started by the `.bat` |
+| U14 | Software upgrade USB: where | A **small side button on the same window**, sharing the order number and the stick dropdown |
+| U15 | Software upgrade USB: content | **The plugin release zip's layout** at the stick's root (`SkalarPackageInstaller.exe`, `Application\<order> <serial>.zip`, `Core\bin.zip`), from SVN HEAD; nothing else. Label = the order number |
+| U16 | Software upgrade USB: plugin | **The latest release, pre-selected, with a dropdown to pick an archive version**; the order's own `Plugins:` line is shown for information |
+| U17 | Software upgrade USB: beta core | **A warning, not Failed** (upgrades can use a newer or test core). A delivery USB keeps it as Failed |
 
 ## Open questions
 
