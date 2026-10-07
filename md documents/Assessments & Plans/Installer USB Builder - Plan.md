@@ -453,8 +453,9 @@ what was fetched from where (U6).
 
 **Everything is collected and checked first, in a local staging folder (U5).** Only when nothing
 critical is missing does the tool write the backups and then erase and write the stick. On *Failed*
-the stick is untouched and no backup is written. *Cancel* is safe up to the line; after it the tool
-finishes the step in progress and reports what was written.
+the stick is untouched and no backup is written. *Cancel* is safe up to the line. After it, *Cancel*
+is disabled and the run completes, because a half-written stick is worse than a finished one (as
+built in Phase 2b).
 
 The written half does this:
 - **Backups** (U9) go to the order folder (finding 7): the run data on this PC, and a zip of exactly
@@ -648,6 +649,9 @@ It runs on whatever PC it is started on: Joost's own PC, not a robot PC.
 - **U-c** Whether erasing the stick (format) and setting its label need admin rights on the robot
   PC. If they do, the fallback is to delete the stick's contents and set the label, if that works
   without admin. To verify on a real robot PC in Phase 3.
+  *As built in Phase 2b:* "erase" deletes the stick's contents and never formats. The label is
+  tried three ways without admin rights (`Set-Volume`, `Win32_Volume`, the Explorer shell). If all
+  three fail, the result is a warning to rename the stick by hand. Not yet run on a real stick.
 - **U-d** Whether every robot or test PC can actually reach the share, `\\build` and SVN. The design
   assumes it can (U3).
 
@@ -658,7 +662,7 @@ It runs on whatever PC it is started on: Joost's own PC, not a robot PC.
 | **0 — Ground truth** | *Started 2026-10-02. Six reference USBs mapped by 2026-10-06; draft rules table written. Left: J2 and the Lab session.* Confirm today's real procedure with the Lab (the guide is from 2022). Collect 2–3 more reference USBs; the `Installer Backup\` folders make this cheap. Good candidates: 99444892 / 99445277 / 99445861 (BOD), 99445669 (Waters, five parameters), 99445796 (Soil pH/EC). Derive the rules table from them | Nothing |
 | **1 — Manifest only, in the window** | The window with **Check only** as the only enabled button (U10): `<order>` → the progress and results windows say what the USB would contain, from where, and what's missing, and the report is written to a temporary folder. Run it on the reference orders and diff it against their `Installer Backup\` zips. No need to wait for the Lab to make a new USB, and the Lab can try the window early | Nothing (temporary report only) |
 | **2 — Build to a folder** | *Check only* also keeps the staging folder and offers *Open staged folder*; diff it against the hand-made USBs | Local staging folder only |
-| **2b — Software upgrade USB** | The side button (U14–U17). It needs only the checkout, core, plugin and write-and-verify steps, so it can ship before Phase 3. That makes it the **first real USB write, with Joost as the operator**: a low-risk place to settle U-c (admin rights for formatting and labelling) before the Lab relies on it | The stick |
+| **2b — Software upgrade USB** | *Built 2026-10-07* in `Tools&Scripts\Installer USB Builder\` (see its README). On 99445669, the application zip has the same 279 files as the Lab's USB, and `bin.zip` matches Core 1.143.2. Test mode, the Failed and Cancel paths, and the drive refusals are verified; a real stick is not yet. The side button (U14–U17). It needs only the checkout, core, plugin and write-and-verify steps, so it can ship before Phase 3. That makes it the **first real USB write, with Joost as the operator**: a low-risk place to settle U-c (admin rights for formatting and labelling) before the Lab relies on it | The stick |
 | **3 — Full delivery** | **Create installer** (backups, write the stick and its label, verify it, report), **Prepare PC for shipping** (the cleanup, plus removing the log copy job once it exists) and **Verify installation** (the second check, D8). Pre-commit checks (D9) run inside Create | USB, order folder, the PC being cleaned |
 
 ## Decisions (Joost, 2026-10-02)
