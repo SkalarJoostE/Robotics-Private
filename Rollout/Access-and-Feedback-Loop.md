@@ -378,7 +378,7 @@ answers.
 | Use | Verdict |
 |---|---|
 | **The Tier-1 inbox** (§4) | **Yes — best fit.** Small append-only files, no locking, no concurrency, everyone can already reach it, customer data stays inside the network, nothing new to provision |
-| **An onboarding seed bundle** | **Worth measuring.** A fresh clone has the repo but none of the generated layer — `Sequences/` is git-ignored, so day one is ten SVN template checkouts over VPN plus regeneration. A share holding pre-generated `Sequences\` CSVs and the template `docs\` (including `error-codes.md`) would cut that materially. Caveat: the `Template *` folders are SVN working copies and must still be checked out locally — only the derived artefacts can be shortcut |
+| **An onboarding seed bundle** | **Worth measuring.** A fresh clone has the repo but none of the generated layer — `Sequences/` is git-ignored, so day one is ten SVN template checkouts over VPN plus regeneration. A share holding pre-generated `Sequences\` CSVs and the template `docs\` would cut that materially. Caveat: the `Template *` folders are SVN working copies and must still be checked out locally — only the derived artefacts can be shortcut |
 | **Running the workspace from the share** | **No.** See below |
 | **Hosting the always-on A4 box** | **Probably not that machine.** A file server and a machine that runs an agent are different things; this one would need VPN, SVN, Python and permission to run arbitrary tooling. Ask IT for a small VM rather than putting it on infrastructure others depend on |
 
