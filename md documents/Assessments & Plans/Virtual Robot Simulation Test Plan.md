@@ -1235,3 +1235,465 @@ in the script. `SKV009` was inheriting a stale gate from an unrelated finding. A
   the next real detections are.
 - **Cross-table coherence rules** not yet implemented (unchanged).
 - Machine-readable rule catalogue, CI wiring, evidence bundle (`SIM-015`, Phase 1) — unchanged.
+
+---
+
+## 2026-10-20 — `SIM-006` SSPL surface spike (read only)
+
+**What changed:** a new assessment, `Virtual Robot SSPL Surface Spike.md`. It measures the full surface
+the order software uses to talk to the SP2000 controller, to size the PSD6-style virtual robot
+(SSPL interpreter + robot-state model on a virtual COM pair, software in Normal mode). It covers
+Testkit, BOD, Waters, Soil, Lutum, Waters ALS Canada and order 99407519 (RB-418). It is a static scan,
+checked against the RB-418 `.glf` log (22,198 programs) and against the plugin's `Translator\SP2000_1`.
+No software was changed.
+
+**State:** `SIM-006` is **partly done**. The static corpus and coverage classification exist for six
+trees and one order, plus one real-log census (99407519, 7 Oct). Not yet done: captured program
+corpora from initialization, Park, Syringe Check and a multi-sample run for the other templates.
+
+**Findings that change the plan:**
+
+- **There is one wire protocol, and every command is a program upload.** `SendDirectSSPL` just calls
+  `RunSSPL` in all trees. The controller **echoes every uploaded line**, answers `|` with `A`, and
+  ends execution with `A`. The pack logs each echo as `InterpreterSSPLex: Unexpected default` (101,654
+  per RB-418 session). That noise is the best ground truth for a simulator's transport.
+- **The language that is used is small.** The live code uses about 18 op keywords + 11 `MOTOR`
+  sub-ops, `IF`/`WHILE`/`DEFBLOCK`/`BLOCK`, single-letter variables, the seconds timer `S` and one
+  `$` string register. `SSPLGenerated.cs` is mostly dead: 12–17 live programs per standard template
+  (18–51% of its bytes), and 36 of 157 in ALS Canada (8%). Byte-identical groups: Testkit = 99407519;
+  BOD = Waters = Soil.
+- **The pack path is used everywhere except ALS Canada**, which runs normal analyses through the
+  plugin (`IRobot.Robot` → `Translator`) with `\n` line ends. One virtual controller can serve both.
+- **The virtual-COM route avoids the Review's `DiscardInBuffer` cast blocker**, because the pack opens
+  `COM<PortNumber>` itself. Robot Normal + diluter on the PSD6 simulator + meters in Emulate is
+  possible, because each device has its own emulation flag.
+- **Emulate hides the most on Testkit:** 16 robot-level gates, including every gripper/decap action
+  `70x00`–`74x00`. BOD has 7, Waters/Soil 6, Lutum 9.
+- **The cost is the world model, not the interpreter.** The RB-418 gate (`00x0J` → single-sensor
+  `PORTINBIT(1,8)` = 0 ⇒ CAP) is fully traced, with the minimal state needed to prove recap/put-back.
+- **Two template variants need separate golden traces:** BOD's upload handshake differs, and
+  BOD/Waters/Soil poll `MOTOR(6)` positions during waited moves, where Testkit/Lutum block on
+  `MOTOR(0,…,1)`.
+
+**Still open:**
+
+- **Firmware spec or source (asked of Joost, no answer yet).** Needed for `GRIP`/`READLEVEL`/`LEVEL`
+  return codes, `MOTOR(5)` with 4/5/6 arguments, `MOTOR(3)`/`MOTOR(8)` semantics, speed/accel units →
+  motion time, `S`/variable types, and what the controller does after `E`/`F`/`G`. The standard
+  templates never answer `G`; ALS Canada sends `D`/`W`. None of these is on the 99407519 path.
+- **A `Q`/`L`/`U`/`R` log trace** from an order without `BypassCoverLock`.
+- **`SIM-007` first slice (recommended):** a 99407519 interpreter for its 15 live programs plus the inline
+  and dynamic sites, verified by replaying the 7 Oct log's outgoing programs, then error 121 →
+  method 64 end to end in Normal mode. The spike's §7.4 has the detail.
+- The scanner used here (a lexer over the mirror and `AllScripts.cs`) was a throwaway in a scratch
+  directory. The static pre-check in the spike's §7.1 should be rebuilt as a real tool if `SIM-007` goes ahead.
+- The 99407519 `SkalarPackSolution` mirror is incomplete (4 `Structure\` folders); reprocessing
+  that order is outside this project.
+
+---
+
+## 2026-10-20 — firmware source found; simulator design written (`SIM-007` design)
+
+**Built:** `Virtual Robot Simulator Design.md` (design only, no code). Inputs: the robot firmware repo
+`roboticsonefirmware` (CA16 `2CA16700/robot/appl.cpp` is the SSPL interpreter; motor-board and DTC
+firmware alongside), the in-house TOC simulator (serial, ASP.NET Core) and BV simulator
+(`fwsimulator`, Ethernet) as structural templates, and the 2015 manual `SSPLv1.10.docx`. All three
+repos are cloned at the workspace root, git-ignored.
+
+**Decisions:**
+
+- The route is a **PSD6-style virtual controller on a virtual COM pair, with the robot in Normal
+  mode**. This supersedes the in-process backend and hooks as the main simulation path, because
+  Emulate's bypasses sit inside the pack's actions (16 on Testkit) and no backend behind Emulate can
+  reach them.
+- The **firmware is the oracle**: `appl.cpp` is ported structurally, quirks included, and every rule
+  cites a firmware line. Where the controller is silent about a defect, the simulator also raises a
+  finding.
+- The structure follows the TOC simulator (Web API + Communication projects, System.CommandLine,
+  Swagger, socat Docker modes, release pipeline), plus a test project in the fwsimulator style. A
+  top-down view (new) is fed by a live trace stream and can also replay a `.glf`.
+
+**Firmware facts that correct the spike:** there is no overload/stall reporting (`G`/`D`/`W` are dead
+on 5.1); ESC is a hard reboot; errors are `F\r` + the line (no `SSPL-ERROR n`); expressions evaluate
+left to right with `^` = OR, and a space silently drops a term; variables are 16-bit, and `A0` = `A`.
+The full list is in the design's §11.
+
+**Still open:** field firmware 5.00 (99407519) versus repo 5.1; the TMC429 clock for move timing;
+where the simulator repo lives; which virtual COM driver to standardise on. First slices S0–S3 are
+defined (proof: RB-418 error 121 → method 64 → recap → put-back in Normal mode).
+---
+
+## 2026-10-20 — simulator S0 built and pushed
+
+**Built:** slice S0 of `Virtual Robot Simulator Design.md` in the new private repo
+`SkalarJoostE/Robotic-Simulator`, commit `874342e`. It is cloned at `Robotics-AI\Robotic-Simulator\`
+and git-ignored here.
+
+- `SP2000Simulator.Communication`: a real COM port and an in-memory link.
+- `SP2000Simulator.Firmware`: `Ca16Controller` (boot, prompt loop, `A`/`B`/`C`/`D`/`E`/`L`/`Q`/`R`/`U`/`Z`, ESC reboot, 0x7F pause, pause button) and `SsplInterpreter` (keyword table and prefix dispatch, `END`, `F` + line). Every other keyword fails loudly with `SIM-UNSUPPORTED`.
+- `SP2000Simulator.WebAPI`: TOC-style options and Swagger API.
+- Docker/socat, GitHub Actions CI, and 20 xUnit protocol tests, each citing its firmware line.
+
+**Verified:**
+- Build: 0 warnings under TOC's `.editorconfig`.
+- Tests: 20/20, three runs in a row.
+- Over the HHD pair (simulator on COM1, a scripted PC on COM2), the upload exchange
+  `A` → `PORTOUT(1,0)\r` `END\r` echoes → `A\r` matches the RB-418 log byte for byte, and `L`/`Q` answer `0`.
+
+**Learned while building:** ESC jumps to the power-on reset vector, so RAM, including the program buffer, is zeroed. After a reset, `Z` would dump all 20,000 zero bytes.
+
+**Still open:**
+- S1: the keyword functions, variables and expressions, plus the golden replay of the RB-418 log's `Outgoing data` programs.
+- The assumption behind the cover lock sensor (closed + lock magnet off ⇒ 0) needs a log from an order without `BypassCoverLock`.
+
+---
+
+## 2026-10-20 — simulator S1 built and pushed
+
+**Built:** slice S1 in `SkalarJoostE/Robotic-Simulator`, commit `79dd9b2` (on top of S0 `874342e`).
+
+- `SsplInterpreter` now holds every keyword function of `appl.cpp`, one method each, split into partial files: `Expressions` (`is_var`, `fnd_const`/`fnd_Lconst`/`fnd_Dconst`, `fnd_num`/`fnd_long`, `is_expression`, `cond`), `Flow` (IF/WHILE/FOR/BLOCK, END, WAIT/WAITMS, LOCK/UNLOCK), `Io` (PRINT, CLS, PORTIN/PORTOUT(BIT), GRIP, READLEVEL, LEVEL, MAGNET, PUMP, STIRRER, OPEN/FLUSH/INPUT/GET/INKEY/BINKEY/DINKEY) and `Motor`.
+- Board-facing interfaces in `Boards.cs`, for S2 to implement. `IIoBoards` is implemented by `ControllerHardware` as plain registers, with settable inputs. `IMotionBoards` is a full `MOTOR` parse that calls it, or `SIM-UNSUPPORTED` when no motion boards are fitted. `IAuxPort` serves channels 5–10; an unfitted channel fails loudly on first use.
+- `S` is var[18] driven by `ISimClock.Now` (new). `WAIT(n)` ends on the n-th tick of the 1 s counter. The instant test clock advances on every delay.
+- The findings from design §5, plus hangs (`LOCK`, negative `WAIT`/`WAITMS`), undefined blocks, undefined 710 command numbers, `FLUSH(10)`, and DEFBLOCK inside a skip.
+- Still unsupported, all failing loudly: `CHAR`, `INT2ASC`, `DILK`, `LIFT`, `TUBEA`, `BRIDGE`, `TROLLEY`. Aux statements are ported; only the devices are missing.
+
+**Golden replay** (`GoldenReplayTests`, fixture `SP2000Simulator.Tests\Fixtures\rb418-99407519-programs.json`):
+- Every `Skalar.Pack1.SSPL*` message of the RB-418 log was pulled through the Loupe MCP by a script, so 17.4k messages never entered context. That gives 1,359 program cycles and 126 distinct programs. Two cycles around the 14:19 reconnect are skipped.
+- Replies are decoded the way the pack's lexer does it (`SSPL_Serial.cs:571-722`).
+- **Upload echo: 126/126 identical.**
+- **Run: 26 programs (573 of 1,357 runs) reply byte for byte.** That includes the channel-6 pressure-sensor and heater-controller programs (a scripted aux device answers with the logged values), and one input-polling program that matches once its two `PORTINBIT` bits are set.
+- **100 programs (784 runs) stop at their first `MOTOR`.** Grouped by option: 3: 28, 0: 24, 1: 15, 2: 8, 5: 7, 10/6/4: 6 each. All 100 match the log up to that point.
+- 0 unexplained mismatches.
+
+**Verified:**
+- 0 warnings, 0 errors on a full (`--no-incremental`) Debug and Release build.
+- 77/77 tests, three runs in a row.
+
+**Learned while building:**
+- `syntax()` sends the bad line through `putStr`, a printf. A line of NULs therefore sends `F\r` alone, and S0's test that expected 80 NULs was wrong. A `%` in an offending line or in PRINT text is formatted.
+- `NEXT` without `FOR` sends no `F` and no `|`, but `run()` still prompts `A\r`, so the PC sees a bare prompt.
+- `BLOCK` of a block whose DEFBLOCK has not run jumps to address 0, and `b_adres` survives between runs. `ENDBLOCK` with no call pops `b_return[-1]` = `b_adres[259]`.
+- `OPEN`'s parity goes through `fnd_num`, so it must be quoted (`'N'`).
+- For a program sent in chunks, the pack logs only the echoes of the last chunk.
+- S0's "0 warnings" held only for an incremental build. A clean build showed CA1707 on the test names (now suppressed in the test project) and three WebAPI warnings (fixed).
+
+**Still open (S2):**
+- Motor boards and timing behind `IMotionBoards`, including the board routing of `appl.cpp:182-672`, unfitted-board hangs and the MOTOR(8) sensor loop.
+- Raise `MinimumExactPrograms` in the replay test as `MOTOR` programs start to match. Their PRINT values (`POSITION=`) then also depend on motion.
+- `ControllerHardware` → real 710/expander models.
+- A Debug build of `WebAPI` into its own `bin` fails while the S0 WebAPI instance (PID 38152, started 13:03) is still running from that folder. It was left alone; the S1 build used a scratch output directory.
+
+---
+
+## 2026-10-20 — simulator S2 built and pushed
+
+**Built:** slice S2 (boards and motion) in `SkalarJoostE/Robotic-Simulator`, commit `fa94a45` (on top of S1 `79dd9b2`).
+
+- **Register-level port of both sides of the I2C bus** (`SP2000Simulator.Firmware\Boards\`). These are the CA16 drivers `Ca16Driver710`/`704`/`705`, ported from `2CA16700/robot/21088710.cpp`, `21088704.cpp`, `21088705.cpp` and the `references[19][8]` table. The board firmware is `Board710Firmware`, `Board704Firmware` (also the 714 = `21088726`) and `Board705Firmware` (also 715/725 = `21088724`/`21088725`, same code, other address). Each is a port of `danalyzer.cpp`/`danalyzer1.cpp` `run()` with its register map.
+  - `Ca16Motion` implements `IMotionBoards` with the routing of `appl.cpp:182-672`.
+  - `I2cBus` returns 0xFF from an absent board. The CA16's bit-banged I2C never checks the ACK (`i2c.cpp:32-53`), so `Get_Status` spins for ever. That is reproduced as `FW-HANG` plus silence, and an ESC recovers.
+- **TMC429 kinematics on `ISimClock`** (`Tmc429`, `Tmc429Axis`): ideal trapezoids in ramp mode, ramps to VTARGET in velocity mode, and `MotorStop` as a ramp down (VTARGET 0), not a hard stop. Every register write rebases the trajectory, so positions are a function of time and can be read mid-move. The `SpeedChangedFlag` rule of `MoveToPosition` is ported.
+- **Board facts ported, each with its line:**
+  - the 710 negates y; the 705 negates y; the 704 negates x, y1 and y2;
+  - the correction sign follows the homing direction, and `SetCorrection` keeps the old sign;
+  - readback is `(long)(raw / correction)`, truncated, then `MOTOR(6)` truncates to a short;
+  - positions pass through `float` in `Goto`;
+  - `MOTOR(3)` starts both moves, then waits for each; `MOTOR(7)`; `MOTOR(8)` stops at once when searching downwards (new finding `FW-MOTOR8-DIRECTION`); `MOTOR(9)`/`(10)` at `MotorConfig.VMax`.
+  - Homing: drive at VMax to the sensor, `MotorStop`, `Delay(50)` = 500 ms, back off at 30, stop, 500 ms, then zero if the reset flag is set. The board tick is 10 ms (`21088704/SOSX/sosx.cpp:86-97`: 24 MHz/64/3750; the "1ms" comment on `TickISR` is stale). The ramp-downs happen inside the pauses.
+  - The 710 then loads VMax from its SPEEDx register, i.e. the last `MOTOR(1)`. That is 0 at power-on, so a homing before any `MOTOR(1)` leaves VMax 0 and the next waited move hangs, with a finding naming VMAX 0.
+  - The 705 homes z the other way in opto-sluice mode, and nothing switches that mode back.
+  - `HomeNoMove`.
+  - After the first 710 homing the pause button is ignored until the PC reads the lock (`watchdog.cpp:30`, `21088710.cpp:404-411, 688-692`). New finding: `FW-PAUSE-IGNORED`.
+- **ESC reboots only the CA16:** boards keep position, speed and homing settings; corrections go back to 1. A power cycle from the API restarts the boards too.
+- **Sensor seam:** `ISensorSource.Level(input, IAxisState, time)` for `Home(motor)`, `Opto(bit)`, `Reed(n)` and `ExpanderBit(port, bit)`. `ControllerHardware` consults it for GRIP/PORTIN and falls back to its registers when there is no rule.
+  - The default `HomeSensors` is table-free. Each axis's sensor sits on its homing side, with its edge where the motor powered on. It triggers a span past the edge while approaching and releases at the edge while backing off; that span is sensor hysteresis plus backlash, default 230 microsteps.
+  - Rotary axes and expander home sensors (`HomeMotorOnIO`) are covered. S3 replaces this with the order's tables.
+- **`ScaledClock`** now accounts delays exactly and only sleeps once more than 16 ms is owed, so 1 ms firmware polls keep real-time pace.
+- **WebAPI:** boards are fitted from `--boards` with `--tmcClockHz`, and there is a new `GET /simulator/motors`. The S0 process still holding COM1 (PID 38152, started 13:03) was a leftover from an earlier simulator session; it was stopped after Joost confirmed it was not his.
+
+**The TMC429 clock fit.** f_clk = **11.825 MHz** (`FirmwareProfile.TmcClockHz`, `--tmcClockHz`).
+- Data: every waited move of the RB-418 log (99407519) rebuilt from the pack's captions, with start positions tracked through the session and a 63 ms PC/serial latency (the median of the 199 `MOTOR(1)` cycles).
+- Two-parameter least squares (clock, extra latency) over 322 moves of x/y, z, 705 z and the motor-16 rotation: RMS 33 ms, max 108 ms. Log timestamps are quantised to 15.6 ms.
+- Fitted per group, the clock lands between 11.55 and 12.05 MHz.
+- The fit was redone in C# over the full ordered replay (`Rb418MotionTests`, 392 waited moves and homings): mean 0.000 s, RMS 0.036 s, p90 0.060 s, max 0.113 s.
+- 12 MHz, a round crystal value, fits slightly worse (RMS 43 ms).
+- Homing spans fitted from the two start-ups agree between them: x 228, y 211, 710 z 364, 705 z 240, 715 z 146-215 microsteps.
+
+**Replay match rate** (`GoldenReplayTests`, each program alone on a fresh 99407519 controller): **126/126 programs** (S1: 26).
+- 123 match exactly.
+- 1 matches with its `PORTINBIT` bits set.
+- 2 match with a position placed: `MOTOR(6,0)` = 17440 and `MOTOR(6,1)` = 352 read where the previous session left x and y.
+- 0 unsupported, 0 mismatches. `MinimumExactPrograms` = 126.
+
+**Startup proof:**
+- **99407519, 13:46 power-on** (`ConnectAndReset` → `InitRobot` → `HomeAndGetPositions`, 63 steps; `Rb418MotionTests.Startup1346_*`): every reply identical, every waited move within 0.15 s. Its only input is the parked x/y state the PC reads back (17440, 352) and the run speeds the first moves need (650/60, 1250/150). The first `MOTOR(0,0,0,1)` takes 2.21 s on the robot, which only the previous session's 650/60 explains: proof that the boards keep their speed across an ESC.
+- **99407519, 15:03 reconnect:** the whole session's 760 MOTOR cycles replayed in order, then the 62-step start-up. Every reply is identical, including `MOTOR(6,13)` = **-25604**: the decapper's -735 × 124 = -91140 steps from before the reset, read with the reset correction of 1 and truncated to a short.
+- **BOD template (99444892 DEU SP2000-5 BOD, both start-ups in its log, 13:44 and 13:46; `BodStartupTests`):**
+  - The only fitted inputs are each axis's sensor span, from its first homing at 13:44. A first pass shows the 13:44 session leaves every axis within 9 microsteps of where it found it, except the gripper fingers (5, 7), which end 56,101 off: 425 × 132, parked open and declared 0.
+  - At 13:46 (pure check): 197 identical replies; 43 mid-move `MOTOR(6)` reads that equal the simulated position with the robot 0-145 ms behind (median 49 ms); and 22 waited moves and homings within 0.099 s.
+  - Spans: decapper y (3) 1619, gripper fingers 2729/2741, z 288, y2 319, y 194, x 233 microsteps. Motor 3 homes in 4.3 s every time, even straight after a homing: a wide flag crossed at speed 30, not distance.
+
+**Learned while building:**
+- **`DeviceConfiguration.FirmwareVersion` is not the fitted boards.** 99444892 (BOD) carries the same string as 99407519 (`714: 705:3.0 710:5.2 715:3.0`, a template default) but drives motors 3-7, i.e. a 704. Design §6's "fitted boards come from MotorConfiguration plus the firmware string" needs correcting: take them from the motor numbers in use, or from a log's `$` register.
+- **99407519's motor 16 is rotary:** correction 3200 is one turn of a 200-step motor at 16 microsteps, and `MOTOR(0,16,25)` is 25 turns. Its home flag comes round every turn, which is why its homing takes 1.5 s after any number of turns.
+- **`HomeMotorOnIO`** (99407519 `SSPLGenerated.cs:1246`) stops with `MOTOR(10)`, which does not wait for the ramp down, then declares 0 with `MOTOR(5,..,0)`. The "home" is therefore off by the stopping distance (≈3,375 microsteps at 450/60 on motor 16). This is pack behaviour, now pinned in a test.
+- **The 704 starts commanded moves 40-50 ms late.** In the BOD log, `MOTOR(10)`, `MOTOR(1)` and unwaited `MOTOR(0)` take ~45 ms longer on 704 motors than on 710 motors; position reads do not. The source does not explain it. The only difference found is that the 704 enables its TMC262 stall interrupts (`21088704/motors/tmc429.cpp`, IRQ1E-IRQ5E set; the 710/705 leave them off). Not modelled; the BOD proof tolerates it in its mid-move reads.
+
+**Still open (for S3 and later):**
+- **RB-418 decapper (S3).** `MOTOR(3,13,14,...)` (decap/recap: rotation 13 at 2000 with z 14 at 17) takes 0.4-1.3 s longer than either motor's step time. The implied clock varies from 7 to 11 MHz between move shapes, which open-loop step timing cannot do; it is reported, not asserted.
+  - From 14:12 every homing of the decapper z after a decap or recap takes 0.55 s longer than before 14:12, with identical commands: about 260 microsteps lost per cycle. A physical change during the session, possibly related to the error 121 → method 64 scenario.
+  - Both are named in the timeline fixture (`decapperNote`, `worldEffects`). They are the first things the S3 world model should explain.
+- S3: the order loader and world model behind `ISensorSource` (home sensor geometry from the tables, gripper/decapper/bellow), then the RB-418 error 121 → method 64 → recap → put-back scenario.
+- Field firmware versions are not modelled separately (710 5.2 vs repo 5.7, 705 3.0 vs 3.3, 704 unknown). The changelogs mention only version-read fixes, but this is untested.
+- 704 command latency: confirm or refute the stall-interrupt hypothesis on a robot or from a 704 log with timing.
+
+**Verified:**
+- 0 warnings and 0 errors on full (`--no-incremental`) Debug and Release builds of all four projects, built into scratch output folders because the old S0 process locks `WebAPI\bin`.
+- Tests: 105/105, three runs in a row in Debug and once in Release.
+- Serial end to end over the HHD pair, in real time: the simulator on COM1 (`--firmware 5.00 --boards 705:3.0,710:5.2,714:,715:3.0`), a scripted PC on COM2 sending programs as the pack does (A, lines, `|`, C).
+  - Homing the z took 1.51 s, and `MOTOR(0,2,700,1)` 0.862 s; the trapezoid formula gives 0.847 s and the log about 0.85 s after its PC latency.
+  - `MOTOR(6)` polled during an unwaited move read 674 → 602 → 480 → 322 → 0.
+  - `MOTOR(0,3,…)` to the absent 704 went silent with `FW-HANG`; ESC recovered, and the z position survived the ESC.
+
+## 2026-10-20 — simulator S3 built and pushed: the world model and the RB-418 proof
+
+**Built:** slice S3 (world model and the RB-418 proof) in `SkalarJoostE/Robotic-Simulator`, commit `3f464e3` (on top of S2 `fa94a45`).
+
+- **`SP2000Simulator.Order`** reads an order's tables with the host's ownership rule:
+  - an application's `TableIsShared="False"` copy;
+  - else the unit a `TableReference` points at;
+  - else the unit that declares the table without a reference (the defining unit).
+  - Each table's source file and reason are recorded in the snapshot.
+  - Tables: `DeviceConfiguration`, `MotorConfiguration`, `ManipulatorDefinition`, `IOConfiguration`, `GripperManipulatorConnection`, `DecapperBellowConnection`, `Position`, `RackDefinition`, `HeightDefinition`, `DecapSettings` + `SampleCups`, `RobotSettings`, `TemperatureBoardConfiguration`, `ShakerConfiguration`, `Reagent`, and the application's `SampleAnalysis`.
+  - Starting from `Profile.md` was not needed: the loader reads the XML directly, streaming, in under a second.
+  - On 99407519 the rule picks GeneralTables for `MotorConfiguration` (SSPL_Functions' mirror carries the typo `Type.GeneralTabels`), CommonActions for the gripper/decapper rows (GripperDecapper's copies are mirrors), and Robot for `RobotSettings` (Meter has a stale copy with a reference).
+  - The result is an `OrderSnapshot`. Its JSON is the test fixture `order-99407519-multitest.json`, taken from the RB-418 customer software (r40227). It is regenerated with `SP2000_REGENERATE_FIXTURES=1`.
+- **Fitted boards from the motor numbers in use** (`OrderSnapshot.FittedBoards`/`BoardSpec`), with versions from `FirmwareVersion` where it names that board. 99407519 → `705:3.0,710:5.2,715:3.0`. The `714:` in its `$` register is a board no motor uses; only a log shows it. Design §6 corrected (in the design doc, uncommitted).
+- **`SP2000Simulator.World`** (`WorldModel`, an `ISensorSource` chained ahead of `HomeSensors`, which also follows the IO expander outputs):
+  - The deck comes from `Position` + `RackDefinition`, a port of the pack's `CalculateCoordinates` (`AllScripts.cs:6701`). Five places are checked against logged `MOTOR(3,0,1,…)` moves: COLD 1/2 (1220, 350), COLD 1/3, COLD 2/18 (724, 2850), DECAPPER (2100, 1510), SHAKER (5685, 4160).
+  - State: vessels (place or carried, cap, volume), caps (thread 0–1, origin vessel), jaws and what they hold, the bellow.
+  - The single gripper sensor (`SampleGripperCapPresenceSensor`, in 1.8) reads 0 when:
+    - the jaws hold a cap or vessel; or
+    - the jaws are open over a vessel, between 50 Z units above and 150 below its grip height.
+    - The grip height is `BottlePickupHeight`, or `CapDecapHeight` for a capped vessel in the decapper (rows uid 64/67).
+    - Both window numbers are assumptions. The 150 is needed because 72x00's retry grips at `DecapRetryHeight` 1365, 100 below the cap.
+  - Outputs follow `ActivateOutputBit`:
+    - `SampleGripperPort` (out 2.0, 0 = close): closing takes what is in the window.
+    - `SampleDecapperBellowPort` (out 2.2, 1 = clamp): clamping sets a carried vessel into the decapper, and releasing lets the gripper lift a vessel whose cap it holds.
+  - Rotate motor 13 with the bellow clamped and the jaws on the cap:
+    - it unscrews after 0.75 × `GripperDecapRotation` in that sense;
+    - it seats a held cap after 0.75 × `GripperCapRotation` in that sense (fraction: assumption);
+    - turning the other way first (`CapCounterClockwiseRotation`) only finds the thread.
+  - Counter → units uses a new `MotorBoardFirmware.Sense` (the 710/705 y and the 704 x/y1/y2 negations).
+  - `GET /World` lists every rule with its row or "assumption".
+  - World changes are a new trace kind, `World`. Physical problems are `WORLD-*` findings: `WORLD-DECAPPER-OCCUPIED`, `WORLD-CAP-DROPPED`, `WORLD-VESSEL-DROPPED`, `WORLD-PLACE-OCCUPIED`, `WORLD-UNWIRED-OUTPUT`.
+  - A two-sensor gripper reports `SIM-UNSUPPORTED` and is not answered (S5).
+- **Scenarios** (design §7.3, JSON with comments):
+  - They set the deck (`vessels`, `fromSamples`, `reagents`) and the gripper, and inject faults: `{"input":"1.8","stuck":1}` and `{"when":"decap","nth":1,"do":"cap-slips"}`. `expect.worldAtEnd` sets the decapper, gripper, vessels and `noFindings`.
+  - Refused, before the world changes: `from`, `level`/`never`, `pauseButton`, unknown keys, another order.
+- **Web API:**
+  - Options `--order` (folder or snapshot `.json`), `--application`, `--scenario`. `--boards` now defaults to the order's motor numbers.
+  - `WorldController`: `GET /World`, `/World/places`; `PUT`/`DELETE` vessels; `PUT` gripper; force or release an input; cover.
+  - `ScenarioController`: `POST /Scenario`, `/Scenario/file`, `GET /Scenario/check`.
+  - The service is built at start-up, so a bad `--order`/`--scenario` stops the start rather than the first request.
+  - Smoke-tested on port 5199 against the RB-418 customer copy.
+
+**RB-418 proof (offline, design §1 acceptance at protocol level):**
+- **Logged cycles against the world** (`Rb418WorldTests.LoggedCycles_1410_to_1412…`, fixture `rb418-99407519-error121-cycles.json`, extracted with Loupe):
+  - The window is 14:10:47.9–14:12:11 of the 7 Oct 13:46 session: the uid 65 pick-up from COLD 2/18 (not 2/19), its decap, error 121 (handler −1, skip: the old software), then the next sample's pick-up from COLD 1/2, the shaker, and the decap.
+  - 94 cycles. The 89 robot cycles all reply as logged, including all 15 `PORTINBIT(1,8)` reads (14 × `STATUS=0`, and `STATUS=1` after the shaker drop at 14:11:33).
+  - The 5 aux cycles on channel 6 (pressure, heaters) are skipped. One shaker end-stop register is preset (S5).
+  - The world adds what the log cannot show: uid 65's cap falls into COLD 1/2 when the jaws open for uid 1 (`WORLD-CAP-DROPPED`, 14:11:20), and uid 1 is lowered onto the open uid 65 (`WORLD-DECAPPER-OCCUPIED`, 14:11:58). The pack logged that decap as successful, because the jaws still held uid 1's cap.
+- **Method 64 with the fix** (`Error121_Method64_RecapsInTheDecapperAndPutsTheTubeBack`, scenario `rb418-phra-empty.scenario.json`):
+  - `PackGripperOracle` ports `GetGripperStatus`, `DetectTubeInGripper`, `Open/CloseGripper(WithCap)`, 70x00, 71x00, 72x00 + `Decap()`, 73x00 + `Cap()` and 00x0J from the r40227 `AllScripts.cs`, Normal-mode path. It sends the same programs: the Z heights and recap moves come out as logged (1195 / 1205 / 1253 / 1265, −840/−735).
+  - Pick-up from COLD 2/18, decap; the PHRA tubes are empty (no robot traffic: error 121 is PC-side).
+  - Step 1: 00x0J reads `STATUS=     0` ⇒ CAP (Emulate: "" ⇒ EMPTY, the gate skips), then 73x00 recaps in the decapper.
+  - Step 2: 00x0J reads CAP (the jaws hold the recapped tube), then 71x00 puts it back in COLD 2/18.
+  - End state: uid 65 capped in COLD 2/18, decapper empty, jaws empty, no `WORLD-*` finding.
+  - Contrast: without the world, the S2 register answer gives EMPTY at the same gate.
+- Faults:
+  - `cap-slips` on the first decap drives 72x00's error-36 branch: retry at 1365, decap on the second attempt.
+  - 1.8 stuck at 1 gives error 30 at the pick-up.
+  - Without the fix, a second sample into the occupied decapper raises both `WORLD-*` findings.
+- **Not done: the live application run.**
+  - Nothing blocked it on the PC side: PID 38152 was already gone and COM1/COM2 were free.
+  - The simulator fits no aux devices. 99407519's start-up and run talk to channel 6, through `P=6` / `PRESSURECHECK` (`RAPS`) and the DTC heater blocks (`STA`/`STB`/`THA`/`THB`). Those statements stop with `SIM-UNSUPPORTED` by design.
+  - The in-app run of method 64 therefore needs channel-6 device simulation first (design §8, with the PSD6 or diluter `Emulation` and the meter in Emulate).
+
+**S2 open items:**
+- **Decapper z homing +0.55 s from 14:12.**
+  - Homings after a decap or recap take 1.60–1.64 s up to and including the 14:11:07 one (the error-121 sample), and 2.15–2.18 s for every decap or recap after it (six, to 14:18:14). Homings after other moves stay normal.
+  - The first slow one (14:12:08) follows the first decap after uid 65 was left open in the decapper: the decap the world flags as `WORLD-DECAPPER-OCCUPIED` at 14:11:58.
+  - So the cause is the abandoned tube, i.e. RB-418's own defect. The mechanism is not proven. A longer homing means the axis ends deeper than counted (steps lost while rising, or a shifted reference). A tube blocking the descent would do the opposite.
+  - Lab check: time a z homing after a decap with a tube left in the decapper.
+  - Fixture note updated.
+- **`MOTOR(3,13,14)` duration.**
+  - The firmware has no cause: appl.cpp:484-540 is two un-waited Gotos, then two waited ones. On the 705 that is 0x0B/0x0C, then 0x18/0x19 `WaitforPos`. Stall IRQs are disabled (tmc429.cpp:71-72), and the run current only scales the TMC262.
+  - New, repeatable correlation (25 cycles), all three long shapes at rotate run current 150:
+    - 2400/1115: +1.28 s
+    - 360/1205: +0.58 s
+    - −840/1253: +0.90 s
+    - −735/1265 at run current 33: +0.02 s (on time)
+  - Still unmodelled and not asserted.
+  - Side note: `c_21088705::movexy` computes both targets from `_x` (21088705.cpp:310-323). Nothing in appl.cpp calls it.
+
+**Still open (S4/S5 and later):**
+- Live app run of RB-418: needs simulated channel-6 devices (pressure sensor, DTC heater controller).
+- S5 world: two-sensor grippers, level detectors (`PumpSettings` has no rows on 99407519), shaker and cap-flipper cylinders (the shaker end stops are register presets for now), `HomeWithIO` home sensors from `IOHomeSensor`, and range-specific `DecapSettings`.
+- The window and thread numbers are assumptions; calibrate them on a robot.
+- `from` (mid-run faults) and `pauseButton` events in scenarios.
+- S4 viewer: the world view and trace (`World` kind) are ready for it.
+
+**Verified:**
+- 0 warnings and 0 errors on full (`--no-incremental`) Debug and Release builds of all six projects.
+- Tests: 128/128, three runs in a row in Debug and once in Release.
+- Web API smoke test against the RB-418 customer copy: `/World` with rules; scenario refusal (`level`, a misspelled key); the boards in `$`.
+
+## 2026-10-21 — simulator aux devices built and pushed; the live RB-418 run passes
+
+Commit `0b600d1` on `SkalarJoostE/Robotic-Simulator` main (after S3 `3f464e3`).
+
+**Aux devices (design §8):**
+- New project `SP2000Simulator.Aux`. It holds the dual temperature controller: 2SPD0508, firmware v3.03, `roboticsonefirmware\2SPD0508_DualTemperatureController\v303_DTC (2SPD0517A)`.
+  - It sits behind `IAuxPort`.
+  - It is ported from `Main.c`, `UART.c`, `Timer.c` and `MAX31865.c`, with line citations.
+  - The DTC is the pressure monitor as well. `RAPS` is a DTC command, so one device serves both heater blocks and the pressure sensor.
+- Commands, as the pack sends them (`SSPLGenerated.cs`):
+  - `RAPS` → `%4.2f\r`. The value comes from `--pressure`, default 4.70 as logged. `PRESSURECHECK` prints it as `PRESSURE=x`.
+  - `STA n` / `STB n` → `RSTA=n` / `RSTB=n`. Set points are clamped to `TSM` (factory 200), with the firmware's previous-set-point and both-off logic.
+  - `THA` / `THB` → `%4.1f\r`, plus the `TCA` / `TCB` correction (±20).
+  - `RDA7` / `RDB7` → `RDA07h = 0x00`.
+  - `WDA0 2` / `WDB0 2` clear a latched error.
+  - Also: `KOT` and the knock-out timer (in 100 ms ticks, off as from the factory), `RFWM`, `RPID` / `WPID`, and the 16-byte RX FIFO with its overflow.
+- Sensor faults:
+  - A non-zero MAX31865 fault register, or a reading above `TSM`, latches the error.
+  - With the error latched, `THn` answers `999.9\n` with **no CR**, so a waiting `INPUT` times out, as on the robot.
+  - A latched error stops the block heating.
+- Unsupported commands:
+  - Commands the firmware knows but the simulator does not model fail loudly. They throw the new `AuxDeviceUnsupportedException`, and the interpreter turns it into `SIM-UNSUPPORTED` + F. These are: `?`, `!`, the `P…` PID tuning commands, `SAVE`, `DLS`, `ssr`, `tld`, MAX31865 registers other than 07h, and config bits other than bit 1.
+  - Commands the firmware does not know get no answer and a `FW-DTC-UNKNOWN-COMMAND` finding.
+- **Assumption (no source):**
+  - The heater model is a linear ramp at `--heaterRate` °C per simulated second. The default 0.1 is fitted from the RB-418 log (A 67.7 → 69.3 °C in 17 s; B 0.064 °C/s).
+  - The block moves to its set point while it is on and error-free, else back to ambient.
+  - No PID overshoot, no noise, no 9600-baud byte time.
+- Wiring and API:
+  - `--order` fits one DTC per channel in use: each enabled `TemperatureBoardConfiguration.PortNumber`, and `RobotSettings.PressureSensorPort` when `PressureSensorEquipped`. 99407519 gets one device on channel 6 with both roles.
+  - Disabled boards get none; the pack skips them too.
+  - New endpoints: `GET /Aux`; `PUT /Aux/{ch}/pressure|ramp|heaters/{A|B}/temperature|fault`.
+- Byte checks:
+  - Every entry of `GoldenReplayTests.Channel6Replies` replies byte for byte.
+  - The golden replay now runs all 126 programs against the DTC instead of the reply table, and all are still exact.
+  - The pack's `PRESSURECHECK` program, as sent in the log, prints `PRESSURE=4.70` and `STATUS=OK`.
+  - Loupe confirms `HEATERA=RSTA=120`, `HEATERB=RSTB=150` and `PRESSURE=4.70` at 13:46:36-37 on 7 Oct.
+
+**Live RB-418 run (done):**
+- Sandbox `%TEMP%\r418live`, a fresh robocopy of `%TEMP%\r418b` (not an SVN working copy).
+  - `Set-EmulationMode -Mode Emulate` was run, then the robot row was set to `OperationalMode` 0 and `PortNumber` 2. The diluter and the NanoColor meter stay in Emulate.
+  - The PHRA tubes were already all unticked in r418b.
+- The simulator ran on COM1 with `--firmware 5.00 --order %TEMP%\r418live --scenario rb418-live.scenario.json --heaterRate 5`. The new fixture builds the deck from the selected samples and sets `PHRA` empty. The app was on COM2 (HHD pair).
+- **Seeding is the catch.**
+  - Multitest is a `HideTrays` application, and a new analysis resets every row to `YesNo=false`, `Method 0 None`. So the first `Run-AppTest -CreateNew` "finished" in 17 s without opening the robot port.
+  - Fix: in that new analysis's `Tables.xml`, set uid 65 (COLD 2/18) to `YesNo=true`, `Method=Total P (MN)`, `Range=6801 TP 15`.
+  - Then set its `Analyses.TreeDatabase.Xml` row back to `Status=NewAnalysis` (the core's new-analysis status, AnalysisForm.cs:2410).
+  - Also mark the old interrupted customer analysis `Finished` in the sandbox.
+  - Then run `Run-AppTest` without `-CreateNew`.
+  - This core has no automation API (UI path), so `-Samples` / `-SampleValues` are not available.
+- Dialog policy: the default rules, plus `No reagent tube with enough volume` → Cancel.
+- Result (app log `Skalar Robotics 99407519 246453 2026-10-21-06-06-33-1.glf`):
+  - Channel 6: `RAPS` → 4.70, `STA 120` / `STB 0`, then `THA` / `THB` through the temperature gate. Block A reached 120 °C, so the gate did not block.
+  - The world shows the pick from COLD 2/18 (08:07:19), set into the decapper, the cap unscrewed (08:07:35), and the cap re-engaged in the decapper (08:07:43). The tube was then lifted out and released at COLD 2/18 (08:07:51).
+  - 08:07:36.145: `GetErrorHandlingMethod: Error 121, Handler 64`.
+  - 08:07:36.209: `00x0J Cap tube if gripper holds the cap` reads `GripperStatus … CAP`, proceeds into 20x00 and 73x00, and ends with error code −1.
+  - 08:07:48.454: `00x0J Put back tube if gripper holds it` reads `CAP`, proceeds into 20x00, 71x00 and 21x00, and ends with −1. 71x00's drop check then reads `EMPTY` (08:07:53).
+  - 08:07:54.696: `ShowErrorPopup ErrorCode: 121`, answered Cancel.
+  - `GET /Scenario/check` = `[]`: the decapper is empty, the jaws are empty, and S65 is capped in COLD 2/18. 0 simulator findings.
+  - Nothing blocked the run: not the temperature gate, not the shaker end stops, not the cover lock (`BypassCoverLock` true).
+- Expected noise:
+  - After Cancel, the app asks "Analysis has been stopped, would you like the robot to do finalize procedure?". Run-AppTest treats it as an unknown dialog (exit 1); it was answered No by hand.
+  - 579 `InterpreterSSPLex: Unexpected default in swithch` errors appear. They are normal: the real robot's 7 Oct log has 5,721.
+  - The Gibraltar log stays 0 bytes until the app closes normally. Kill the app and it is lost.
+
+**Verified:**
+- 0 warnings and 0 errors on `--no-incremental` builds of all seven projects.
+- Tests: 152/152, four runs in a row.
+- Joost, 2026-10-21: the Debug/Release distinction is not used, so one build configuration is enough from now on. CI builds Release only.
+
+**Still open:**
+- `Run-AppTest` cannot seed per-sample Method/Range on a core without the automation API. Applications like Multitest need the table seeding above, or an import layout.
+- The finalize prompt after Cancel could join the default dialog policy (answer No).
+- Heater realism (PID, overshoot, cooling curve) is not modelled; calibrate it on a robot if a B-feature depends on it.
+- S4 viewer; S5 two-sensor grippers, level detection, shaker and cap-flipper cylinders.
+
+## 2026-10-21 — simulator S4 built and pushed: the 3D viewer, built from each order's tables
+
+Commit `0d923d8` on `SkalarJoostE/Robotic-Simulator` main (after the aux-devices commit `0b600d1`).
+
+**Built:**
+- **`SP2000Simulator.Viewer` (new project).** `LayoutBuilder` turns an `OrderSnapshot` into a scene of named slots, served at `GET /Viewer/layout`:
+  - **Gantry:** one bridge per X motor, one carriage per Y motor (spanning every Z axis it carries), and a Z module + rod per Z motor, from `ManipulatorDefinition` + `MotorConfiguration`; `Origin` gives the axis senses.
+  - **Tool offsets** come from a place taught for two groups. 99407519: DECAPPER puts the gripper 187.5 mm left of the needle and 10 mm back. 99444892: the five SAMPLE racks put GRIP 189 mm off and 38 mm forward (median). Parking positions (MAINTENANCE/PARK) are excluded: every group parks at its own coordinates.
+  - **Aliases:** REAGENT is TRANSPORT's needle (same Z motor, same coordinates).
+  - **Racks:** cells come from `Position` + `RackDefinition` through the ported `CalculateCoordinates`, never the RobotLayout designer.
+    - BOD's SAMPLE n / FILL n are one rack with two names.
+    - 99407519's SAMPLE 3/4 (4x6 at 35 mm) and DILUTION 1 are taught on top of SAMPLE 1/2. They are drawn as outlines: alternatives, of which the tables don't say which is fitted.
+  - **Heights:** vessel tops from a gripper's grip height, floors from a needle's deepest height.
+  - **Devices:** gripper/fingers (BOD finger motors 5/7 matched rear/front), decapper head (rotate motor 13 on the gripper Z's 705), bellow, shaker platter (motor 16), meters, dispensers, DTC, probes.
+  - **IO and the rest:** IO rows attached to their parts; collision pairs (both BOD pairs inactive: TRANSPORT is disabled); vessels from the run's selected `SampleAnalysis` rows.
+  - **Flags:** every guess carries `assumed` and its basis. There is a per-order override file (`layouts/<order>.layout.json`: sizes, hide/show, glTF per slot, extra stations, Z home heights).
+- **Units.** A pack unit is 0.1 mm on X, Y and Z.
+  - X/Y: `appl.cpp:13`.
+  - Z: the firmware comment says mm, but taught heights up to ~2000 and the 64 µstep/unit decapper Z (a 5 mm lead screw at 3200 µsteps a turn) only fit tenths.
+  - Check: X 32/7 µsteps per unit = exactly 70.0 mm per turn.
+  - Live = counter × board sense ÷ `ConversionFactor`.
+- **CAD (`Model/99372972_300A.obj`, from the hardware engineer; git-ignored).** It is 99372972 PRT SP2000-3 BOD + pipetting pH: 508 MB Autodesk OBJ, Z-up mm, 1.73 M vertices, 3.47 M triangles, 2,120 unnamed solids, 263 colours.
+  - Converted to a 59 MB GLB (scratch script), it loads in the viewer in 0.6 s on the GPU. Joost confirmed the render is the robot.
+  - Measured into `layouts/frames.json`:
+    - deck 1202 × 699 mm between the end plates;
+    - black plinth 90 mm; clear arched end covers 618 mm;
+    - X rails front and back, underside 344 mm above the deck;
+    - bridge hanging between them at 228–323 mm (46 × 95);
+    - Z modules 42 × 274;
+    - electronics housing 190 × 370 on the right end;
+    - syringe dispensers standing to the right.
+  - The builder uses it for SP2000-3. Other sizes keep a taught-extent outline and carry the heights over (flagged). The default theme follows the CAD's look.
+  - It cannot move per axis: there are no part names.
+- **Live stream** `GET /Viewer/stream` (server-sent events) carries:
+  - motors in pack units, ~30 Hz while anything moves;
+  - world and IO on change;
+  - trace (programs, world, findings, state);
+  - the PC action in drive mode.
+- **Log replay.** `TimelineBuilder` plays a Loupe cycle extraction through a full simulated robot (in-memory link) with a `SamplingClock`: motors are sampled at 30 Hz of simulated time *inside* waited moves, before later register writes rebase them. Each cycle starts at its logged time.
+  - The replay spec sets the deck (scenario) and the start the log cannot show: outputs, inputs, placed counters, DTC pressure/temperatures held, InitMotors, homed Z, start place.
+  - `--timeline <spec> --out <file>` writes a timeline; `--drive <spec>` plays the same cycles live in real time.
+  - **RB-418** (7 Oct, 14:10:47–14:12:11, deck from the customer's Multitest sample table, 96 tubes): **93/94 cycles reply as logged.** The one left is a `PRESSURECHECK` where the real sensor read 4.70 between 4.69s. The timeline shows `WORLD-CAP-DROPPED` (0:32) and `WORLD-DECAPPER-OCCUPIED` (1:10).
+  - **BOD 99444892** start-up from power-on (13:44, counters placed as `BodStartupTests`): **222/269.** The rest are mid-homing `MOTOR(6)` polls off by up to ~900 counts: the 704 start latency S2 reported and did not model.
+- **Viewer** (`wwwroot/viewer`, served at `/` and `/viewer/`):
+  - Three.js 0.186.1 vendored (import closure only, 2.4 MB, MIT), ES modules, no build step.
+  - Look and render: `theme.js` holds every colour/material/light/size (plus `themes/light.js`); PBR, AgX tone mapping, soft shadows, GTAO that switches itself off below 40 fps; instanced vessels and caps.
+  - Cameras: orthographic Top/Front/Side and a Free orbit with smooth flights; framing respects the panels (view offset).
+  - Panels: Z panel per Z motor with the travel height; info panel (action, program, replies, findings, world, IO lamps by `ActivateOutputBit`/`InvertedSensor`, derived vs assumed notes).
+  - Overlays: `VIEW-XY-LOW`, `VIEW-UNTAUGHT`, `VIEW-COLLISION`.
+  - Interaction: hover shows each part's basis and binding; replay transport with event ticks; drag-and-drop timelines.
+
+**Verified:**
+- 0 warnings, 0 errors on a `--no-incremental` build of all eight projects.
+- Tests: 163/163, three runs in a row (11 new).
+  - Layout: units, slots, both orders, overrides, assumed flags, CAD profile.
+  - Timeline: RB-418, BOD, the checked-in timelines.
+- Both orders run live in drive mode. Screenshots are in `docs/screenshots/`: 99407519 live top/free/side, RB-418 replay at the decap and at the occupied decapper, 99444892 live top/free/front, and the three CAD renders.
+  - Reviewed in the browser pane.
+  - Saved through headless Edge over DevTools at 1600×1000: the pane caps captures at 800 px, and only allows the origin path, so the viewer is also served at `/`.
+
+**Learned while building:**
+- Joost's first review: the Z axes must hang on the Y carriage. The carriage now spans every Z axis it carries, each with its own module.
+- Restarting a drive must reset the deck (the scenario is now reapplied); otherwise the world keeps the last run's vessels.
+- The BOD fixture's applications have no selected samples; the BOD deck in the screenshots is the illustrative `bod-99444892-bottles.scenario.json`.
+
+**Still open (what a hardware sheet or CAD would settle):**
+1. **Where the motors' home sits on the deck.** The needle's distance from the right end cover and the back rail at X 0 / Y 0. The deck is centred on the taught places for now.
+2. **Each tool tip's height above the deck at Z 0.** The rule for now: gripper rods from the grip height plus a vessel of four rack pitches; needle rods 10 mm above their deepest height. BOD rods come out tall.
+3. **Deck length per frame size** (only SP2000-3 is measured).
+4. **CAD as separate, named assemblies** (frame, bridge, each Y carriage, each Z slide, fingers, decapper head) with known origins, so they drop onto the slots and move with the motors.
+5. **Real vessel and rack dimensions** per rack type (optional; sizes are drawn from pitch and heights).
+- **S5 is unchanged:** two-sensor grippers (the BOD world reports `SIM-UNSUPPORTED`), level detection, shaker and cap-flipper cylinders.
