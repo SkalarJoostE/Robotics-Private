@@ -1697,3 +1697,45 @@ Commit `0d923d8` on `SkalarJoostE/Robotic-Simulator` main (after the aux-devices
 4. **CAD as separate, named assemblies** (frame, bridge, each Y carriage, each Z slide, fingers, decapper head) with known origins, so they drop onto the slots and move with the motors.
 5. **Real vessel and rack dimensions** per rack type (optional; sizes are drawn from pitch and heights).
 - **S5 is unchanged:** two-sensor grippers (the BOD world reports `SIM-UNSUPPORTED`), level detection, shaker and cap-flipper cylinders.
+
+## 2026-10-21 — simulator Setup fixes after Joost's 99440240 walk-through; the Waters run passes live
+
+Commit `2220fc7` on `SkalarJoostE/Robotic-Simulator` main (after the launcher/Setup commit `c2c9208`).
+
+**1. "Failed to initialize the robot": cause and fix.**
+- Cause, from Joost's app log (`Skalar Robotics 99440240 266xxx 2026-10-21-11-56-49-1.glf`, 13:56:54): `Initializer.RobotInitialization ERROR: InvalidCastException: Unable to cast 'Devices.EmulateDevice' to 'RS232DeviceEx'` in `SSPLBase.DiscardInBuffer` ← `SSPL.ConnectAndReset`. Prepare had put the robot on COM2, where `pH meter - 1` (Emulate) already was.
+  - robotics-plugin: the application keeps one device per port name (`DevicePool`, keyed `COMn`). An `EmulateMeter` still connects through `Meter.Connect`, which pools its `EmulateDevice` under the row's port (`Meter.cs:507`; `IdleConnector.SetDevice` sets the port). The meters are created first (13:56:52.9), the robot second.
+  - The pack's `SSPL.OpenSerial` (99440240 `AllScripts.cs:406-427`) takes the pooled device for `COM` + `Robot.PortNumber` and casts it: no byte is sent. The simulator trace shows the same: nothing after its own boot.
+- Fix (`OrderSetup.Prepare`): every enabled `DeviceConfiguration` row gets a port of its own. An emulated row that shares one moves to a free number (not a row's, not a COM port of this PC, not the pair's); two rows that both open a port are refused; nothing is written when anything is refused. Prepare also refuses the simulator's end and a port this PC lacks. `Inspect` reports clashes; the drawer shows them. On Joost's PC: robot → COM2, `pH meter - 1` → COM4 (Emulate), `pH meter - 2` stays COM3.
+- **Live proof** (sandbox `%LOCALAPPDATA%\SP2000Simulator\sandboxes\99440240 GBR SP2000-5 pH in soil (sandbox 2026-10-21 142700)`, set up through the drawer in the browser; simulator on COM1, app on COM2; `Run-AppTest.ps1 -Application Waters -CreateNew -Racks 1`):
+  - `ConnectAndReset. Comport is opened successfully` at 14:31:58, initialisation, then the whole Waters run: `Waters:Finished` in 642 s, no unknown dialogs (answered: two "racks are moved", one "meters in emulation"). App log `Skalar Robotics 99440240 266xxx 2026-10-21-12-31-00-1.glf` (2.5 MB).
+  - The application opens the robot port when a run starts, not when it opens (app started ~14:29, port at 14:31:58): the drawer now says to listen before pressing Start.
+  - Simulator findings: no `SIM-UNSUPPORTED`; two `FW-CONSTANT-OVERFLOW` (the constant `200.438320203553` is 16 characters; the firmware copies it into 9 bytes, `appl.cpp:1895`). The Waters position polling (`MOTOR(6,2,I)` while Z moves) is answered.
+  - App errors: 6,142 `InterpreterSSPLex: Unexpected default` (normal, as RB-418); `Stability` column and titration-table errors (also in Joost's log, not robot related); 36× error 28 "Sample cannot be measured yet!" from `90x00` in `00x0H Intelligent rinse if available` — the pack's own flow control, looked up in this system's `ErrorDescriptions`; not compared with a real robot's log.
+  - **Not covered:** in this run tray A1 sat in the planner's "Order of racks' handling" queue (Run-AppTest's `-Racks` drops it there, not on robot position 1; Joost). The app reports all 32 samples measured (emulated pH), but the simulator's deck held only the 12 STD rows, so the needles went into empty SAMPLE 1 places unseen: a gripper-less world senses nothing yet (level detection is S5).
+
+**2. Applications list.** Hidden = `Invisible` in `PrjApplications.Type` of `Applications.TreeDatabase.Xml` (robotics-core `AnalysisFormNew.cs:25`, `AnalysisTree.cs:195`, `MainForm.cs:3280`; written by the settings designer's Visible checkbox, `Application_SettingsBuilderCtrl.cs:91`). `OrderSetup.VisibleApplications` filters on it (no tree file: all tables files). 99440240: Calibration, Flush, Park, Soil, Waters (PumpCalibration, SyringeCheck, Soil2Day, SoilMeasurementAndBufferAddition hidden).
+
+**3. Step 1** has no Application or Firmware choice. The robot comes from the hardware tables; the firmware from the robot row (override only on `POST /Order/load`, `firmware`). `--application` has no default any more; a `fromSamples` scenario without one is refused with the instruction (`rb418-live.scenario.json` now needs `--application Multitest`).
+
+**4. Viewer leaks.** `RobotScene.setLayout` removes the CSS2D label elements (the renderer only removes a label's element when the label itself is removed, not a parent), disposes geometry/materials and the vessel meshes, and clears `placeIndex`, `vesselDims`, `world`, `io`. Verified on a second simulator (port 5181): 99407519 → 99440240 leaves 15 labels, all 99440240's, and 180 places.
+
+**5. Deck at run start** (`RunAnalysis` in Order, `RunDeck` in World, `SimulatorService.RefreshRunDeck`):
+- robotics-core writes the started analysis to disk before the run's initialisation: `AnalysisForm.Start` → `Status` Started/StartedIni → `SaveCurrentAnalysis` (the analysis tables `Analyses\<Path><Created UTC yyyy.MM.dd-HH.mm.ss.fff>.<App>.Tables.xml`, then `dalAnalyses.Save()`, the tree). The simulator watches `Analyses.TreeDatabase.Xml` (the run's ESC is a backstop) and loads that run's deck once.
+- On the robot = `YesNo` and `RackPos` > 0 (the planner sets `RackPos` when a tray is dragged onto a robot position, `AddTrayOnAnalyzer`, and 0 when taken off). Place = (rack type, `RackPos`, `PosInRack`) as `GetTargetRack(LOCATION, RackPos)`; the rack type is a flagged rule: SampleAnalysis → SAMPLE (else the deck's first rack, COLD), CalibrationStandards (standards and KCL bottles) → STANDARD.
+- Findings: `WORLD-RUN-TRAY-QUEUED` (a selected tray with no `RackPos` at Start: queued or not placed — the core moves queued trays on during the run **without saving**, checked in both live runs, so the simulator cannot see them), `WORLD-RUN-TABLE-UNMAPPED`, `WORLD-RUN-PLACE-MISSING`, `WORLD-RUN-DECK-UNREADABLE`.
+- Only runs started after the order was loaded count: the customer's tree carries interrupted "Started" June runs whose tables are not in SVN (first live run: a stale Calibration was picked at listen time; fixed).
+- Capped: never without a decapper (`DeckGeometry.DecapperFitted`); with one, unless the run's `SettingsBoolean DecapBottle` (BOD) is false or the row is `Decapped`. 99440240: all open.
+- Drawer step 3 shows the run's deck, notes and findings; manual scenarios moved under "Test scenarios". A queued tray's rows are written with **no `RackPos` element** (DBNull): the first loader version skipped the whole table on that; fixed and tested.
+- Live: run 1 deck 2 s after Start = 12 STD/KCL vessels at STANDARD 1, open; run 2 (stopped early at Joost's request) gave the same deck plus `WORLD-RUN-TRAY-QUEUED` for A1.
+
+**6. Gripper-less deck.** `DeckGeometry.DeckManipulator`: the enabled gripper's manipulator, else the first enabled manipulator with a multi-place rack, a SAMPLE group first (99440240: MANIPULATOR: 1, GROUP: PROBE: SAMPLE 1–5 4×8, STANDARD 1 4×4, KCL, RINSE, WASTE, MAINTENANCE). `WorldModel`, scenarios and `LayoutBuilder` use it; the viewer draws the vessels (20 test vessels drawn; 12 from the run).
+
+**7. Drawer.** `call()` now locks and unlocks only at the outermost call (the nested `call` overwrote `dataset.wasDisabled`, so "Start the simulator" stayed disabled); `sandbox()` runs its two calls one after the other. The steps are numbered with ticks: sandbox → point the robot row → start the simulator → start the application and a run. Also: a sandbox of a sandbox keeps one "(sandbox …)" stamp.
+
+**Verified:** 0 warnings, 0 errors on `--no-incremental` Release builds; tests 182/182 three runs in a row (19 new: port clash, refusal, pair checks, hidden apps, sandbox name, gripper-less world/layout, open without a decapper, decap rules, run deck from the analysis files, queued trays). New fixture `order-99440240-waters.json`.
+
+**Still open:**
+- `Run-AppTest -Racks` puts racks in the queue, not on a robot position: session "Run-AppTest: put racks on robot positions" (started by Joost) is changing that in Robotics-AI.
+- A live run with A1 on robot position 1, to see the samples on the simulator's deck.
+- S5 for Waters: level detection and what the needles and probes sense in a vessel; nothing is sensed on a gripper-less deck yet.
