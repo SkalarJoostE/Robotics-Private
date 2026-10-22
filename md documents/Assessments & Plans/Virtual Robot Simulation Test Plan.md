@@ -1813,3 +1813,31 @@ State: **in the `Robotic-Simulator` working copy, not committed.** It builds on 
   unchanged and the world model does not use the floor.
 - **Open:** which end the positioner pin faces; the thermoreactor (HEATER) block has no model yet. The photos stay
   local (not in the simulator repo), at Joost's request.
+
+## 2026-10-22 — viewer: BOD trays 21081240 (European) and 21081241 (Wheaton)
+
+- **Models** from `3d/BOD trays`. For the European tray, the RAL 7038 file (`... 1.glb`), which Joost supplied as the
+  one with the correct colour. Both trays are 3 × 6 at 72.1 mm; they differ only in bore (72.3 / 70.2 mm) and colour.
+  Both are reconstructions from the drawings.
+- **Choice (`BodTrays.cs`):** the tables cannot tell the trays apart (RackDefinition 3 × 6 at 720 either way), so the
+  layout builder weighs other evidence:
+  - the override file's `bodTray` decides;
+  - **Wheaton:** "Wheaton" in `ApplicationInfo.txt` or the folder name, a YSI meter, or EPA-only BOD applications;
+  - **European:** ISO-only BOD applications (SP518 assumed: SP517 is a different tray with no model);
+  - otherwise no tray and a warning.
+
+  The snapshot now carries `VisibleApplications` and `ApplicationInfo`; SOURCE racks are excluded.
+- **Local checkouts:** 99445277, 99445807 and 99441183 → Wheaton. 99443749 and 99445861 → European. Template →
+  warning. 99391423 → none (3 × 7). 99361463 does not load (no unit holds HeightDefinition; older software, separate
+  issue).
+- **Tests:** 187/187, 0 warnings. `check-deck.mjs` also checks each model's marker grid, grid centre and bottle floor
+  against the catalogue. The BOD replay's layout was patched to the builder's output (trays, probe labels, note).
+- **Open, in order agreed with Joost:**
+  1. `MotorG` into the snapshot: finger motors from the table, not from descriptions (99445807 unmatched).
+  2. 99361463 does not load (no unit holds HeightDefinition).
+  3. S5: level detection, and what needles and probes sense in a vessel.
+  4. Waters live run with A1 on robot position 1 (after the Run-AppTest racks change).
+  5. **Testkit vials (Joost):** a vial looks right in its tray but is drawn bigger once picked up and in the
+     decapper, and the cap is not drawn correctly while decapping.
+  6. Visuals waiting on photos or CAD: the COD needle/stirrer assembly, the shaker (tilt plus reciprocation), one
+     common reagent holder (99412413), the thermoreactor block, the BOD stopper lifter and decapper.
