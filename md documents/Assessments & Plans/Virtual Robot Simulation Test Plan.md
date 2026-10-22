@@ -1745,3 +1745,15 @@ Commit `2220fc7` on `SkalarJoostE/Robotic-Simulator` main (after the launcher/Se
 - The pack's `PaperbandFilter.InitializePaperbandFilter` (99443177 `AllScripts.cs:12652-12687`) pools an `RS232Device` under `COM<PortNumber>` for every Available filter, emulated or not ("Create Serial port. Port name: COM2" … "Paperband Filter at port (2) is successfully emulated", 15:14:56.57). The robot then got that device.
 - The port rule was per file and `DeviceConfiguration` only. It now covers every `PortNumber` of `DeviceConfiguration` (Enabled), `PaperbandFilterConfiguration` (Available) and `DiluterConfiguration` (Enabled) across all table files; a mirrored copy of one device counts once and moves with it. Verified read-only on Joost's sandbox: the drawer shows "COM2: the robot (SP2000) (Normal), paperband filter PBF1 (Emulate)". Prepare again moves PBF1 to the first free number. 2 new tests; 184/184 three times, 0 warnings.
 - Not yet re-run live on 99443177: Joost's SkalarRobotics was still open on that sandbox (Prepare refuses while it runs).
+
+## 2026-10-22 — simulator set up on a second PC; a Windows-only test failure fixed
+
+- Cloned `Robotic-Simulator` (at `1ca97d3`) and the three reference repos at the workspace root, all
+  git-ignored: `roboticsonefirmware` (`f6eaf97`, as in the design), `tocsimulator` (v1.9.0),
+  `fwsimulator` (master `0da131e`). The reference repos come from `bitbucket.org/skalaranalytical/`;
+  the design doc's **Repos** line now gives the URLs.
+- Build 0 warnings / 0 errors. One test failed on this PC only:
+  `OrderSetupTests.Prepare_..._AndRestoreIsByteExact`. With `core.autocrlf=true` the test's raw-string
+  fixture is checked out with CRLF, so its `"\n"` replacements matched nothing. A test bug, not a
+  simulator bug; fixed by normalising first (commit `53b1b63`). 184/184.
+- Nothing else changed; the open items of 2026-10-21 still stand.
