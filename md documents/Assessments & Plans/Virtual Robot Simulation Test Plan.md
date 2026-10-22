@@ -1757,3 +1757,41 @@ Commit `2220fc7` on `SkalarJoostE/Robotic-Simulator` main (after the launcher/Se
   fixture is checked out with CRLF, so its `"\n"` replacements matched nothing. A test bug, not a
   simulator bug; fixed by normalising first (commit `53b1b63`). 184/184.
 - Nothing else changed; the open items of 2026-10-21 still stand.
+
+## 2026-10-22 — viewer: compact COD tube gripper and its rail mounting (uncommitted)
+
+State: **in the `Robotic-Simulator` working copy, not committed.** It builds on an earlier uncommitted gantry pass
+(CAD shells from 99372972: `gantry-cad.js`, `gantry-layout.js`, `tools/`, `docs/gantry-cad.md`,
+`docs/hardware-photo-reference.md`, `System photos/`). That pass is also uncommitted, and its 508 MB source OBJ under
+`3d/` must stay out of git.
+
+- **Mechanism:** a gripper is the compact tube gripper when it sits on a pneumatic connection with no finger motor
+  and no BOD bottle. Checked on the local checkouts (SVN unavailable): 99429723 and 99412413 → tube gripper;
+  99443749 and 99445807 → stopper lifter (unchanged). RB-418 (99407519) → tube gripper.
+- **Mounting:** on a bridge with a tube gripper, the beam runs between the heads. Each narrow rail (with a motor box)
+  sits against the beam with 6 mm clearance, and the tool hangs from a bracket on the rail's outer face. Brackets:
+  22.75 mm on 99407519, 21.5 mm on 99412413, 32.5 mm on 99429723. This replaces the gap left by housings centred on
+  the tool axes. The carriage is drawn as black X-braced plates around the beam.
+- **Correction after Joost's 99429723 view:** the rails had different tops, and the probe's rail ran down into the
+  racks. Each rail had been sized for its own slide at full stroke. Now:
+  - the rails of one carriage share one top and one bottom;
+  - the bottom sits 10 mm above the lowest tool tip at travel height (about 159 mm above the deck on 99429723);
+  - a tool shorter than its stroke needs hangs from a stem below its bracket.
+
+  `check-gantry.mjs` asserts the alignment and the bottom clearance.
+- **Second round of feedback:**
+  - **Black rod beside the gripper:** this was `Probes` row 0, Color on the NanoColor photometer (manipulator GRIPPER
+    because the gripper carries the tube there), drawn as an electrode. `LayoutBuilder` now skips photometric rows
+    and adds a layout note. This is the first C# change of the pass (`MeasurementTypes.cs`, new
+    `LayoutTests.PhotometricProbeRows_...`). The RB-418 replay was patched to the builder's output for that part and
+    note only: a full regeneration also changes `world`, `vessels` and a DTC pressure reply from earlier slices, and
+    was not applied.
+  - **Needle hub:** moved up to the bracket.
+  - Tests 185/185 (Debug), 0 warnings.
+- **Tool coordinates:** taught tool coordinates, parent slots and motor bindings are unchanged. `tools/check-gantry.mjs`
+  asserts this on both bundled replays, and the four live layouts were compared part by part. No C# changed.
+- **Still open:**
+  - 99429723's transport tool is a lone probe; the needle/stirrer assembly is not drawn yet.
+  - `MotorG` is not in the snapshot: 99445807's finger motors are unmatched.
+  - The shaker (tilt plus reciprocation) and the reagent rack (one common holder).
+  - Scale is from photos (assumed).
