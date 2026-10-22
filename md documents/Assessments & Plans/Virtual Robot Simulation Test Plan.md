@@ -1948,3 +1948,17 @@ pushed with slice 3 and these fixes once Joost said to commit.
   - On 99445861: probe at 149 mm (top 169); fill height 1.6 mm under the rim.
   - Fills use the nominal volume.
 - 200/200 tests. Next: Joost re-runs live.
+
+## 2026-10-22 — to-do: real bottle and stopper models (waiting on photos)
+
+- **Bottles and stoppers as they really look**, instead of a straight cylinder and a red disc.
+  - Water that follows the bottle's shape: the body, then up into the neck.
+  - The stopper drawn sitting in the neck, lifted by the lifter, put back at the recap.
+  - Either from model files (GLB, as the trays were made from drawings), or built in code from dimensions: the
+    Wheaton is 69 × 165 mm (Fisher listing); neck and stopper sizes still unknown.
+- **Waiting on:** Joost takes photos of the stoppers and bottles the week of 26 October 2026, including which stopper
+  type (Wheaton glass "robotic" stopper, or NS29 on Skalar bottles) the lab sees most.
+- **Same treatment for the Testkit vials** (open list item 5): a vial drawn bigger once picked up or in the decapper,
+  and its cap drawn wrong while decapping.
+- **Also offered, not decided:** make `Start-Simulator` stop and show the error when the build fails, instead of
+  silently starting the last build. That cost one live test on 22 October: the probe-depth fix was not running.
