@@ -1841,3 +1841,27 @@ State: **in the `Robotic-Simulator` working copy, not committed.** It builds on 
      decapper, and the cap is not drawn correctly while decapping.
   6. Visuals waiting on photos or CAD: the COD needle/stirrer assembly, the shaker (tilt plus reciprocation), one
      common reagent holder (99412413), the thermoreactor block, the BOD stopper lifter and decapper.
+
+## 2026-10-22 — simulator: finger motors from MotorG; older packs load
+
+- **1. MotorG (done).** `ManipulatorRow.MotorG` is read from ManipulatorDefinition. A gripper's fingers bind to that
+  motor when it is available, as the pack does (`ddMotorG`, InitializeBODGripper). A MotorG naming no available
+  motor warns and binds nothing; an empty one means no finger motor. The "finger" description guess remains only for
+  snapshots without the column (the older fixtures), and says so in its basis.
+
+  | Order | Before | Now |
+  |---|---|---|
+  | 99445807 | GRIP1/GRIP2 unbound | motors 5 and 7 ("G motor BOD Gripper (rear/front)") |
+  | 99443749 | motor 14 | motor 14, from the table |
+  | 99429723 (COD) | pneumatic | pneumatic |
+
+- **2. 99361463 (partly).** An older pack (2020) without HeightDefinition, GripperManipulatorConnection or
+  DecapperBellowConnection; its heights are `HeightOffsetDefinition` (offsets from the bottom per object type).
+  - Both tables are now optional, so it loads: one carriage, three YSI probe manipulators on one Z, six racks.
+  - A warning says every tool home, vessel height and floor is a default.
+  - Still open: reading HeightOffsetDefinition (a second height model), and its warning that the taught places span
+    more than the SP2000-3 deck (possibly different Position units in old packs).
+- **Tests:** 189/189, 0 warnings (MotorG beats the guess, unavailable MotorG warns, old pack builds).
+- **Decision (Joost):** 99361463 is old enough to leave as it is (it loads; heights are defaults). Next: S5 (what
+  needles and probes sense in a vessel), with stirring: a stirrer paddle visibly turning at the configured speed, as
+  in the photos.
