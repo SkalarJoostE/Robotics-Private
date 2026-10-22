@@ -1962,3 +1962,18 @@ pushed with slice 3 and these fixes once Joost said to commit.
   and its cap drawn wrong while decapping.
 - **Also offered, not decided:** make `Start-Simulator` stop and show the error when the build fails, instead of
   silently starting the last build. That cost one live test on 22 October: the probe-depth fix was not running.
+
+## 2026-10-22 — third live run on 99445861: stirring and the rinse/waste glass
+
+- **Stirrers stood still live.** The pack sent `STIRRER(1,45)` and BOD1's stirrer was there, but the viewer turns
+  paddles with the source's clock, and the live clock only moves with motor frames. Fixed: live paddles turn on the
+  wall clock; replays keep theirs.
+- **Rinse/waste "looked quite bad"** (Joost): normally a connected pair of glass cylinders of equal height, the rinse
+  overflowing through a tube into the waste.
+  - Fixed: RINSE and WASTE within 160 mm are drawn as that pair, with height = the probe tip at RinseHeight + 40 mm
+    (186 mm on 99445861).
+  - Rendered and checked.
+- **Also found:** Joost's restart at 13:20 ran the old build. Start-Simulator's build failed, probably because the
+  previous simulator still held the files, and it quietly started the last build. That is why the probe-depth fix
+  seemed missing. The launcher change is still undecided.
+- **Also found:** the HHD bridge's COM2 went to device error 43. Disabling and enabling it fixed it.
