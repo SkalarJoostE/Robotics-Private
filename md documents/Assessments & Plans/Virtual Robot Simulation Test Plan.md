@@ -1865,3 +1865,64 @@ State: **in the `Robotic-Simulator` working copy, not committed.** It builds on 
 - **Decision (Joost):** 99361463 is old enough to leave as it is (it loads; heights are defaults). Next: S5 (what
   needles and probes sense in a vessel), with stirring: a stirrer paddle visibly turning at the configured speed, as
   in the photos.
+
+## 2026-10-22 — S5 slice 1: stirrers drawn and turning (uncommitted)
+
+- **What it shows:** every manipulator with a `StirrerNumber` or `StirrerIO` gets a stirrer, switched as the pack's
+  `ToggleStirrer` does (full-speed IO row, an output switching it, or the PWM channel).
+- **Speed:** duty × an assumed 600 rpm full speed (Joost: proportional, assume full speed; no rpm known), turned with
+  replay or live time. IO lamps show the running channels.
+- **Checked on:** 99443749, 99445277, 99440240, 99429723.
+- **Details:** `docs/stirrers.md`. Tests 190/190, plus `check-stirrers.mjs`.
+- **Explained to Joost (slice 2):** "liquid and immersion" is not measuring. It checks where the robot puts its tools
+  against the deck:
+  - a probe in an empty place (the 21 Oct Waters run, where A1 was queued: 32 "measured" empty places);
+  - a probe stopped above the liquid (measure height too high);
+  - a tip below a vessel floor.
+
+  It is also the groundwork for slice 3, level detection (pump fills the vessel, `READLEVEL` trips).
+
+## 2026-10-22 — S5 slice 3: level detection with filling
+
+- **Decisions (Joost):**
+  - No "empty place" findings; the 21 Oct Waters case was the test script's tray handling, not a robot fault.
+  - Hit detection shelved: it depends on measured robot layouts we do not have. It would only pay off for replaying a
+    reported Z crash.
+- **Built:**
+  - `PumpSettings` and `ManipulatorDefinition.FillPump` in the snapshot.
+  - `READLEVEL` answered by the world: liquid at the filling manipulator's tip while `LEVEL n` is on.
+  - Water flows at `PumpSpeedMilliLiterPerSecond` into the vessel under the tip; FILL/SAMPLE aliases count as one spot.
+  - The surface rises with the vessel's cross-section, with heights from the layout (`LayoutVesselFrame`).
+  - The viewer draws the water to the world's surface.
+  - Findings `WORLD-OVERFLOW` and `WORLD-FILL-NO-VESSEL`.
+  - Scenario fault `{"level":n,"never":true}`.
+- **Verified:**
+  - `LevelDetectionTests` (pack's poll through the interpreter on 99444892 BOD1): 120 ml after 120 polls, surface at
+    the tip; relay off, overflow; no vessel, finding; never-trips fault.
+  - 195/195 tests, 0 warnings. Write-up: `docs/level-detection.md`.
+- **Still open:** a live application fill on a BOD order (not done here); detector offset from the tip, vessel shapes
+  (cylinders) and tip homes are assumed.
+
+## 2026-10-22 — fixes from Joost's live BOD run on 99445861
+
+Joost's live run (sandbox of 99445861, BOD_ISO, DecapBottle on) showed four problems.
+
+1. **No rinse vessel.** GRIP's PARK and BOD's RINSE are taught at one spot. The layout merged them as "PARK / RINSE"
+   and drew a park marker. Fixed: a park with a real vessel type among its aliases is drawn as that vessel.
+2. **Bottles drawn with liquid.** They had no volume, so the viewer drew the theme fill. Fixed: a bottle on a fill
+   pump's places starts empty, and the robot's fill puts the water in.
+3. **False `WORLD-FILL-NO-VESSEL`** while the pump flushed over the waste. Fixed: WASTE and RINSE spots are drains.
+4. **Bottles open, and decap failed (error 71, then the run stopped).**
+   - Cause: the world counted only a decapper station, and refused two-sensor grippers.
+   - Fixed: the BOD stopper lifter (`WorldModel.Stopper.cs`, `docs/stopper-lifter.md`). It counts as a decapper for
+     the run deck, the lower sensor sees a stopper at CapPresenceHeight, fingers at DecappedPosition lift it, the
+     upper sensor sees it lifted, and fingers down over the bottle put it back.
+   - `GripperRow.DecappedPosition` is read.
+
+Tests 199/199, 0 warnings. Not yet re-run live.
+
+**Also found:** this PC has no virtual COM pair; only COM5, a real USB serial device. The Setup drawer refused the
+same-port pair silently, at the bottom of the drawer. Suggested: com0com or HHD.
+
+**Commits:** `e8f3995` (slice 1, stirrers) had been created locally although Joost rejected that tool call. It was
+pushed with slice 3 and these fixes once Joost said to commit.
