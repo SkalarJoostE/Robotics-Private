@@ -1936,3 +1936,15 @@ pushed with slice 3 and these fixes once Joost said to commit.
 - **The water jumped instead of rising.** The viewer redraws on world notes and the fill wrote none. Fixed: a note at
   most once a simulated second while a pump runs, plus the volume when it stops.
 - **Tests:** 200/200, with a recap-order test. Commit pushed. Next: Joost re-runs live.
+
+## 2026-10-22 — third live run on 99445861: probe depth in BOD bottles
+
+- **Joost:** better, but the probe went far too deep. On a real robot it enters only about 2 cm, just under the neck.
+- **Cause:** the probe rod's tip home was a guess (its deepest taught height = 10 mm above the deck).
+- **Fixed:**
+  - On 18-position BOD trays the bottles have their real size (Wheaton 300 mL 69 × 165 mm from the Fisher listing;
+    SP518 assumed).
+  - Tip homes are anchored on them: MeasureHeight = 20 mm under the top, CapPresenceHeight = 10 mm under it.
+  - On 99445861: probe at 149 mm (top 169); fill height 1.6 mm under the rim.
+  - Fills use the nominal volume.
+- 200/200 tests. Next: Joost re-runs live.
