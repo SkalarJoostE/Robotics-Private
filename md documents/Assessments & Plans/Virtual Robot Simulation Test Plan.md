@@ -1977,3 +1977,20 @@ pushed with slice 3 and these fixes once Joost said to commit.
   previous simulator still held the files, and it quietly started the last build. That is why the probe-depth fix
   seemed missing. The launcher change is still undecided.
 - **Also found:** the HHD bridge's COM2 went to device error 43. Disabling and enabling it fixed it.
+
+## 2026-10-22 — measuring sheet for real dimensions
+
+- **Why:** deriving sizes from taught heights made everything fit by construction and look too tight (Joost, rinse
+  glass and bottles).
+- **Agreed approach:**
+  - an independent dimensions catalogue for objects;
+  - tool-tip heights at Z 0 per head type;
+  - taught heights checked against both, not used to size things.
+- **Sheet:** https://claude.ai/artifact/H9xwVvchXGXCwYer9vNx92 ("SP2000 Measuring Sheet", private to Joost). About 45
+  rows, each showing the current assumed value and its source: gantry, tool tips at Z 0, tools and stirrers, BOD
+  bottles and stoppers, rinse/waste glass, COD tubes, racks and trays. Joost fills it in himself in production.
+- **Reading it back:** each row is saved to the artifact's database (`measurements/<id>`: `value` mm, `note`,
+  `photo`; `sheet/meta`: `robot`). Read it with ArtifactData `list` on `measurements`. Round trip checked with a probe
+  record, which was then deleted.
+- **Next, once filled in:** build the catalogue file in the simulator from it, replace the assumptions, and add the
+  height checks.
