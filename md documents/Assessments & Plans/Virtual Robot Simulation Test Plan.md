@@ -1926,3 +1926,13 @@ same-port pair silently, at the bottom of the drawer. Suggested: com0com or HHD.
 
 **Commits:** `e8f3995` (slice 1, stirrers) had been created locally although Joost rejected that tool call. It was
 pushed with slice 3 and these fixes once Joost said to commit.
+
+## 2026-10-22 — second live run on 99445861: recap and live water fixed
+
+- **The stopper stayed on the feet after the recap.** The world looked at the stopper only on sensor reads, but
+  Action71x00 lowers the fingers and slides away before reading one. The world saw the fingers down beside the bottle
+  and dropped the stopper ("released between places" in the trace). Fixed: the stopper is also re-evaluated on every
+  program upload.
+- **The water jumped instead of rising.** The viewer redraws on world notes and the fill wrote none. Fixed: a note at
+  most once a simulated second while a pump runs, plus the volume when it stops.
+- **Tests:** 200/200, with a recap-order test. Commit pushed. Next: Joost re-runs live.
