@@ -1795,3 +1795,21 @@ State: **in the `Robotic-Simulator` working copy, not committed.** It builds on 
   - `MotorG` is not in the snapshot: 99445807's finger motors are unmatched.
   - The shaker (tilt plus reciprocation) and the reagent rack (one common holder).
   - Scale is from photos (assumed).
+
+## 2026-10-22 — viewer: COD sample rack 210880307B from CAD
+
+- **Model:** `3d/COD sample rack/samplerack_210880307B_assembled.glb`, served as
+  `viewer/models/cod-sample-rack-210880307B.glb`. It holds 48 bores of about 18.2 mm, 8 × 6 at 24 mm pitch, with the
+  top plate at 62 mm. Its generator says it is an **approximate reconstruction from the drawing**, not a CAD export;
+  the README it refers to was not supplied.
+- **Which racks:** any rack with cells in a 6 × 8 grid at 24 mm (SAMPLE, COLD, COOLER, DILUTION in the three COD
+  checkouts). The model is centred on the cells and turned so its 8 bores follow the 8 cells. Not used for HEATER
+  (the photo shows a thermoreactor block), alternative outlines, or explicit overrides. Visual only: cells, places and
+  vessel floors unchanged.
+- **Code:** `deck-layout.js`, `tools/check-deck.mjs`, and `Program.cs` (serves `.glb` from the viewer folder).
+  Tests 185/185, 0 warnings. Write-up: `docs/deck-cad.md`.
+- **Tubes stand on the bottom plate (6 mm)** with their top unchanged (Joost: they must touch the rack bottom). The
+  floor had been a default 80 mm tube below the taught grip height (24 mm). This is drawing only: places are
+  unchanged and the world model does not use the floor.
+- **Open:** which end the positioner pin faces; the thermoreactor (HEATER) block has no model yet. The photos stay
+  local (not in the simulator repo), at Joost's request.
