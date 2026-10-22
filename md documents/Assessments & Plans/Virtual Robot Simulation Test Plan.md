@@ -1994,3 +1994,66 @@ pushed with slice 3 and these fixes once Joost said to commit.
   record, which was then deleted.
 - **Next, once filled in:** build the catalogue file in the simulator from it, replace the assumptions, and add the
   height checks.
+
+## 2026-10-22 — simulator: live-run recording; the live view can go back in time (uncommitted)
+
+State: **in the `Robotic-Simulator` working copy, not committed.**
+
+- **Recorded server-side, one recording per application run** (Joost, same day: not from Start listening, each
+  run its own, a manual stop, and an end when the robot stops). `RunRecorder` decides from what the simulator can see:
+  - **Start:** the PC's first bytes, i.e. the ESC of ConnectAndReset when the run's initialisation opens the port.
+    Listening with nothing connected records nothing.
+  - **Next run:** the core writes the run as Started in `Analyses.TreeDatabase.Xml` before its initialisation
+    (robotics-core `AnalysisForm.Start`); that ends the previous recording.
+  - **Normal end:** the tree shows the run `Finished`, or `Incubating` for a BOD day (`AnalysisForm.timer1_Tick`, after
+    the finalization).
+  - **Stop button:** it writes nothing to the tree. The status stays Started, which is why customer trees keep
+    interrupted Started runs. But every run ends in the pack's `Finalization.Start`, whose last robot command is `U`
+    before `CloseSerialForm` (abrupt stop included). So 5 s of silence after a `U` saves the recording.
+    - An error popup or a pause also sends `U` and waits, so this only saves; when the PC sends again in the same run,
+      the same recording continues.
+    - The port close itself cannot be seen: the pack opens the port without DTR or handshake.
+  - **By hand:** Stop recording in the viewer; the rest of that run is not recorded, the next run is.
+  - Format: the replay's own, `TimelineFile` `sp2000-timeline/1`. `TimelineBuilder`'s recorder became a shared
+    `TimelineRecorder`. Both checked-in replays regenerate **byte-identical** to before the change.
+  - Contents: motors at 30 Hz while moving; world and IO on change. Events: programs, replies (decoded as the replay
+    does), world, findings, state notes, and drive actions.
+  - A recording carries `recording` (id, start, end, link, programs, recovered) and no `check`.
+  - Saved under `%LOCALAPPDATA%\SP2000Simulator\recordings` (`--recordings <folder|off>`).
+  - The running session writes `<date time> <order> <link>.recording.jsonl`, flushed every second. Stop turns it
+    into `.timeline.json`.
+  - A session in which the PC sent no program is not kept.
+  - A journal left by a closed or crashed simulator is finished at the next start, marked *recovered*. A journal
+    another simulator holds open is skipped.
+- **Viewer:**
+  - On the live view, pause, the scrubber or ← load the recording so far into the same scene. It then plays as a
+    replay (speed, scrub), grows once a second, and follows its end.
+  - Live (G) returns to the robot now. The application keeps running.
+  - Replays lists the session being recorded now, the recorded sessions (newest first), and the log replays.
+  - Seeks give the panels only what they show, and lookups are binary searches, so long recordings stay fast.
+- **Found and fixed on the way: the live view showed every waited move finished at once.**
+  - The board driver waits for a move with one `Delay` up to the board's idle time. `ScaledClock.Now` is the end of
+    a delay from the moment it starts, so another thread reading the motors saw the end position.
+  - Measured on the existing stream: no motor frame from 5.4 s to 15.0 s of a drive, then the final position.
+  - New: `ISimClock.Present` (`ScaledClock`: the scaled wall clock). The live stream and the recorder read motors at
+    it.
+  - Second fix: Windows waits in 15.6 ms steps, so the 30 Hz sampler runs to deadlines, and on a timer the "still
+    frame before a move" goes where the previous sample was. Without it, playback stair-stepped.
+  - Result: a 41 s drive went from 39 frames (jumps) to 847, with 440 mid-move Z frames.
+- **Verified:**
+  - 0 warnings and 0 errors on a `--no-incremental` build.
+  - Tests 204/204 three runs in a row (4 new: `RecordingTests`), plus `tools/check-recording.mjs`; the other node
+    checks still pass.
+  - Headless Edge on a drive:
+    - live → pause (at the end, paused);
+    - scrub to 30 % (3.0 s of 10.1 s);
+    - 4× for 2 s (+8.0 s while the recording grew);
+    - Live; Replays while running and after Stop; the finished recording opens.
+  - The journal of a killed simulator was recovered at the next start.
+- **Not yet done:**
+  - A live COM run with the application. Only drive mode and the controller-level tests have been run; the run
+    boundaries above are traced in the source, not yet seen on a real run (Stop button, error popup, BOD day end).
+  - Joost should see moves animate live now, where they used to jump.
+- **Open:**
+  - **Memory.** The running session's recording is held in memory (serialised), and going back fetches it whole. This
+    is fine for runs of an hour; a day-long session would be tens of MB.
