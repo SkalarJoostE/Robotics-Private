@@ -2058,6 +2058,187 @@ State: **in the `Robotic-Simulator` working copy, not committed.**
   - **Memory.** The running session's recording is held in memory (serialised), and going back fetches it whole. This
     is fine for runs of an hour; a day-long session would be tens of MB.
 
+## 2026-10-22 — assessment: old SP2000-generation orders (99336374) in the simulator (read only, no code)
+
+Trigger: Joost wants to test the SSO-89 upgrade of 99336374 FRA SP2000-8 BOD (2018, core 1.36 era, workflow-driven)
+on the simulator once the other session has written it. Nothing was changed in the simulator or the order.
+
+- **Today it does not load.** `OrderLoader` requires `ManipulatorDefinition`, `IOConfiguration`, `Position` and
+  `RackDefinition`; this generation has none (`KeyNotFoundException`, `OrderLoader.cs:63`). `Load(path)`/`LoadAny`
+  also default the application to "Multitest".
+- **Fleet:** the diluter scan counts ~160 "SP2000 monolith" folders (G1b/G2/G3/G5h/G6 with that framework). In the
+  workspace: 99336374, 99324149, 99301224 (×2); 99339531 is in between (Positioning, no RoboticsSettings);
+  99341210/99345583/99361463 are transitional (ManipulatorDefinition + Positioning, no HeightDefinition).
+- **The controller side needs nothing new except `DILK`.** Same CA16 (firmware 5.00, boards 704:3.0, 714, 710:5.2),
+  same SSPL over COM at 19200. The pack computes every XY/Z in C# and sends absolute `MOTOR(0,…)`; `TUBEA`, `CHAR`,
+  `INT2ASC`, `BRIDGE`, `TROLLEY`, `LIFT` are absent from called code. **`DILK` is required**: the Kloehn ATU diluter
+  sits on CA16 serial port 8 (`OPEN(8,9600,8,'N',1)`, `DILK(8,n,S1,'C','<cmd>',$)` and `'Q'` polling), and
+  `CheckConnectedDiluters` stops the run at init without it. Firmware: `appl.cpp` `DilCommandKLOEN` 2475-2960.
+- **Emulate is no shortcut:** in Emulate the pack's `RunSSPL` sends nothing and `DecapBottle`/`CapBottle`/`InitGripper`
+  return true at once (`AllScripts.cs` 553-563, 8629, 8762, 1130). The robot row must be Normal, as for new orders.
+- **Where the modern concepts live (99336374):**
+
+  | Modern | Old |
+  |---|---|
+  | DeviceConfiguration robot row | same table, uid 1 (Name 10, Type 0, port 2) — `Prepare` already finds it |
+  | MotorConfiguration | same name, **no Available/Origin/HomeWithIO/TravelHeight**; `Status` NotConnected = not fitted (motor 13) |
+  | ManipulatorDefinition | `ManipulatorSettings` (motors by Description string; fixed names ManipulatorBOD/PH/Decapper/BOD2) |
+  | GripperManipulatorConnection + heights | `GripperSettings` (MotorG 5 jaw, Z 3, SafeHeight 1450, CapPresenceHeight 1720, Home 425, Decapped 385, sensors → `DIOSettings`) |
+  | IOConfiguration | `DIOSettings` (gripper sensors as `GRIP(port,bit)`), `DevicesConfiguration` (19 rows of **raw SSPL strings**: `PUMP(1) ON`, `LEVEL(1) ON`, `STIRRER(1,…)`), `RoboticsSettings` strings (rinse valve `STIRRER(3,100)`, aeration `PUMP(3)`) |
+  | Position + RackDefinition | absolute origins in `RoboticsSettings` (Probe/Fill/Gripper/Aerate X/Y, Rinse, Waste, Park, Maintenance) + `Positioning` (43 Name/X/Y/Z rows, pH places and offsets) + the application `BOD` table's `CoordX/CoordY` `msdata:Expression` on RackPos/PosInRack |
+  | HeightDefinition | absolute Z per place in the same columns/rows |
+  | Run deck (SampleAnalysis) | the analysis's `BOD` table: YesNo/Status1, RackPos, PosInRack, CoordX/Y; no decapped column — `Settings.DecapSample` |
+  | DiluterConfiguration.PortNumber/Emulation | `ComPort` = **CA16 port**, not a PC port; no Emulation column |
+
+- **Plan (slices; not started):**
+  1. **L1 legacy loader.** Detect the generation (`RoboticsSettings` present, `ManipulatorDefinition` absent) and build
+     the same `OrderSnapshot` from the old tables, so World/Viewer/RunDeck stay unchanged. Motors: Available =
+     not NotConnected; Origin from `Direction` (flagged). Places: one synthetic rack per tray position, evaluated
+     from the `CoordX/CoordY` expressions + tool origins; fixed places from `RoboticsSettings`/`Positioning`. IO:
+     parse the SSPL strings. Run deck: map `BOD` → those places, capped when `DecapSample`. `Prepare`: skip
+     `DiluterConfiguration.ComPort` (controller port) and never insert `Emulation` into a schema without it.
+     No default "Multitest".
+  2. **L2 `DILK` + a Kloehn XP3000 model on aux channel 8** (port `DilCommandKLOEN`, `StatusCheckKloen`; no reply
+     for absent addresses).
+  3. **L3 world:** the cap gripper (jaw motor 5 + two GRIP sensors) via the stopper-lifter rules; level detection
+     from `LEVEL`/`READLEVEL` with `PUMP(1)`; the `MaxX/MaxY` software clamp as a finding.
+  4. **L4 viewer:** an SP2000-8 frame (only SP2000-3 is measured), the mirrored pH Y (Direction 0).
+- **What it would prove for SSO-89:** every bottle of 8 × 21 reached by probe, fill needle, cap gripper and pH. It
+  would already catch the known risk: row 7 at Y 535 + 6 × 650 = 4435 exceeds `RoboticsSettings.MaxY` 4075, which
+  the pack clamps silently (`AllScripts.cs` 2584-2652) — the probe would land on row 6.
+- **Gaps:** no real robot log exists for 99336374 (no golden replay); the motor-board mapping, bottle spacing
+  (760/380, 6×3 in code), the decap side-step 380 and the init commands are hard-coded in the pack; ApplicationInfo
+  names an Oxi7310 DO meter while the enabled row is an Oxi730 Level2 on COM8.
+
+## 2026-10-22 — simulator: SP2000 monolith orders load; DILK and the Kloehn chain (uncommitted)
+
+State: **in the `Robotic-Simulator` working copy, not committed.** Slices L1 (legacy loader) and L2 (DILK) of the
+assessment above.
+
+- **L2, `DILK`:** `SsplInterpreter.Dilk.cs` ports DilCommandKLOEN, MakeStringKLOEN, StatusCheckKloen and
+  Flush_padKLOEN (appl.cpp:2436-2948):
+  - every choice (`C`, `Q`, `P/D/A`, `V`, `s/v`, `G`) and the 1 s timeout to S = -1;
+  - the broadcast;
+  - quirks as findings: the bit-4 hang, the buffer overflows, the PC-channel case and the 9/10 flush.
+- **`KloehnDiluterChain`** (`SP2000Simulator.Aux`):
+  - It is a model, not a port: there is no Kloehn source or manual.
+  - Assumptions, in its remarks: the command set, Cavro error numbers 3/7/15, a query reply ending in a space (the
+    appl.cpp:2872 example and the pack's scan for 32), moves at steps ÷ V, and initialised at start.
+  - It is fitted per `DiluterConfiguration.ComPort`. `GET /Aux/diluters` shows it.
+- **L1, `LegacyOrderLoader`:** branches in `OrderLoader.Load` and builds the same snapshot. The mapping is in the
+  README section "SP2000 monolith orders".
+  - The tray grid is fitted from the evaluated `CoordX/CoordY` expressions and verified cell by cell.
+  - `RunAnalysis` reads `Settings.DecapSample`. `RunDeck` maps the `BOD` table to SAMPLE for monolith orders only.
+  - Prepare leaves controller-channel diluters alone.
+  - The viewer shows the loader's notes.
+- **Verified:**
+  - Tests 230/230, 0 warnings, including 11 `DilkTests` (the pack's own KloehnDiluterInit runs to the end) and 10
+    `MonolithOrderTests`.
+  - The fixture `order-99336374-bod.json` is taken from the workspace checkout, which carries the **uncommitted SSO-89
+    3x7 edits**.
+  - The simulator started headless on the order (`--order`, no COM port):
+    - version register `1088 version 5.00 704:3.0 710:5.2`;
+    - Kloehn pump 1 on channel 8;
+    - layout of three tools, 168 deck places and eight trays.
+- **Found:** on the SSO-89 layout, row 7 of every tray is beyond `RoboticsSettings.MaxY` 4075 (BOD probe Y 4435,
+  decapper Y 4502). The pack clamps those moves silently. This is now a viewer warning.
+- **Not done:**
+  - A live run with the 2018 application (COM1↔COM2 present; not started, the other session is working on the order).
+  - Fill pump, level detection, rinse valve and aeration (SSPL strings in DevicesConfiguration), so a fill's
+    `READLEVEL` sees no liquid yet.
+  - The SP2000-8 frame.
+  - 99324149 and 99301224 not tried.
+
+## 2026-10-23 — simulator: a trolley that homes at the other end (pH Y, Direction 0) was drawn mirrored (uncommitted)
+
+- **Symptom (99336374 live run):** the pH tool stood outside the frame, in front of the bridge. Every robot with two Y
+  trolleys on one bridge is affected (BOD probe homing at the back, pH/transport trolley homing at the front), old
+  and modern: 99443749's `Y motor transport/pH` (motor 15) has Direction 0 and Origin FRONT/LEFT too.
+- **Cause:** the pack sends Direction only as the homing direction (`HomeMotor(nr, mtr.Direction, ...)`, 99336374
+  AllScripts.cs:1085; 99443749 :1190). The CA16 then negates that axis's correction (Set_Homingdirection), so target
+  +3530 becomes board counter −3530 × factor, and the CA16 divides the sign out again on read-back. The viewer, the
+  recordings and the world model computed units as counter × board sense ÷ factor, without that sign. The recording
+  `2026-10-23 104926 99336374 COM1` shows motor 6 (Y pH) from −3530 to +35 for a pack that only sent 0..3530, and
+  finger motor 5 (also Direction 0) at −425 for the pack's +425. `FingersAt` had a `Math.Abs` that hid the same error.
+- **Fix:** `MotorBoardFirmware.HomeSense(motor)` (−1 while the board's direction[] for the axis is not direction 1),
+  folded into `MotorBoards.Sense`, which every unit reader uses. It is taken from the board, not the CA16, because the
+  board keeps the direction through an ESC as the motor keeps its place, while the CA16's correction is reset.
+  `Math.Abs` removed from `FingersAt`; the units note in the layout header now states the rule.
+- **The layout itself was already right:** the legacy loader maps Direction 0 to Origin FRONT, the pH carriage's Y
+  binding runs backwards (scale −0.1) from a home 461 mm in front of the BOD home, and the pack's `y −= 2·CoordY`
+  mirror is applied to the pH places.
+- **Verified:** tests 231/231. New `MotionTests.Units_CountAwayFromHome_ForAnAxisHomedWithDirection0_AndKeepThatThroughAnEsc`
+  (704 y2 homed with direction 0, MOTOR(0,6,340) reads +340, and still +340 after an ESC). It fails with −340 without
+  the fix.
+- **Open:**
+  - A new live run on 99336374 to see the pH trolley in place. Older recordings keep their mirrored values, because
+    a recording stores the units it was given.
+  - The pH group's offset from the BOD group is the median of the shared places: 461 mm from the eight sample trays
+    against 390 mm from RINSE/WASTE (BOD 370 + pH 3530). The 71 mm gap is in the order's numbers
+    (`pospHSampleOffset` Y 4075 = `MaxY`, on a workspace copy carrying the uncommitted SSO-89 rack edits). Check it
+    against the 2018 racks before reading it as a simulator fault.
+
+## 2026-10-23 — SSO-89 (99336374): the simulator caught a wrong bottle numbering before the robot did
+
+- **What happened:** after the SSO-89 rack change (5 × `4x6` → 8 × `3x7`), Joost ran 99336374 in the simulator. The
+  simulator started at the top-left bottle of the rack while the software's own drawing showed bottle 1 top-right.
+- **Which was wrong:** the software's drawing. The order's position lines put the next rack at +X and the next column
+  at −X. The layout numbers rack slots right to left (`RackGrid NumberingDirection`), so bottles must be numbered left
+  to right, as the old `4x6` was (default). The re-used 2018 `3x7` tray type carried `Top2Bottom_Right2Left`, so
+  columns 1 and 3 would have been swapped for the operator. The simulator, which places bottles from the evaluated
+  `CoordX/CoordY` expressions, was right.
+- **Fixed** in the order: `3x7` numbering back to the default; committed with the rack change as SVN **r40243**. The
+  "uncommitted SSO-89 rack edits" mentioned in the entry above are therefore now on SVN.
+- **Why it matters for this plan:** a first concrete case of the simulator finding an operator-facing software defect
+  on a real order before any robot ran it. Write-up: `md documents\AI Order Approval Details\2026-10-22_99336374_SSO89_rack_upgrade_21_positions.md`.
+
+## 2026-10-23 — simulator: clearance between manipulators (uncommitted)
+
+- **Built:**
+  - `WORLD-SAFE-DISTANCE` (Error) checks the pack's own rule. Each manipulator counts from its own home, so the pack
+    keeps the **sum** of two positions at most `SafeDistance`:
+    - in Y for two trolleys on one bridge that home at opposite ends;
+    - in X across two bridges (99443749 `CollisionCheck`, AllScripts.cs:11147-11192).
+  - The monolith's `MinDistanceY` (99336374 `CheckCollision`, AllScripts.cs:2312-2346) becomes the same pairs in
+    `LegacyOrderLoader`. The fixture `order-99336374-bod.json` was regenerated: BOD/pH and pH/Decapper, 4071.
+  - The pack moves the other manipulator away before a move would break the rule. So this finding means a move went
+    past that check. A limit that is itself set too high is only seen by the contact check.
+  - `WORLD-TROLLEY-CONTACT` (Error): two carriages on one bridge meet. Off until `frames.json` `gantry.carriageReach` is
+    measured (see Found).
+  - Both checks are in the world (`WorldModel.Clearance.cs`, `ClearancePair`):
+    - each trace event checks the motion since the previous one, sampled from the boards' kept plans;
+    - `Tmc429Axis.RestsFrom` bounds the sampling, because the clock jumps to the end of a waited move;
+    - so the findings reach recordings and headless runs.
+  - The viewer only lights both rods. Its old `VIEW-COLLISION` was removed: it compared the X *difference* with
+    `SafeDistance`, where the pack uses the sum.
+  - The layout notes, per Y pair, how far apart the scene puts the two tools at the pack's limit. A negative gap is a
+    warning that the offset between the groups is wrong.
+  - The measuring sheet has a new row, "Y carriage: reach toward the other trolley" (`gantry.carriage-reach`).
+- **Found:**
+  - Every enabled `CollisionSettings` pair in the workspace is a same-bridge Y pair: 99391423, 99435480, 99443749 and
+    99336374. No workspace order has a two-bridge X pair, so the X rule is untested against real data.
+  - At the pack's own limit the two tools stand 38-56 mm apart: 99336374 53.9, 99391423 56/38, 99435480 48.8. A
+    carriage guessed centred on its tool would "touch" in normal runs. The number that decides contact is each
+    carriage's reach from its tool toward the other trolley, so the contact check waits for that measurement.
+  - 99443749: the scene puts the tools 85-101 mm *past each other* at the limit. Its pH group offset is the median over
+    RINSE, WASTE, BODRINSE_PHKCL and BODAIR_PHKCL, which are each trolley's own cups, not shared places.
+  - **Correction to the entry above:** on 99336374 the BOD rinse (Y 370) and pH rinse (Y 3530) are two cups too. The
+    run has both trolleys at them at once (Y sum 3900). So the 390 mm from RINSE/WASTE is not an inconsistency in the
+    order: 461 mm from the sample trays is the right separation.
+  - The real run of 99336374 peaks at Y 370 + 3530 = 3900, under 4071, so it should give no `WORLD-SAFE-DISTANCE`.
+- **Verified:** tests 238/238, solution builds with 0 warnings. `ClearanceTests` cover:
+  - pairs and axis from the monolith tables;
+  - the limit (4071 quiet, past it reported once, where it was passed);
+  - passing and leaving within one program;
+  - contact without the table limit;
+  - contact off without a measured reach.
+- **Open:**
+  - A live run with the new build: expect no clearance findings on 99336374.
+  - `carriageReach` from the measuring sheet into `frames.json`.
+  - `RelateGroups` should not treat RINSE/WASTE/KCL-type places as shared between groups; that is what breaks 99443749.
+  - The monolith's rule for trolleys homing at the same end (a difference rule on "bod"/"ph" names) is not modelled;
+    no workspace order has it.
+
 ## 2026-10-23 — first COD-titration order end to end in the real application: 99446390 (SSO-52), two defects caught before hardware
 
 - **What ran:** 99446390 TWN SP2000-3 COD Titration, a copy of 99404033 with one B-feature (COD titer also from the
@@ -2108,3 +2289,67 @@ State: **in the `Robotic-Simulator` working copy, not committed.**
     seen on a live run.
   - The hung rack drag is not fixed (cause unknown).
 - **Open:** the 20-tube rack layout, then a run on the real deck geometry; a real-titrator FAT.
+
+## 2026-10-23 — simulator: two trolleys line up on their racks; carriage bodies on their home side (uncommitted)
+
+- **Symptom (Joost):** after the sign fix, on 99336374 and 99443749 the two trolleys overlap and look like one
+  manipulator.
+- **99443749, the trolleys were placed wrong.**
+  - `RelateGroups` took the median of every place taught for both groups. On 99443749 that included RINSE, WASTE,
+    BODRINSE_PHKCL and BODAIR_PHKCL, which are each trolley's own cups: BOD's are all at Y 1170, the transport's KCL is
+    at 850.
+  - Those gave 202-401 mm between the homes, the two SAMPLE racks 469 mm; the median came out at 331.5 mm.
+  - The sign error had hidden it. With the trolley moving the right way, it drove into the BOD carriage.
+- **Confirmed by a photo of the robot (Joost, 23 Oct):** each trolley has its own rinse/waste pair, the two rinses side
+  by side. With 469 mm the cups come out, from the back: BOD waste 47, BOD rinse 117, pH rinse 185, pH waste 254 mm.
+  That is waste, rinse, rinse, waste about 70 mm apart, as in the photo.
+- **Fix 1:** two groups on different Y motors that share a rack line up on racks only. 99443749 TRANSPORT is now at
+  468.8 mm, and the "past each other" warning is gone. 99336374 is unchanged at 461 mm. Same-trolley groups
+  (gripper/needle, 99407519's DECAPPER) are unchanged.
+- **99336374, the drawing was the problem:** the 70 mm saddle was drawn centred on the Z axes, but the pack lets the axes
+  come 57 mm apart.
+- **Fix 2:** a carriage with a Y pair is drawn with its body on its home side. It reaches toward the other trolley half
+  the gap the pack leaves at its limit (99336374: 28.6 mm, body 6.4 mm off the axes), or `carriageReach` once measured.
+  - The body is marked assumed until then.
+  - The Z axes, tools and bindings do not move: the shift is on the carriage, with the opposite shift on its rods
+    (`meta.axesZ`).
+  - The world's contact frame and the viewer use the axes' centre.
+- **Verified:** tests 242/242, solution builds, viewer JS checks. New `ClearanceTests`:
+  - the 99443749 cup order and spacing from the photo (runs when the order is in the workspace);
+  - the 99336374 body offsets with the axes unchanged.
+- **Note:** a `testhost` (PID 60408) held the test DLL during this work, so tests ran from
+  `SP2000Simulator.Tests\bin\scratch`.
+- **Open:** a look in the viewer on both orders.
+
+## 2026-10-23 — START HERE next session (handover to the work PC)
+
+Today's work, in order: the three entries above, which are the detail. Nothing has been tried in the viewer yet.
+
+1. **The pH Y sign:** a trolley homed with Direction 0 was drawn mirrored. Fixed in `MotorBoards.Sense`.
+2. **Clearance checks:**
+   - `WORLD-SAFE-DISTANCE` is the pack's sum rule from `CollisionSettings` / `MinDistanceY`.
+   - `WORLD-TROLLEY-CONTACT` is built, and off until `frames.json` `gantry.carriageReach` is measured.
+3. **Two trolleys on one bridge:** they line up on shared racks only, and carriage bodies are drawn on their home side.
+
+**First thing to do:** start the simulator on 99336374 and 99443749 and look.
+- Two separate trolleys that come close at the rinse cups but do not overlap.
+- No "past each other" warning on 99443749.
+- No `WORLD-SAFE-DISTANCE` in a normal run. 99336374's run of today peaks at Y 370 + 3530 = 3900, under 4071.
+
+**State at hand-over:**
+- Tests 242/242 and the solution builds, on the home PC.
+- What reached GitHub is whatever was committed and pushed at the end of the session. Check `git log` in
+  `Robotic-Simulator` before assuming any of this is there.
+- The simulator's uncommitted set also holds the earlier monolith/DILK work (entry "SP2000 monolith orders load"),
+  which shares files with today's.
+- Live recordings stay on the home PC (`%LOCALAPPDATA%\SP2000Simulator\recordings`), including
+  `2026-10-23 104926 99336374 COM1`, made before the sign fix: its motor 6 values are mirrored.
+- 99336374 and 99443749 are workspace checkouts; the 99443749 cup test only runs where that order is checked out.
+
+**Open, in priority order:**
+1. Look at the viewer, as above.
+2. Measure the carriage reach on the measuring sheet ("Y carriage: reach toward the other trolley",
+   https://claude.ai/artifact/H9xwVvchXGXCwYer9vNx92), then add `gantry.carriageReach` to `layouts/frames.json`. That
+   switches the contact check on and replaces the assumed carriage drawing.
+3. The X rule (two bridges) is untested on real data: no workspace order has such a pair.
+4. The monolith's same-direction trolley rule (a difference rule on "bod"/"ph" names) is not modelled.
