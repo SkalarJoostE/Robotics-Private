@@ -2057,3 +2057,54 @@ State: **in the `Robotic-Simulator` working copy, not committed.**
 - **Open:**
   - **Memory.** The running session's recording is held in memory (serialised), and going back fetches it whole. This
     is fine for runs of an hour; a day-long session would be tens of MB.
+
+## 2026-10-23 — first COD-titration order end to end in the real application: 99446390 (SSO-52), two defects caught before hardware
+
+- **What ran:** 99446390 TWN SP2000-3 COD Titration, a copy of 99404033 with one B-feature (COD titer also from the
+  CalibrationStandards / STANDARD rack). The real application drove the simulator; the TL7000 titrator stayed in
+  Emulate.
+  - Set up through the API: `POST /Order/sandbox`, `load`, `prepare` (pcPort 2, simPort COM1), `start-listening/COM1`.
+    Robot row Normal on COM2, `Titronline 7000` Emulate on port 3, no clash.
+  - Titer seeded in the sandbox: CalibrationStandards row 3 = Type Titer, YesNo true.
+  - `Run-AppTest.ps1 -Application COD -CreateNew -RackPositions 1`. Deck at Start: 12 SampleAnalysis rows on SAMPLE 1,
+    3 CalibrationStandards rows on STANDARD, 0 findings.
+  - The layout note "taught places span more than the SP2000-3 deck" is expected: the copy still has 99404033's
+    seven 3x4 racks until the 20-tube rack layout is done.
+- **Run 1 (SVN r40247):** the titer went to X 195, Y 2459 (STANDARD place 3 = 1299 + 2 × 580) via the escape sub,
+  before any sample, then 12 samples on SAMPLE 1. Two defects showed:
+  - **Z 0 at the standard rack.** Before the standard-rack titration the stirrer started (`STIRRER(1,100)`) with no
+    Z move, so in the air, then dropped to MeasureHeight 1715; the droplet wait went to Z 0. Cause: the copied
+    chain uses `StartStirHeight` and `DropletHeight`, and STANDARD had only Measure/StirOff heights. No error is
+    raised; the move just stays at the top. Fixed in r40248 (placeholders 1485 / 1055, teach on site).
+  - **Titer row titrant empty.** The calculation used the titer (shared `TitrationMethodCalculation`: TiterVolumeAvg 2,
+    Titrant 8.157, all samples 8.157 instead of 0.12), but the titer row's `AverageTitrantConcentration` stayed empty.
+    Cause: the core copies results back only for `Calc` columns, and for a `TableReference` table it reads the
+    definitions from the master (`AnalysisForm.cs:7277-7306`). Run 2 (r40248, flag in the application copy only)
+    still showed it empty; fixed in r40249 (flag in `SkalarPack.Robot.Tables.xml`).
+- **Run 3 (r40249):** finished, exit 0. Standard-rack Z 1485 → 1715 → 1055 → 620 → 0; titer row Measured, 2 mL,
+  titrant 8.157; 12/12 samples measured; deck findings 0.
+- **What it proves:** routing, heights and the calculation wiring, and that the emulated titrator has a titration for
+  the Titer sample type (33) with the COD method. **Not:** real volumes or endpoints (the emulated TL7000 returns
+  2 mL for every titration, so every sample reads COD 0 "Under range").
+- **Second case of the simulator finding an order defect before any robot ran it** (after SSO-89, 99336374).
+  Neither defect was visible to the static checks. Write-up:
+  `md documents\AI Order Approval Details\2026-10-23_99446390_SSO52_titer_from_standard_rack.md`.
+- **Tooling found:**
+  - `Run-AppTest.ps1 -RackPositions` needs **Windows PowerShell 5.1**. Under PowerShell 7 its screen helper fails to
+    compile (`System.Drawing` forwarded types) right after the analysis is created.
+  - `Run-AppTest.ps1` reported "did not finish" on run 1 although the analysis was `Finished` (13:50–14:01): it reads
+    the state from the window title, which had become `< Administrator > Skalar.Units.Pack#1 - [COD:Finished]`.
+  - One attempt hung inside the rack drag with no dialog and no message; the next attempt dragged fine. Cause not found.
+  - `Check-ManipulatorGeometry.ps1 -Methods 12,13,14` reported the geometry complete: it only walks methods named in a
+    Settings row, and this method is started by code, so its subs were never walked.
+- **Tooling fixed, same day (Robotics-AI working copy, not yet committed):**
+  - `Check-ManipulatorGeometry.ps1`: a `-Methods` entry not reached from any Settings row is walked from the Sequence
+    rows that lead to it, with a NOTE; one no Sequence leads to is reported NOT CHECKED, never "complete", and
+    `-FailOnMissing` exits 1. On the pre-r40248 sandbox it now reports exactly the two STANDARD heights the simulator
+    showed; the 99445796 example's output is byte-identical to the old script's.
+  - `Run-AppTest.ps1`: refuses `-Racks`/`-RackPositions` under PowerShell 7 up front, with the command to use; also reads
+    the state from the main window's `[App:State]` title, and counts a run finished when `Analyses.TreeDatabase.Xml`
+    shows it `Finished` after Start. The edition check and the disk check are tested; the title fallback is not yet
+    seen on a live run.
+  - The hung rack drag is not fixed (cause unknown).
+- **Open:** the 20-tube rack layout, then a run on the real deck geometry; a real-titrator FAT.
