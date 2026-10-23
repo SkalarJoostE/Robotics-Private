@@ -2354,12 +2354,10 @@ Today's work, in order: the three entries above, which are the detail. Nothing h
 3. The X rule (two bridges) is untested on real data: no workspace order has such a pair.
 4. The monolith's same-direction trolley rule (a difference rule on "bod"/"ph" names) is not modelled.
 
-## 2026-10-23 — simulator: liquid handling for monolith orders; first full BOD run on 99336374 (uncommitted)
+## 2026-10-23 — simulator: liquid handling for monolith orders; first full BOD run on 99336374
 
-State: **in the `Robotic-Simulator` working copy, not committed.** The working copy also holds another session's
-uncommitted clearance work (`ClearanceTests`, `WorldModel.Clearance.cs`, `LayoutTrolleyFrame.cs`). Two of its tests
-failed at 15:35 while that session was still editing them: `TwoTrolleys_LineUpOnTheirSampleRacks_NotOnCupsOfTheSameName`
-and `Carriages_MeetingAnotherTrolley_AreDrawnOnTheirHomeSide`. Everything else passed: 240/242.
+State: **committed and pushed** in `Robotic-Simulator` `6ae18f3` (together with the other session's clearance work, 242/242
+tests, and the L1/L2 code of 22 Oct), README `c378ffb`.
 
 - **Built:**
   - **`LegacyOrderLoader`** parses the pack's SSPL text into IO rows: DevicesConfiguration `CmdOn`/`InputStatus`, and
