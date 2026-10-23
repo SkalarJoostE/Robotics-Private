@@ -2353,3 +2353,46 @@ Today's work, in order: the three entries above, which are the detail. Nothing h
    switches the contact check on and replaces the assumed carriage drawing.
 3. The X rule (two bridges) is untested on real data: no workspace order has such a pair.
 4. The monolith's same-direction trolley rule (a difference rule on "bod"/"ph" names) is not modelled.
+
+## 2026-10-23 — simulator: liquid handling for monolith orders; first full BOD run on 99336374 (uncommitted)
+
+State: **in the `Robotic-Simulator` working copy, not committed.** The working copy also holds another session's
+uncommitted clearance work (`ClearanceTests`, `WorldModel.Clearance.cs`, `LayoutTrolleyFrame.cs`). Two of its tests
+failed at 15:35 while that session was still editing them: `TwoTrolleys_LineUpOnTheirSampleRacks_NotOnCupsOfTheSameName`
+and `Carriages_MeetingAnotherTrolley_AreDrawnOnTheirHomeSide`. Everything else passed: 240/242.
+
+- **Built:**
+  - **`LegacyOrderLoader`** parses the pack's SSPL text into IO rows: DevicesConfiguration `CmdOn`/`InputStatus`, and
+    RoboticsSettings rinse valve and aeration. Probe n becomes a `PumpSettings` fill line: `FillPump<PumpProbe n>` until
+    `LevelDetection<LevelProbe n>` reads 1, at `RoboticsSettings.PumpSpeed` ml/s (99336374: FillPump1 / LevelDetection1,
+    20 ml/s).
+  - **`BodTrays.MonolithBottle`:** a monolith BOD rack that no tray model fits gets a bottle from `VolumeBottle`, sized
+    to hold it up to the probe's measuring depth (assumed). A unit test fills at FillZ and stops at 166 ml.
+  - **Kloehn:** `?8` answers the valve port, `o-n` turns the other way, and an initialised pump starts on port 1. Joost's
+    11:25 run had stopped on `?8` (SIM-UNSUPPORTED), then refused `o-3R`.
+  - **`ControllerHardware`** raises change notes only on a real change. That 11:25 recording was 398 MB: 7.2 M notes
+    from the fill loop rewriting the same outputs.
+- **Live run** (Joost, real application, sandbox `99336374 FRA SP2000-8 BOD (sandbox 2026-10-23 152407)`,
+  BOD_FirstDay, tray B1 on position 1, some bottles deselected by hand):
+  - Initialisation, Kloehn init and ATU additions run (`?8`, `o-3R`, `P792R`, `o1R`, `D792R`, no pump errors).
+  - Five bottles were filled to 165 ml by the level detector, and every bottle was decapped and recapped by the
+    stopper lifter.
+  - **Order findings (SSO-89 racks):**
+    - **Row 7 cannot be reached.** The fill needle is clamped to MaxY 4075 (bottle at 4435), and both the timed fill
+      and the level-detection fill pumped there, onto the deck: `WORLD-FILL-NO-VESSEL` ×2, after
+      `MOTOR(3,0,1,4765,4075)`.
+    - **The unclamped decap move** `MOTOR(3,0,1,3266,4502)` takes the BOD trolley to Y 4502 with the pH trolley at
+      home, past `CollisionSettings.MinDistanceY` 4071: `WORLD-SAFE-DISTANCE`.
+    - Both were predicted on paper in the SSO-89 write-up; the run confirms them, and the clearance breach is new.
+  - **Pack finding:** `IF I1=0 AND Q1=1` in SP2000_LiquidDetection_v4. The firmware drops the `AND` part
+    (`FW-CONDITION-IGNORED-TEXT`), so the real robot does the same.
+- **Simulator gaps seen:**
+  - The 4 pH calibration standards are not on the run deck (`WORLD-RUN-PLACE-MISSING`). The deck is the stopper
+    lifter's group, while STANDARD is taught for the pH group only.
+  - `Run-AppTest.ps1` times out on this core's "New analysis" dialog, right after login. Runs are started by hand.
+- **Next:**
+  - Put other groups' racks (STANDARD) on the run deck.
+  - A Run-AppTest path for the 2018 core.
+  - The SP2000-8 frame.
+  - Re-run after the order's MaxY / row-7 fix.
+  - 99324149 and 99301224.
