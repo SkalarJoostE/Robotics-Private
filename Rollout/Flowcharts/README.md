@@ -17,6 +17,7 @@ Made for the web-chat side project discussion, October 2026.
 | `08-customer-software-to-svn.md` | Customer software to SVN (`skalar-svn-import`) |
 | `09-diluter-upgrade.md` | Diluter Upgrade Kit |
 | `10-learning-loop.md` | Filing results back into the case base (`skalar-session-wrapup`) |
+| `11-proposal-any-robot-question.md` | **Proposal, not built:** two lanes with a shared RAG search (see `md documents\Assessments & Plans\RAG Assessment.md`) |
 
 The `.md` files are the source. Each one renders on its own in VS Code and GitHub (Mermaid).
 `flowcharts.html` is the combined page, generated from them:
