@@ -21,9 +21,8 @@ flowchart TD
 
     AGENT[["Full workflow on the server, charts 02 to 04<br/>check out or refresh the order from SVN,<br/>profile and sequences, uploaded log through<br/>the log reader, several rounds"]]:::ai
     AGENT -.- QUEUE[One question per order at a time]:::rule
-    SEARCH -.->|"prior-art step starts<br/>from the same results"| AGENT
-    AGENT --> REVIEW{Engineer reviews<br/>before the asker sees it}:::human
-    REVIEW --> OUT2([Answer]):::start
+    SEARCH -.->|"prior-cases step starts<br/>from the same results"| AGENT
+    AGENT --> OUT2([Answer]):::start
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
     classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a

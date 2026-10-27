@@ -21,7 +21,7 @@ flowchart TD
     SHARE -->|Yes| SEND["Send to the maintainer for review<br/>Submit-Contributions.ps1"]:::script
     SHARE -->|No| GIT[(Workspace repository)]:::store
     SEND --> GIT
-    GIT -.->|"Prior-art search<br/>at the start of every case"| NEXT([Next question]):::start
+    GIT -.->|"Prior-cases search<br/>at the start of every case"| NEXT([Next question]):::start
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
     classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a

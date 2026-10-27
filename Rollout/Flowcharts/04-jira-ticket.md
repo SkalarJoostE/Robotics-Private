@@ -25,7 +25,7 @@ flowchart TD
     ENOUGH -->|No| ASKFOR[Smallest concrete request<br/>for what is missing]:::ai
     ENOUGH -->|Yes| LOCAL[Diagnose, and if needed fix<br/>locally in the ticket folder]:::ai
     ASKFOR & LOCAL --> ANALYSIS[("analysis.md<br/>cause, confidence, verification,<br/>draft Jira reply to copy")]:::store
-    ANALYSIS --> ENG{Engineer decides:<br/>post, commit, contact customer}:::human
+    ANALYSIS --> ENG{Engineer decides:<br/>post to Jira, commit to SVN}:::human
     ENG --> CONF{Fix confirmed<br/>on the robot?}:::human
     CONF -->|Yes| LOGIT[Offer: log this ticket resolution]:::ai
 
@@ -40,7 +40,7 @@ flowchart TD
 
 ## Key points
 
-- "Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN, contacting the customer and deploying all need the engineer to ask for them.
+- "Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN and deploying all need the engineer to ask for them.
 - When the customer sent their own software, that is what gets diagnosed. SVN can differ from what actually runs on site.
 - If the ticket points to customer software the scraper could not download, the assistant stops and asks for it instead of quietly using SVN.
 - The draft reply is written for internal readers and never claims testing or a delivery date that has not happened.

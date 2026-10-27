@@ -7,13 +7,13 @@ A lab issue, a Jira ticket and a port verification differ only at the start and 
 ```mermaid
 flowchart TD
     S1[1 Intake<br/>fetch or refresh the order software,<br/>place the log in the order's Log folder]:::script
-    S2[2 Prior art<br/>search the case base and the<br/>Template Known Issues page]:::ai
+    S2[2 Prior cases<br/>search the case base and the<br/>Template Known Issues page]:::ai
     S2D{Seen before?}:::decision
     S3[3 Pre-generated summaries first<br/>order Profile.md, Sequence CSVs<br/>before any raw XML]:::ai
     S4[4 Log census<br/>four Loupe queries sent together]:::ai
     S5{5 Big search ahead?<br/>more than 5 rounds or 10k of material}:::decision
     SUB[Hand it to a helper agent<br/>that returns only the conclusion]:::ai
-    S6[6 Targeted confirmations<br/>one claim per query]:::ai
+    S6[6 Check each conclusion<br/>one small, specific lookup per point]:::ai
     S7[7 Write-up]:::ai
     LOGQ{Engineer: log it?}:::human
     CB[(Case base<br/>md documents logs)]:::store
@@ -36,7 +36,8 @@ flowchart TD
 
 ## Key points
 
-- Prior art comes before any new digging. Field issues repeat, and a past write-up is often most of the answer.
+- Prior cases come before any new digging. Field issues repeat, and a past write-up is often most of the answer.
 - The order's `Profile.md` lists its hardware and every application's settings in about 15 KB. Building the same picture from the XML took about five rounds on one review, roughly 80 times the cost.
+- Step 6 checks the conclusions one at a time, each with its own narrow lookup, for example "did the gripper reach position 3 at 10:42?". One broad search that tries to confirm everything at once returns hundreds of lines and proves none of them clearly.
 - Independent lookups go out together in one round. Lookups that depend on an earlier answer are not merged, so speed never replaces a check.
 - Each resolved case is filed back into the case base, so the next similar case starts with an answer.

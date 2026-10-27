@@ -238,7 +238,6 @@
           <li><strong>API billing:</strong> a personal subscription cannot be shared, so a shared service runs on an API key.</li>
           <li><strong>A queue per order:</strong> refreshing an order discards local edits, so two people asking about the same order must not run at once.</li>
           <li><strong>Tighter permissions</strong> and agreement with IT on sending customer logs and software to a cloud model.</li>
-          <li><strong>Review at first:</strong> an engineer checks answers before the asker sees them, until case types prove reliable.</li>
         </ul>
       </div>
       <div class="fact">
@@ -328,13 +327,13 @@ flowchart LR
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     S1[1 Intake&lt;br/&gt;fetch or refresh the order software,&lt;br/&gt;place the log in the order's Log folder]:::script
-    S2[2 Prior art&lt;br/&gt;search the case base and the&lt;br/&gt;Template Known Issues page]:::ai
+    S2[2 Prior cases&lt;br/&gt;search the case base and the&lt;br/&gt;Template Known Issues page]:::ai
     S2D{Seen before?}:::decision
     S3[3 Pre-generated summaries first&lt;br/&gt;order Profile.md, Sequence CSVs&lt;br/&gt;before any raw XML]:::ai
     S4[4 Log census&lt;br/&gt;four Loupe queries sent together]:::ai
     S5{5 Big search ahead?&lt;br/&gt;more than 5 rounds or 10k of material}:::decision
     SUB[Hand it to a helper agent&lt;br/&gt;that returns only the conclusion]:::ai
-    S6[6 Targeted confirmations&lt;br/&gt;one claim per query]:::ai
+    S6[6 Check each conclusion&lt;br/&gt;one small, specific lookup per point]:::ai
     S7[7 Write-up]:::ai
     LOGQ{Engineer: log it?}:::human
     CB[(Case base&lt;br/&gt;md documents logs)]:::store
@@ -354,7 +353,7 @@ flowchart TD
     classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
     classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
     <div class="notes">
-    <div class="points"><h3>Key points</h3><ul><li>Prior art comes before any new digging. Field issues repeat, and a past write-up is often most of the answer.</li><li>The order's <code>Profile.md</code> lists its hardware and every application's settings in about 15 KB. Building the same picture from the XML took about five rounds on one review, roughly 80 times the cost.</li><li>Independent lookups go out together in one round. Lookups that depend on an earlier answer are not merged, so speed never replaces a check.</li><li>Each resolved case is filed back into the case base, so the next similar case starts with an answer.</li></ul></div>
+    <div class="points"><h3>Key points</h3><ul><li>Prior cases come before any new digging. Field issues repeat, and a past write-up is often most of the answer.</li><li>The order's <code>Profile.md</code> lists its hardware and every application's settings in about 15 KB. Building the same picture from the XML took about five rounds on one review, roughly 80 times the cost.</li><li>Step 6 checks the conclusions one at a time, each with its own narrow lookup, for example "did the gripper reach position 3 at 10:42?". One broad search that tries to confirm everything at once returns hundreds of lines and proves none of them clearly.</li><li>Independent lookups go out together in one round. Lookups that depend on an earlier answer are not merged, so speed never replaces a check.</li><li>Each resolved case is filed back into the case base, so the next similar case starts with an answer.</li></ul></div>
     
     </div>
   </section>
@@ -484,7 +483,7 @@ flowchart TD
     ENOUGH --&gt;|No| ASKFOR[Smallest concrete request&lt;br/&gt;for what is missing]:::ai
     ENOUGH --&gt;|Yes| LOCAL[Diagnose, and if needed fix&lt;br/&gt;locally in the ticket folder]:::ai
     ASKFOR &amp; LOCAL --&gt; ANALYSIS[("analysis.md&lt;br/&gt;cause, confidence, verification,&lt;br/&gt;draft Jira reply to copy")]:::store
-    ANALYSIS --&gt; ENG{Engineer decides:&lt;br/&gt;post, commit, contact customer}:::human
+    ANALYSIS --&gt; ENG{Engineer decides:&lt;br/&gt;post to Jira, commit to SVN}:::human
     ENG --&gt; CONF{Fix confirmed&lt;br/&gt;on the robot?}:::human
     CONF --&gt;|Yes| LOGIT[Offer: log this ticket resolution]:::ai
 
@@ -496,7 +495,7 @@ flowchart TD
     classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
     classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
     <div class="notes">
-    <div class="points"><h3>Key points</h3><ul><li>"Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN, contacting the customer and deploying all need the engineer to ask for them.</li><li>When the customer sent their own software, that is what gets diagnosed. SVN can differ from what actually runs on site.</li><li>If the ticket points to customer software the scraper could not download, the assistant stops and asks for it instead of quietly using SVN.</li><li>The draft reply is written for internal readers and never claims testing or a delivery date that has not happened.</li></ul></div>
+    <div class="points"><h3>Key points</h3><ul><li>"Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN and deploying all need the engineer to ask for them.</li><li>When the customer sent their own software, that is what gets diagnosed. SVN can differ from what actually runs on site.</li><li>If the ticket points to customer software the scraper could not download, the assistant stops and asks for it instead of quietly using SVN.</li><li>The draft reply is written for internal readers and never claims testing or a delivery date that has not happened.</li></ul></div>
     <aside class="web"><h3>For a web version</h3>
         <p><span class="fit good">Good</span> The chat proof of concept already runs this flow as its Helpdesk channel and ends with a draft reply for a person to send.</p>
         <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Jira (read)</li><li>Log reader</li><li>Engineer approval</li></ul>
@@ -760,7 +759,7 @@ flowchart TD
     SHARE --&gt;|Yes| SEND["Send to the maintainer for review&lt;br/&gt;Submit-Contributions.ps1"]:::script
     SHARE --&gt;|No| GIT[(Workspace repository)]:::store
     SEND --&gt; GIT
-    GIT -.-&gt;|"Prior-art search&lt;br/&gt;at the start of every case"| NEXT([Next question]):::start
+    GIT -.-&gt;|"Prior-cases search&lt;br/&gt;at the start of every case"| NEXT([Next question]):::start
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
     classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
@@ -787,7 +786,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">This chart is a proposal. Nothing on it is built yet. It shows how a web page open to everyone with access could answer any question about the robots, not only software questions. Knowledge questions are answered from a shared search over the written knowledge (RAG: retrieval-augmented generation). Questions about one order's software or a log still go through the full workflows above. Full reasoning: <code>md documents\Assessments &amp; Plans\RAG Assessment.md</code>.</p>
-    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Anyone with access asks&lt;br/&gt;a question on the web page]):::start --&gt; ROUTE{What kind&lt;br/&gt;of question?}:::decision
@@ -805,9 +804,8 @@ flowchart TD
 
     AGENT[["Full workflow on the server, charts 02 to 04&lt;br/&gt;check out or refresh the order from SVN,&lt;br/&gt;profile and sequences, uploaded log through&lt;br/&gt;the log reader, several rounds"]]:::ai
     AGENT -.- QUEUE[One question per order at a time]:::rule
-    SEARCH -.-&gt;|"prior-art step starts&lt;br/&gt;from the same results"| AGENT
-    AGENT --&gt; REVIEW{Engineer reviews&lt;br/&gt;before the asker sees it}:::human
-    REVIEW --&gt; OUT2([Answer]):::start
+    SEARCH -.-&gt;|"prior-cases step starts&lt;br/&gt;from the same results"| AGENT
+    AGENT --&gt; OUT2([Answer]):::start
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
     classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
