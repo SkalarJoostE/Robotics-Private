@@ -131,7 +131,6 @@ Question on the web page
   │                         → nothing good found? hand over to the order lane or an engineer
   └─ order / log question → full workflow (flowcharts 02–07)
                              prior-art step starts from the same search results
-                             engineer reviews the answer before the asker sees it (stage 1)
 ```
 
 The flowchart version of this is chart 11 in `Rollout/Flowcharts/`.
@@ -181,7 +180,6 @@ Running this for several users at once adds requirements that a single engineer'
   index, and someone responsible for it when it fails.
 - **Read-mostly permissions.** The web lane diagnoses and drafts; it never commits, posts to Jira or
   edits order software outside its own working folder.
-- **Engineer review** of order-lane answers before the asker sees them, at least at first.
 
 ### Cost reasoning
 
@@ -199,7 +197,7 @@ Running this for several users at once adds requirements that a single engineer'
 
 | Topic | Why it matters | Proposed handling |
 |---|---|---|
-| **Confident wrong answers** | When the search misses the right page, the model answers fluently from the wrong one. This is the "first wrong answer kills adoption" risk in `Access-and-Feedback-Loop.md` §7. | Answers always cite their sources and show page status. "No good match" hands over instead of guessing. Engineer review stays on at first. |
+| **Confident wrong answers** | When the search misses the right page, the model answers fluently from the wrong one. This is the "first wrong answer kills adoption" risk in `Access-and-Feedback-Loop.md` §7. | Answers always cite their sources and show page status. "No good match" hands over instead of guessing. Answers go straight to the asker, with no engineer review in front (decided 2026-10-27), so these two carry the risk. |
 | **Embedding model and data governance** | Meaning-based search needs an embedding model. A cloud one sends the indexed text to that provider. Anthropic does not offer embeddings itself. | Decide with IT: a cloud provider under the same agreement as the AI model, or a local model on the server. The corpus is small enough for local. |
 | **Dutch and English** | Commit messages and some documents are Dutch. | Choose a multilingual embedding model, and keep keyword search in the mix. |
 | **Freshness** | A stale index answers from old pages. | Rebuild on commit; show the page date in the answer. |
@@ -216,8 +214,7 @@ Running this for several users at once adds requirements that a single engineer'
    already defines a replay test this can follow.
 3. **Wire it into the prior-art step** of the lab and ticket skills, and compare rounds and cost
    against the logged chats in `lab-chat-poc/cost_log.csv`.
-4. **Only then build the knowledge lane** of the web page, with engineer review on until answers
-   prove reliable.
+4. **Only then build the knowledge lane** of the web page.
 
 ## Sources
 

@@ -354,15 +354,17 @@ can post back — every credential involved is already approved.
 
 ### The staged plan
 
-**Stage 1 — triage-and-draft, with a human in front.** Colleagues send questions; the chat answers;
-**a Software Engineer reviews before the asker sees it.** This is the POC's own recommended next
-step, and it is the honest form of "stage 1" now that the engine exists — the review step, not the
-manual running of the tool, is what mitigates §7 while no confidence gate is built. It still produces
-the **Arm B evidence** the replay protocol calls the stronger arm (PROJECT.md §8, 2026-07-29), and
-`md documents\Lab Questions\` is already the folder that record lands in.
+**Stage 1 — triage-and-draft, answered directly.** Colleagues send questions; the chat answers, and
+the answer goes straight to the asker. There is **no Software Engineer reviewing before the asker
+sees it** (Joost, 2026-10-27; this replaces the earlier plan for a reviewer in front). So §7 is carried
+by the answer itself: it cites its evidence, keeps facts, inferences and open questions apart, and asks
+for what is missing instead of guessing. A Software Engineer reads what was asked and answered
+afterwards through the feedback loop (§4). It still produces the **Arm B evidence** the replay
+protocol calls the stronger arm (PROJECT.md §8, 2026-07-29), and `md documents\Lab Questions\` is
+already the folder that record lands in.
 
-**Stage 2 — graduate well-understood case types to direct answers**, keeping review on everything
-else. This is where a confidence gate (F13) earns its keep.
+**Stage 2 — a confidence gate (F13)**, so an answer the chat is unsure of goes to an engineer instead
+of being sent.
 
 **Stage 3 — real transport and hosting.** Jira first (cheap, approved, reuses the scraper); a central
 box with VPN/SVN/Loupe; a minimal internal web page with an order field and log upload. A Teams bot
@@ -619,8 +621,8 @@ The Lab commits to SVN themselves, and is expected to.
       (already PROJECT.md §9).
 - [ ] Harden `lab-chat-poc` permissions (drop `--dangerously-skip-permissions` for a read-mostly
       allowlist) before anyone outside Software Engineering uses it.
-- [ ] Run Stage 1 — triage-and-draft with a Software Engineer reviewing before the asker sees the
-      answer — and keep filing to `md documents\Lab Questions\`.
+- [ ] Run Stage 1 — triage-and-draft, answers going straight to the asker (no review in front,
+      2026-10-27) — and keep filing to `md documents\Lab Questions\`.
 - [ ] Measure whether an onboarding seed bundle on the share meaningfully beats a cold
       `Sync-Templates.ps1` run.
 
