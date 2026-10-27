@@ -77,6 +77,9 @@
   /* Legend */
   .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: .88rem; color: var(--ink-soft); padding: 0; margin: 0; list-style: none; }
   .legend li { display: flex; align-items: center; gap: 8px; }
+  .legend.mini { gap: 6px 14px; font-size: .8rem; color: var(--ink-faint); }
+  .legend.mini .sw { width: 20px; height: 12px; }
+  .legend.mini .sw.decision { width: 14px; height: 14px; }
   .sw { width: 26px; height: 16px; border-radius: 4px; border: 1.5px solid; flex: none; }
   .sw.ai { background: #e6ecf7; border-color: #1b355d; }
   .sw.script { background: #eef3fb; border-color: #6686b7; border-style: dashed; }
@@ -151,21 +154,12 @@
     <p class="eyebrow">Robotics-AI · behind the screen</p>
     <h1>How Robotics-AI Works</h1>
     <p class="lede">What happens behind the screen for each kind of question an engineer asks, step by step, and what a web page where anyone can ask the same questions would need for each one.</p>
-    <p class="meta">12 flowcharts · built 2026-10-26 from the workspace's own skills and scripts</p>
+    <p class="meta">12 flowcharts · built 2026-10-27 from the workspace's own skills and scripts</p>
   </header>
 
   <section aria-labelledby="legend-h" style="display:flex;flex-direction:column;gap:12px">
     <h3 id="legend-h">Reading the charts</h3>
-    <ul class="legend">
-      <li><span class="sw ai"></span>The assistant reasons or writes</li>
-      <li><span class="sw script"></span>A workspace script runs</li>
-      <li><span class="sw decision"></span>A branch in the flow</li>
-      <li><span class="sw human"></span>An engineer decides or acts</li>
-      <li><span class="sw rule"></span>A hard stop or house rule</li>
-      <li><span class="sw store"></span>A stored result</li>
-      <li><span class="sw start"></span>Start or end</li>
-      <li><span class="sw proposed"></span>Proposed, not built yet</li>
-    </ul>
+    <ul class="legend"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
   </section>
 
   <section class="web-summary" id="web" aria-labelledby="web-h">
@@ -173,7 +167,7 @@
     <p>Today an engineer runs these flows in Claude Code on a PC that has the workspace, the VPN, SVN and the log reader. A web page where anyone can ask a question is only a new front door. Behind it, a server still needs the same workspace and the same access, and every answer is paid per conversation through the API.</p>
     <div class="scroll">
       <table class="matrix">
-        <thead><tr><th scope="col">Flow</th><th scope="col">Web fit</th><th scope="col"><span>Workspace files</span></th><th scope="col"><span>Windows scripts</span></th><th scope="col"><span>SVN via VPN</span></th><th scope="col"><span>Jira (read)</span></th><th scope="col"><span>Log reader</span></th><th scope="col"><span>File upload</span></th><th scope="col"><span>Robot application</span></th><th scope="col"><span>Engineer approval</span></th></tr></thead>
+        <thead><tr><th scope="col">Flow</th><th scope="col">Web fit</th><th scope="col"><span>Workspace files</span></th><th scope="col"><span>Windows scripts</span></th><th scope="col"><span>SVN via VPN</span></th><th scope="col"><span>Jira (read)</span></th><th scope="col"><span>Log reader</span></th><th scope="col"><span>File upload</span></th><th scope="col"><span>Runs robot app</span></th><th scope="col"><span>Engineer approval</span></th></tr></thead>
         <tbody>
         <tr>
           <th scope="row"><a href="#lab-issue">A lab issue comes in</a></th>
@@ -192,7 +186,7 @@
         </tr>
         <tr>
           <th scope="row"><a href="#precedent-search">Have we built this before?</a></th>
-          <td><span class="fit partial">Good for the search and shortlist, which only reads the committed index cards</span></td>
+          <td><span class="fit partial">Partial</span></td>
           <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
         </tr>
         <tr>
@@ -223,6 +217,7 @@
         </tbody>
       </table>
     </div>
+    <p class="fine">A dot means the flow needs that on the server behind the page; an empty cell means it can do without. <strong>Workspace files:</strong> the Robotics-AI repo, including the order and template software checked out in it, read as text (tables, action code). <strong>Windows scripts:</strong> the workspace's PowerShell tools. <strong>SVN via VPN:</strong> checking out or refreshing an order's software. <strong>Jira (read):</strong> reading tickets, never writing. <strong>Log reader:</strong> the reader for <code>.glf</code> robot logs. <strong>File upload:</strong> the asker hands over a log or a zip. <strong>Runs robot app:</strong> starting the robot application itself on Windows, to Build or run an emulation test; reading an order's software never needs it. <strong>Engineer approval:</strong> a person signs off before anything is kept or sent.</p>
     <p class="fine">Good: reading and reasoning that a web chat can answer. Partial: the answer is fine, a person has to approve what is kept. Engineer PC: changes order software or SVN, needs the robot application, or waits on an engineer at every step, so it stays with an engineer.</p>
 
     <div class="facts">
@@ -290,6 +285,7 @@
       </div>
     </header>
     <p class="intro">Every assistant opens the same instruction file first, so the same question gets the same treatment whichever tool is used. The request is then matched to a skill: a written procedure for that kind of work, with its own scripts and its own rules. Anything that does not match a skill is answered from the instructions, the documentation and the software itself.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart LR
     Q([Engineer types a question&lt;br/&gt;the assistant loads the shared&lt;br/&gt;instructions and memory]):::start --&gt; KIND{What kind&lt;br/&gt;of request?}:::decision
@@ -328,6 +324,7 @@ flowchart LR
       </div>
     </header>
     <p class="intro">A lab issue, a Jira ticket and a port verification differ only at the start and the end. The middle is always the same seven steps, in the same order. Following them keeps a review to about ten rounds with the assistant instead of thirty-five, which matters because every extra round re-sends the whole conversation and is billed again.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     S1[1 Intake&lt;br/&gt;fetch or refresh the order software,&lt;br/&gt;place the log in the order's Log folder]:::script
@@ -371,6 +368,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">A colleague in the lab, or at a customer install, reports a robot problem with an order number and usually a log file. The assistant gets the exact software that robot runs, checks whether the problem is already known, and always ends with a diagnosis or a best hypothesis with its reasoning. It never ends with only a request for more information.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Colleague: order number, log, what they saw]):::start --&gt; ASK{Order number&lt;br/&gt;and symptom given?}:::decision
@@ -422,6 +420,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">The robot writes binary <code>.glf</code> log files that can hold hundreds of thousands of lines. The assistant never reads them as text. It asks questions through a dedicated log reader (the Loupe server), starting with a fixed overview and then narrowing one question at a time, so that only the lines that matter end up in front of it.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Log file handed over]):::start --&gt; MCP{Log reader&lt;br/&gt;available?}:::decision
@@ -463,6 +462,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">Service tickets from the Robot Aftersales (RB) and Escalation (ES) boards are pulled into a local folder by a scraper script: the ticket text, every attachment, the order's SVN software and, when the customer sent it, their own running software. The assistant diagnoses from that folder and writes an analysis with a draft reply. It never writes to Jira; the engineer decides what to post.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Engineer: solve RB-380]):::start --&gt; SCRAPE["Fresh copy of the ticket&lt;br/&gt;Process-ServiceTickets.ps1&lt;br/&gt;Jira writes switched off"]:::script
@@ -514,6 +514,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">Most special requests (B-features) have been built for some earlier customer. The workspace keeps a searchable index card for every delivered order (about 1,275) and a growing collection of feature dossiers. The assistant searches those, the engineer picks the right reference order, and the assistant turns it into a dossier that says exactly what to copy and what not to.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Engineer describes the feature]):::start --&gt; GRILL{Requirement clear?}:::decision
@@ -543,7 +544,7 @@ flowchart TD
     <div class="notes">
     <div class="points"><h3>Key points</h3><ul><li>Nothing is downloaded until the engineer has chosen the reference order. The index cards are enough to shortlist.</li><li>The engineer verifies the choice outside the tooling, for example from photos of the built system or by opening its software.</li><li>The dossier records what not to copy as well as what to copy: a reference order also carries other customer-specific parts.</li><li>Dossiers grow from live work. Each port adds or updates one, and it becomes "verified" once the first port passes FAT.</li><li>The interview step is optional and only starts when an engineer asks for it.</li></ul></div>
     <aside class="web"><h3>For a web version</h3>
-        <p><span class="fit partial">Good for the search and shortlist, which only reads the committed index cards</span> The checkout and dossier after the engineer's pick need SVN.</p>
+        <p><span class="fit partial">Partial</span> The search and shortlist only read the committed index cards; the checkout and dossier after the engineer's pick need SVN.</p>
         <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Engineer approval</li></ul>
         <p class="writes"><strong>Writes:</strong> a candidate dossier in the workspace</p>
       </aside>
@@ -559,6 +560,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">A robot's behaviour lives in XML tables (sequences, settings, positions) and in C# action code stored inside those XML files. The assistant changes both through workspace scripts, checks that every new movement has a position to go to, and builds the code. The final build in the real application and the test on the robot stay with the engineer.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Port list from a dossier,&lt;br/&gt;or a direct feature request]):::start --&gt; MIRROR["Refresh the C# code mirror&lt;br/&gt;of both orders&lt;br/&gt;Process-SoftwareFolder.ps1"]:::script
@@ -589,7 +591,7 @@ flowchart TD
     <div class="points"><h3>Key points</h3><ul><li>Every difference between the reference and the target order is sorted. Only the parts of this feature are ported, so another customer's extras do not travel along.</li><li>A new setting goes in three places (the shared table, every application, and the settings popup). Adding it in one place only fails silently, which is why it is a checklist item.</li><li>The geometry check catches a new movement with no position defined. On the robot that would otherwise show up as a crash or a wrong move.</li><li>The emulation test and the in-app Build are real compiles and runs. The assistant's own compile is an earlier, cheaper check.</li><li>Nothing is committed to SVN until the engineer says so.</li></ul></div>
     <aside class="web"><h3>For a web version</h3>
         <p><span class="fit pc">Engineer PC</span> It changes order software, and the Build and emulation test drive the robot application on Windows.</p>
-        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Robot application</li><li>Engineer approval</li></ul>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Runs robot app</li><li>Engineer approval</li></ul>
         <p class="writes"><strong>Writes:</strong> order tables and action code in the local checkout; SVN only after a yes</p>
       </aside>
     </div>
@@ -604,6 +606,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">Orders on the SSO board ("B-System Orders") wait for R&amp;D approval. A script downloads the order and every attachment and converts them to readable text locally: the application questionnaire, the B-features document, the workfile's SPDQ sheet, photos and any robot software. The assistant then reads all of it, cross-checks the documents against each other, finds the best reference order and writes a verdict. The approval itself stays with the engineer.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Engineer: assess SSO-52]):::start --&gt; FETCH["Download the order and attachments&lt;br/&gt;Process-SSO-Approvals.ps1&lt;br/&gt;read only against Jira"]:::script
@@ -647,6 +650,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">When a customer sends the software that actually runs on their robot, SVN has to be brought in line with it without losing anything. The script plans first and changes nothing, the engineer makes three decisions, the changes are staged in the local copy, and the commit happens only after an explicit yes.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Engineer: put this zip on SVN]):::start --&gt; SAFE["Check the local SVN copy is safe&lt;br/&gt;Import-CustomerSoftware.ps1, plan mode"]:::script
@@ -691,6 +695,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">Older robots carry one of several diluter software generations. The Diluter Upgrade Kit brings an order's own software to the current diluter code in place, keeping the customer's positions, calibrations and customisation. It works in stages with gates: anything it cannot handle safely stops the run and says what has to change first.</p>
+    <ul class="legend mini"><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Engineer: upgrade the diluters on order X]):::start --&gt; PLAN["Classify the order's diluter generation&lt;br/&gt;diluterkit plan, read only&lt;br/&gt;upgrade path A to E"]:::script
@@ -722,7 +727,7 @@ flowchart TD
     <div class="points"><h3>Key points</h3><ul><li>The upgrade is always done in the order's own software, never by rebuilding the robot on today's template. The installed software is the customer's system of record.</li><li>Most gates cannot be waved through: the order has to change first. A short list may be accepted, and only after an engineer has reviewed it.</li><li>A failed build check stops the run with undo instructions. Nothing half-upgraded is left behind silently.</li><li>The kit never writes to SVN. The engineer commits after the in-app Build and the FAT.</li></ul></div>
     <aside class="web"><h3>For a web version</h3>
         <p><span class="fit pc">Engineer PC</span> It edits order software, needs the robot application to build it, and has an on-site survey.</p>
-        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Robot application</li><li>Engineer approval</li></ul>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Runs robot app</li><li>Engineer approval</li></ul>
         <p class="writes"><strong>Writes:</strong> the local order checkout, backed up first; SVN only by the engineer</p>
       </aside>
     </div>
@@ -737,6 +742,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">The workspace improves because finished work is written down where the next question will find it. At the end of a case the assistant proposes what to keep and where, the engineer approves the list, and the write-up goes into the matching log. Every investigation flow starts by searching those same logs.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     DONE([Case finished]):::start --&gt; PROPOSE[Assistant proposes what is worth keeping&lt;br/&gt;and where it belongs]:::ai
@@ -781,6 +787,7 @@ flowchart TD
       </div>
     </header>
     <p class="intro">This chart is a proposal. Nothing on it is built yet. It shows how a web page open to everyone with access could answer any question about the robots, not only software questions. Knowledge questions are answered from a shared search over the written knowledge (RAG: retrieval-augmented generation). Questions about one order's software or a log still go through the full workflows above. Full reasoning: <code>md documents\Assessments &amp; Plans\RAG Assessment.md</code>.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
     <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
 flowchart TD
     Q([Anyone with access asks&lt;br/&gt;a question on the web page]):::start --&gt; ROUTE{What kind&lt;br/&gt;of question?}:::decision

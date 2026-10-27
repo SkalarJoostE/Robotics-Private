@@ -43,5 +43,5 @@ flowchart TD
 ## For a web version
 
 Fit: Engineer PC. It edits order software, needs the robot application to build it, and has an on-site survey.
-Needs: Workspace files; Windows scripts; SVN via VPN; Robot application; Engineer approval
+Needs: Workspace files; Windows scripts; SVN via VPN; Runs robot app; Engineer approval
 Writes: the local order checkout, backed up first; SVN only by the engineer

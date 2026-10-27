@@ -42,6 +42,6 @@ flowchart TD
 
 ## For a web version
 
-Fit: Good for the search and shortlist, which only reads the committed index cards. The checkout and dossier after the engineer's pick need SVN.
+Fit: Partial. The search and shortlist only read the committed index cards; the checkout and dossier after the engineer's pick need SVN.
 Needs: Workspace files; Windows scripts; SVN via VPN; Engineer approval
 Writes: a candidate dossier in the workspace

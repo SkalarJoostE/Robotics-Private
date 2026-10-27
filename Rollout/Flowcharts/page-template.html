@@ -77,6 +77,9 @@
   /* Legend */
   .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: .88rem; color: var(--ink-soft); padding: 0; margin: 0; list-style: none; }
   .legend li { display: flex; align-items: center; gap: 8px; }
+  .legend.mini { gap: 6px 14px; font-size: .8rem; color: var(--ink-faint); }
+  .legend.mini .sw { width: 20px; height: 12px; }
+  .legend.mini .sw.decision { width: 14px; height: 14px; }
   .sw { width: 26px; height: 16px; border-radius: 4px; border: 1.5px solid; flex: none; }
   .sw.ai { background: #e6ecf7; border-color: #1b355d; }
   .sw.script { background: #eef3fb; border-color: #6686b7; border-style: dashed; }
@@ -156,16 +159,7 @@
 
   <section aria-labelledby="legend-h" style="display:flex;flex-direction:column;gap:12px">
     <h3 id="legend-h">Reading the charts</h3>
-    <ul class="legend">
-      <li><span class="sw ai"></span>The assistant reasons or writes</li>
-      <li><span class="sw script"></span>A workspace script runs</li>
-      <li><span class="sw decision"></span>A branch in the flow</li>
-      <li><span class="sw human"></span>An engineer decides or acts</li>
-      <li><span class="sw rule"></span>A hard stop or house rule</li>
-      <li><span class="sw store"></span>A stored result</li>
-      <li><span class="sw start"></span>Start or end</li>
-      <li><span class="sw proposed"></span>Proposed, not built yet</li>
-    </ul>
+    {{LEGEND}}
   </section>
 
   <section class="web-summary" id="web" aria-labelledby="web-h">
@@ -174,6 +168,7 @@
     <div class="scroll">
       {{MATRIX}}
     </div>
+    <p class="fine">A dot means the flow needs that on the server behind the page; an empty cell means it can do without. <strong>Workspace files:</strong> the Robotics-AI repo, including the order and template software checked out in it, read as text (tables, action code). <strong>Windows scripts:</strong> the workspace's PowerShell tools. <strong>SVN via VPN:</strong> checking out or refreshing an order's software. <strong>Jira (read):</strong> reading tickets, never writing. <strong>Log reader:</strong> the reader for <code>.glf</code> robot logs. <strong>File upload:</strong> the asker hands over a log or a zip. <strong>Runs robot app:</strong> starting the robot application itself on Windows, to Build or run an emulation test; reading an order's software never needs it. <strong>Engineer approval:</strong> a person signs off before anything is kept or sent.</p>
     <p class="fine">Good: reading and reasoning that a web chat can answer. Partial: the answer is fine, a person has to approve what is kept. Engineer PC: changes order software or SVN, needs the robot application, or waits on an engineer at every step, so it stays with an engineer.</p>
 
     <div class="facts">

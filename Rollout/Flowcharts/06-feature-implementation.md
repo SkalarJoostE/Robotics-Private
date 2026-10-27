@@ -43,5 +43,5 @@ flowchart TD
 ## For a web version
 
 Fit: Engineer PC. It changes order software, and the Build and emulation test drive the robot application on Windows.
-Needs: Workspace files; Windows scripts; SVN via VPN; Robot application; Engineer approval
+Needs: Workspace files; Windows scripts; SVN via VPN; Runs robot app; Engineer approval
 Writes: order tables and action code in the local checkout; SVN only after a yes

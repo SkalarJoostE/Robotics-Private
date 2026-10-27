@@ -56,10 +56,28 @@ const NEEDS = [
   "Jira (read)",
   "Log reader",
   "File upload",
-  "Robot application",
+  "Runs robot app",
   "Engineer approval",
 ];
 const fitClass = (label) => ({ Good: "good", Partial: "partial", "Engineer PC": "pc" })[label] || "partial";
+
+// The Mermaid node classes the charts use, in legend order. The page legend lists them all; each
+// chart repeats only the ones it uses, so a reader never has to scroll back up to the key.
+const LEGEND = [
+  ["ai", "The assistant reasons or writes"],
+  ["script", "A workspace script runs"],
+  ["decision", "A branch in the flow"],
+  ["human", "An engineer decides or acts"],
+  ["rule", "A hard stop or house rule"],
+  ["store", "A stored result"],
+  ["start", "Start or end"],
+  ["proposed", "Proposed, not built yet"],
+];
+const legendList = (keys, cls) =>
+  `<ul class="${cls}">${LEGEND.filter(([k]) => keys.includes(k))
+    .map(([k, label]) => `<li><span class="sw ${k}"></span>${esc(label)}</li>`)
+    .join("")}</ul>`;
+const usedClasses = (mermaid) => [...mermaid.matchAll(/:::(\w+)/g)].map((m) => m[1]);
 
 const files = fs.readdirSync(dir).filter((f) => /^\d+-.+\.md$/.test(f)).sort();
 const charts = files.map(parse);
@@ -80,6 +98,7 @@ const sections = charts
       </div>
     </header>
     ${c.intro.map((p) => `<p class="intro">${inline(p.replace(/\n/g, " "))}</p>`).join("\n    ")}
+    ${legendList(usedClasses(c.mermaid), "legend mini")}
     <div class="sheet"><pre class="mermaid">${esc(MERMAID_INIT + c.mermaid.trim())}</pre></div>
     <div class="notes">
     ${
@@ -120,6 +139,7 @@ const matrix = `<table class="matrix">
 
 const template = fs.readFileSync(path.join(dir, "page-template.html"), "utf8");
 const html = template
+  .replace("{{LEGEND}}", legendList(LEGEND.map(([k]) => k), "legend"))
   .replace("{{MATRIX}}", matrix)
   .replace("{{TOC}}", toc)
   .replace("{{SECTIONS}}", sections)
