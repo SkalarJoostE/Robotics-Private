@@ -319,6 +319,6 @@ The measurement side is four small modules, each with one job:
 - Wrap it in a minimal internal web page (order field + log upload + chat).
 - Run it on one central machine that already has VPN/SVN/Loupe.
 - Decide the billing model for multi-user (per-seat vs API) — using the two columns above.
-- Start in "triage + draft" mode (you review before the lab sees it), graduate well-understood
-  case types to direct answers, and promote the strongest Lab Questions entries into the case
+- Answer the asker directly (no review in front, decided 2026-10-27; see `Rollout/PROJECT.md` §8),
+  add a confidence gate later, and promote the strongest Lab Questions entries into the case
   base so it keeps getting smarter.
