@@ -34,4 +34,4 @@ flowchart LR
 - The instruction file is the same for all three assistants (`CLAUDE.md` points at `.github/copilot-instructions.md`), so behaviour does not depend on which tool someone uses.
 - A skill is chosen from the wording of the request. The engineer does not have to name it.
 - The lab and ticket flows both end up in log analysis when a log is attached; the precedent search hands over to feature implementation once a reference order is chosen.
-- The same house rules hold on every path: software is read only from the workspace (never from an engineer's own `C:\SPD_Projects` copy), nothing writes to Jira, and nothing is committed to SVN without the engineer saying yes in the conversation.
+- The same house rules hold on every path: software is read only from the workspace's own copies, nothing writes to Jira, and nothing is committed to SVN without the engineer saying yes in the conversation.

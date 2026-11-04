@@ -31,8 +31,8 @@ flowchart TD
 ## Key points
 
 - Without the log reader there is no analysis. The assistant stops and says how to fix it rather than guessing from the raw file.
-- The four opening questions always go out together, which turns several rounds into one.
-- Searches are capped at 20 to 30 results and never paged through. A wide search fills the conversation with lines that are then re-sent on every later round.
+- The four opening questions always go out together, which saves time.
+- Searches are capped at 20 to 30 results and never paged through. A wide search would bury the few lines that matter.
 - Error codes differ per robot, so a code is looked up in that order's own error table, never in a template or another order.
 - A "COM port opened" line without a reply points to cabling or power, so the assistant stops looking at code there.
 

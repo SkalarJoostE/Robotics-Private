@@ -2,7 +2,7 @@
 
 > Asked as: any investigation, whether it arrives as a lab issue, an RB/ES ticket or a port check
 
-A lab issue, a Jira ticket and a port verification differ only at the start and the end. The middle is always the same seven steps, in the same order. Following them keeps a review to about ten rounds with the assistant instead of thirty-five, which matters because every extra round re-sends the whole conversation and is billed again.
+A lab issue, a Jira ticket and a port verification differ only at the start and the end. The middle is always the same seven steps, in the same order. Following them keeps an investigation short and focused: known problems are found first, cheap summaries are read before raw files, and nothing is checked twice.
 
 ```mermaid
 flowchart TD
@@ -11,7 +11,7 @@ flowchart TD
     S2D{Seen before?}:::decision
     S3[3 Pre-generated summaries first<br/>order Profile.md, Sequence CSVs<br/>before any raw XML]:::ai
     S4[4 Log census<br/>four Loupe queries sent together]:::ai
-    S5{5 Big search ahead?<br/>more than 5 rounds or 10k of material}:::decision
+    S5{5 Long search ahead?<br/>a lot of material to go through}:::decision
     SUB[Hand it to a helper agent<br/>that returns only the conclusion]:::ai
     S6[6 Check each conclusion<br/>one small, specific lookup per point]:::ai
     S7[7 Write-up]:::ai
@@ -37,7 +37,7 @@ flowchart TD
 ## Key points
 
 - Prior cases come before any new digging. Field issues repeat, and a past write-up is often most of the answer.
-- The order's `Profile.md` lists its hardware and every application's settings in about 15 KB. Building the same picture from the XML took about five rounds on one review, roughly 80 times the cost.
+- The order's `Profile.md` lists its hardware and every application's settings in about 15 KB. Building the same picture from the raw XML is many times slower and more expensive.
 - Step 6 checks the conclusions one at a time, each with its own narrow lookup, for example "did the gripper reach position 3 at 10:42?". One broad search that tries to confirm everything at once returns hundreds of lines and proves none of them clearly.
-- Independent lookups go out together in one round. Lookups that depend on an earlier answer are not merged, so speed never replaces a check.
+- Lookups that do not depend on each other run at the same time. Lookups that depend on an earlier answer wait for it, so speed never replaces a check.
 - Each resolved case is filed back into the case base, so the next similar case starts with an answer.

@@ -19,9 +19,9 @@ flowchart TD
     APPLY --> GATES{Two headless<br/>build checks pass?}:::decision
     GATES -->|No| UNDO[Run stopped<br/>report says how to undo]:::rule
     GATES -->|Yes| REPORT[("change report, flags,<br/>FAT sheet")]:::store
-    REPORT --> BUILD{Engineer presses Build<br/>in the application}:::human
+    REPORT --> BUILD["Build in the application<br/>Build-ViaApp.ps1"]:::script
     BUILD --> FAT{FAT on the robot}:::human
-    FAT --> COMMIT{Engineer adds the files<br/>and commits to SVN}:::human
+    FAT --> COMMIT{Person approves,<br/>files committed to SVN}:::human
     REPORT -.->|"on request"| GUIDE["Engineer guide for the installer<br/>diluterkit guide, to USB"]:::script
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
@@ -36,9 +36,9 @@ flowchart TD
 ## Key points
 
 - The upgrade is always done in the order's own software, never by rebuilding the robot on today's template. The installed software is the customer's system of record.
-- Most gates cannot be waved through: the order has to change first. A short list may be accepted, and only after an engineer has reviewed it.
+- Most gates cannot be waved through: the order has to change first. A short list may be accepted, and only after a person has reviewed it.
 - A failed build check stops the run with undo instructions. Nothing half-upgraded is left behind silently.
-- The kit never writes to SVN. The engineer commits after the in-app Build and the FAT.
+- The kit itself never writes to SVN. The files are committed after the in-app Build and the FAT, once a person approves.
 
 ## For a web version
 

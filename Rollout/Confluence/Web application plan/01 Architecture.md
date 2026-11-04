@@ -1,8 +1,6 @@
-# Robotics-AI web application: architecture
+# Architecture
 
-> **Status:** proposal for discussion, 2026-10-27 · **Owner:** Joost (Software Engineering)
-> **Parent page:** *Robotics-AI: what it is today, and the road to a web application*.
-> Nothing on this page is built yet, except where it says "exists today".
+> **Status:** proposal for discussion. Nothing on this page is built yet, except where it says "exists today".
 
 ## Principles
 
@@ -88,7 +86,7 @@ A ticket question works the same way, with the ticket scraper as step 3's intake
 
 ## Security and data
 
-- **Login:** the company login (single sign-on), so access follows existing accounts and leavers lose access automatically. Two roles at first: *asker*, and *maintainer* (Software Engineering), who can read all conversations.
+- **Login:** the company login (single sign-on), so access follows existing accounts and leavers lose access automatically. Two roles at first: *asker*, and *maintainer*, who can read all conversations.
 - **What leaves the company:** the question, uploaded logs, relevant parts of the order software and ticket content go to the AI provider. This needs IT's written agreement, including the provider's data-retention terms. If IT prefers, Claude can run inside the company's own cloud account (AWS, Google Cloud or Microsoft); that is a configuration change.
 - **Permissions:** the agent worker gets an explicit list of allowed tools and folders. It may run the read-side scripts and write only inside its own job folders. No `git push`, no `svn commit`, no Jira writes, no robot application. The proof of concept skips these checks to run unattended; the service may not.
 - **Uploads are untrusted:** size limits, extracted into a fresh folder per job, never executed.
@@ -105,7 +103,7 @@ A ticket question works the same way, with the ticket scraper as step 3's intake
 ## Keeping it current and learning from use
 
 - **Sync:** the server pulls the workspace from git (the same branch the Lab pilot uses), refreshes templates and rebuilds the search index, on a schedule and after merges.
-- **Feedback:** every conversation is stored with its transcript. A thumbs up/down and a comment field on each answer. Software Engineering reads them, and what proves correct is promoted into the case base through the existing review route, which in turn improves the next answer.
+- **Feedback:** every conversation is stored with its transcript. A thumbs up/down and a comment field on each answer. Maintainers read them, and what proves correct is promoted into the case base through the existing review route, which in turn improves the next answer.
 - **Monitoring:** a health page (SVN reachable, Jira reachable, log reader running, index age, queue length, spend this month) and an alert to a Teams channel when something fails.
 
 ## Deliberately left out of the first version

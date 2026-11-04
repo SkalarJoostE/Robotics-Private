@@ -2,7 +2,7 @@
 
 > Asked as: "port the KCl rinse from 99412345 into 99446390" · "add a setting to switch the sprayer off"
 
-A robot's behaviour lives in XML tables (sequences, settings, positions) and in C# action code stored inside those XML files. The assistant changes both through workspace scripts, checks that every new movement has a position to go to, and builds the code. The final build in the real application and the test on the robot stay with the engineer.
+A robot's behaviour lives in XML tables (sequences, settings, positions) and in C# action code stored inside those XML files. The assistant changes both through workspace scripts, checks that every new movement has a position to go to, and compiles the code. It can then build the change in the real application and run it in emulation. The test on the real robot stays with the lab, and nothing is committed to SVN without a person's yes.
 
 ```mermaid
 flowchart TD
@@ -18,10 +18,10 @@ flowchart TD
     GEO --> MISS{Position missing?}:::decision
     MISS -->|Yes| ADDROW[Add the position row<br/>the lab teaches the real value]:::ai --> GEO
     MISS -->|No| VERIFY[Regenerate the mirror, re-compare,<br/>compile, run the checklist]:::ai
-    VERIFY --> BUILD{Engineer presses Build<br/>in the application}:::human
-    BUILD --> TEST[Optional: unattended test run<br/>in emulation, no hardware]:::script
+    VERIFY --> BUILD["Build in the application<br/>Build-ViaApp.ps1"]:::script
+    BUILD --> TEST["Unattended test run in emulation<br/>Run-AppTest.ps1, no hardware"]:::script
     TEST --> FAT{Lab test / FAT}:::human
-    FAT --> COMMIT{Engineer: commit to SVN?}:::human
+    FAT --> COMMIT{Person approves<br/>the commit?}:::human
     COMMIT -->|Yes| SVN[(SVN)]:::store
 
     classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
@@ -38,7 +38,7 @@ flowchart TD
 - A new setting goes in three places (the shared table, every application, and the settings popup). Adding it in one place only fails silently, which is why it is a checklist item.
 - The geometry check catches a new movement with no position defined. On the robot that would otherwise show up as a crash or a wrong move.
 - The emulation test and the in-app Build are real compiles and runs. The assistant's own compile is an earlier, cheaper check.
-- Nothing is committed to SVN until the engineer says so.
+- Nothing is committed to SVN until a person says yes.
 
 ## For a web version
 

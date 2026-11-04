@@ -2,7 +2,7 @@
 
 > Asked as: "assess SSO-52" · "is this B-system ready to approve?"
 
-Orders on the SSO board ("B-System Orders") wait for R&D approval. A script downloads the order and every attachment and converts them to readable text locally: the application questionnaire, the B-features document, the workfile's SPDQ sheet, photos and any robot software. The assistant then reads all of it, cross-checks the documents against each other, finds the best reference order and writes a verdict. The approval itself stays with the engineer.
+Orders on the SSO board ("B-System Orders") wait for R&D approval. A script downloads the order and every attachment and converts them to readable text locally: the application questionnaire, the B-features document, the workfile's SPDQ sheet, photos and any robot software. The assistant then reads all of it, cross-checks the documents against each other, finds the best reference order and writes a verdict. The approval itself stays with a person.
 
 ```mermaid
 flowchart TD

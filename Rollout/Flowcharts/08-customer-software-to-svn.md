@@ -2,7 +2,7 @@
 
 > Asked as: "put this customer zip on SVN" · "commit the customer's version"
 
-When a customer sends the software that actually runs on their robot, SVN has to be brought in line with it without losing anything. The script plans first and changes nothing, the engineer makes three decisions, the changes are staged in the local copy, and the commit happens only after an explicit yes.
+When a customer sends the software that actually runs on their robot, SVN has to be brought in line with it without losing anything. The script plans first and changes nothing, a person makes three decisions, the changes are staged in the local copy, and the commit happens only after an explicit yes.
 
 ```mermaid
 flowchart TD
@@ -34,7 +34,7 @@ flowchart TD
 ## Key points
 
 - "Put it on SVN" allows planning and staging. The commit needs a separate, explicit yes in the conversation.
-- Files missing from the zip are kept unless the engineer names them; new files are added only when chosen.
+- Files missing from the zip are kept unless a person names them; new files are added only when chosen.
 - If SVN holds a newer core than the customer, the assistant has to ask, because taking the customer's version would roll SVN back.
 - The customer's zip is evidence and is never moved, renamed or deleted.
 

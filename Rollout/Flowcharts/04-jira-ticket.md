@@ -2,7 +2,7 @@
 
 > Asked as: "solve RB-380" · "investigate ES-212"
 
-Service tickets from the Robot Aftersales (RB) and Escalation (ES) boards are pulled into a local folder by a scraper script: the ticket text, every attachment, the order's SVN software and, when the customer sent it, their own running software. The assistant diagnoses from that folder and writes an analysis with a draft reply. It never writes to Jira; the engineer decides what to post.
+Service tickets from the Robot Aftersales (RB) and Escalation (ES) boards are pulled into a local folder by a scraper script: the ticket text, every attachment, the order's SVN software and, when the customer sent it, their own running software. The assistant diagnoses from that folder and writes an analysis with a draft reply. It never writes to Jira; a person decides what to post.
 
 ```mermaid
 flowchart TD
@@ -40,7 +40,7 @@ flowchart TD
 
 ## Key points
 
-- "Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN and deploying all need the engineer to ask for them.
+- "Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN and deploying all need a person to ask for them.
 - When the customer sent their own software, that is what gets diagnosed. SVN can differ from what actually runs on site.
 - If the ticket points to customer software the scraper could not download, the assistant stops and asks for it instead of quietly using SVN.
 - The draft reply is written for internal readers and never claims testing or a delivery date that has not happened.
