@@ -16,21 +16,21 @@ Each child page shows one kind of question as a flowchart: what the assistant do
 
 ## The flows
 
-| # | Page | Typical question |
-|---|---|---|
-| 00 | What happens when you ask a question | Any question asked inside the workspace |
-| 01 | The investigation spine | The seven steps every investigation follows |
-| 02 | A lab issue comes in | "99441979 stops after the second sample, here is the log" |
-| 03 | Reading a robot log | "Why did this run hang?" |
-| 04 | Solving an RB or ES ticket | "Solve RB-380" |
-| 05 | Have we built this before? | "Have we ever rinsed the probe with KCl between samples?" |
-| 06 | Building a feature into an order | "Add a setting to switch the sprayer off" |
-| 07 | Assessing a B-system order for R&D approval | "Assess SSO-52" |
-| 08 | Putting a customer's software on SVN | "Put this customer zip on SVN" |
-| 09 | Upgrading the diluters on an installed robot | "Upgrade the diluters on 99325813" |
-| 10 | How answers become knowledge | "Log this ticket resolution" |
+| Page | Typical question |
+|---|---|
+| [What happens when you ask a question](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2927624199) | Any question asked inside the workspace |
+| [The investigation spine](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2928377857) | The seven steps every investigation follows |
+| [A lab issue comes in](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2926968845) | "99441979 stops after the second sample, here is the log" |
+| [Reading a robot log](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2928181250) | "Why did this run hang?" |
+| [Solving an RB or ES ticket](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2927820802) | "Solve RB-380" |
+| [Have we built this before?](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2928082946) | "Have we ever rinsed the probe with KCl between samples?" |
+| [Building a feature into an order](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2927296516) | "Add a setting to switch the sprayer off" |
+| [Assessing a B-system order for R&D approval](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2927656962) | "Assess SSO-52" |
+| [Putting a customer's software on SVN](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2927296536) | "Put this customer zip on SVN" |
+| [Upgrading the diluters on an installed robot](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2928410625) | "Upgrade the diluters on 99325813" |
+| [How answers become knowledge](https://skalaranalytical.atlassian.net/wiki/spaces/RA/pages/2928443393) | "Log this ticket resolution" |
 
 <!-- Publishing note (not part of the page): each child page is built from Rollout/Flowcharts/NN-*.md —
-the intro paragraph, the Mermaid chart (as a Mermaid macro) and the Key points. The "For a web version"
+the intro paragraph, the Mermaid chart (as an image rendered by mermaid.ink) and the Key points. The "For a web version"
 section is left out here; it belongs to the Web application plan. Flow 11 (the two-lane proposal) also
 goes to the Web application plan, not here. -->
