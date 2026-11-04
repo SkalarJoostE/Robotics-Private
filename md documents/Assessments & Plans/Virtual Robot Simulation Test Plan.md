@@ -1329,6 +1329,10 @@ defined (proof: RB-418 error 121 → method 64 → recap → put-back in Normal 
 `SkalarJoostE/Robotic-Simulator`, commit `874342e`. It is cloned at `Robotics-AI\Robotic-Simulator\`
 and git-ignored here.
 
+> **Since 2026-11-04 the only source of truth is Bitbucket:** `bitbucket.org/skalaranalytical/robsimulator`,
+> branch `master`. The GitHub repo `SkalarJoostE/Robotic-Simulator` is retired and stopped at `c378ffb`.
+> Commit hashes in this plan are the same on both. Push to Bitbucket only.
+
 - `SP2000Simulator.Communication`: a real COM port and an in-memory link.
 - `SP2000Simulator.Firmware`: `Ca16Controller` (boot, prompt loop, `A`/`B`/`C`/`D`/`E`/`L`/`Q`/`R`/`U`/`Z`, ESC reboot, 0x7F pause, pause button) and `SsplInterpreter` (keyword table and prefix dispatch, `END`, `F` + line). Every other keyword fails loudly with `SIM-UNSUPPORTED`.
 - `SP2000Simulator.WebAPI`: TOC-style options and Swagger API.
