@@ -158,6 +158,8 @@ tr.click:hover td{background:#f8fafd}
 .lane b{color:var(--navy)}
 
 /* modal */
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;box-shadow:var(--shadow);font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 .overlay{position:fixed;inset:0;background:rgba(17,32,56,.45);display:grid;place-items:center;padding:16px;z-index:10}
 .modal{background:#fff;border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.2)}
 .modal h2{font-size:20px;margin-bottom:6px}
@@ -227,9 +229,9 @@ tr.click:hover td{background:#f8fafd}
     <button class="nav admin-only" data-go="admin">⚙ Admin</button>
     <h4>Recent</h4>
     <button class="conv" data-go="chat-order">99441979 stops after the second sample</button>
-    <button class="conv" data-go="chat-general">Do we support the AquaLab M300 meter?</button>
-    <button class="conv" data-go="chat-general">YSI membrane replacement interval</button>
-    <button class="conv" data-go="chat-order">99434862 probe goes too deep in rinse</button>
+    <button class="conv" data-go="chat-meter">Do we support the AquaLab M300 meter?</button>
+    <button class="conv" data-go="chat-ysi">YSI membrane replacement interval</button>
+    <button class="conv" data-go="chat-34862">99434862 probe goes too deep in rinse</button>
     <div class="side-foot">Answers can be wrong. Check the sources, and ask Software Engineering when in doubt.</div>
   </aside>
 
@@ -266,7 +268,7 @@ tr.click:hover td{background:#f8fafd}
           <h3>Shared with you</h3>
           <div style="font-weight:700;color:var(--navy)">99445796 diluter timeout at start</div>
           <div class="muted">Shared by P. Jansen (Lab) · 4 Nov</div>
-          <button class="btn small" style="margin-top:12px" data-go="chat-order">Open (read-only)</button>
+          <button class="btn small" style="margin-top:12px" data-go="chat-45796">Open (read-only)</button>
         </div>
       </div>
 
@@ -305,16 +307,16 @@ tr.click:hover td{background:#f8fafd}
           <textarea placeholder="e.g. Why does order 99441979 stop after the second sample?"></textarea>
           <div class="comp-row">
             <label class="field order-field">#&nbsp;Order <input placeholder="99xxxxxx (optional)"></label>
-            <label class="field log-field" style="cursor:pointer">📎 Attach log (.glf)</label>
+            <button class="field log-field" data-toast="Would open a file picker for a .glf log." style="cursor:pointer;background:#fff">📎 Attach log (.glf)</button>
             <span class="grow"></span>
             <button class="send" data-go="chat-order">Ask</button>
           </div>
         </div>
         <p class="hint general-only hidden">Your role can ask general questions. Order questions with logs are for Support and Engineering.</p>
         <div class="examples">
-          <button data-go="chat-general">Do we support the AquaLab M300 meter?</button>
-          <button data-go="chat-general">How often should the YSI membrane be replaced?</button>
-          <button data-go="chat-general">Have we seen error 1203 before?</button>
+          <button data-go="chat-meter">Do we support the AquaLab M300 meter?</button>
+          <button data-go="chat-ysi">How often should the YSI membrane be replaced?</button>
+          <button data-go="chat-error">Have we seen error 1203 before?</button>
         </div>
         <div class="lanes">
           <div class="lane"><b>General questions</b><div class="muted">Answered from the knowledge base, solved cases and known issues, with sources. Usually seconds and a few cents.</div></div>
@@ -327,58 +329,20 @@ tr.click:hover td{background:#f8fafd}
     <section id="v-chat-order" class="hidden">
       <div class="chat-wrap">
         <div class="chat-head">
-          <div><h1>99441979 stops after the second sample</h1><div class="muted"><span class="chip order">Order question</span> &nbsp;Started today 13:58 · €4.12 so far</div></div>
+          <div><h1 id="ordTitle"></h1><div class="muted"><span class="chip order">Order question</span> &nbsp;<span id="ordMeta"></span></div></div>
           <button class="btn share-btn">↗ Share</button>
         </div>
-        <div class="msgs">
-          <div class="msg-user">The robot stops after the second sample every run since yesterday. Log attached.
-            <div class="att"><span># 99441979</span><span>📎 99441979_2026-11-06.glf · 4.2 MB</span></div>
-          </div>
-
-          <div class="progress">
-            <div class="step done"><span class="dot">✓</span>Fetched order 99441979 from SVN</div>
-            <div class="step done"><span class="dot">✓</span>Read the system profile and sequences</div>
-            <div class="step done"><span class="dot">✓</span>Read the log: run of 6 Nov, stopped at 14:32:07</div>
-            <div class="step done"><span class="dot">✓</span>Checked solved cases and known issues</div>
-            <div class="step done"><span class="dot">✓</span>Answer written · 3 min 40 s</div>
-          </div>
-
-          <div class="msg-ai">
-            <h4>What happened</h4>
-            <p>After sample 2 the robot moves the transport manipulator to the rinse position. The Height table has no row for that manipulator at <b>RINSE</b>, so the move is refused and the run stops with error 1203 at 14:32:07 <sup>[1][2]</sup>.</p>
-            <h4>What to check</h4>
-            <p>In <b>Heights</b>, add a <i>DispenseHeight</i> row for <i>MANIPULATOR: TRANSPORT</i> at location <i>RINSE</i>, then teach the height on the robot.</p>
-            <h4>Seen before</h4>
-            <p>Same symptom on order 99434862 after a rinse position was added in the lab <sup>[3]</sup>.</p>
-            <div class="sources">
-              <b>Sources</b>
-              <div class="src"><span class="n">1</span>Log 99441979_2026-11-06.glf, 14:32:07, error 1203</div>
-              <div class="src"><span class="n">2</span>Order 99441979, Height table</div>
-              <div class="src"><span class="n">3</span>Solved case: 99434862 probe height on rinse <span class="chip reviewed">reviewed</span></div>
-            </div>
-            <div class="ai-foot">
-              <span class="grow">Example answer · €4.12</span>
-              <button class="icon-btn thumb" title="Helpful">👍</button>
-              <button class="icon-btn thumb" title="Not helpful">👎</button>
-            </div>
-          </div>
-
-          <div class="msg-user">Which other positions miss a height row?</div>
-          <div class="progress">
-            <div class="step done"><span class="dot">✓</span>Using what was already read for this order</div>
-            <div class="step now"><span class="dot"></span>Checking every position used by the run…</div>
-            <div class="step"><span class="dot"></span>Writing the answer</div>
-          </div>
-        </div>
-        <div class="composer">
+        <div class="msgs" id="ordMsgs"></div>
+        <div class="composer" id="ordComposer">
           <textarea placeholder="Ask a follow-up…"></textarea>
           <div class="comp-row">
-            <label class="field">#&nbsp;99441979</label>
-            <label class="field log-field" style="cursor:pointer">📎 Attach log</label>
+            <label class="field" id="ordField"></label>
+            <button class="field log-field" data-toast="Would open a file picker for a .glf log." style="cursor:pointer;background:#fff">📎 Attach log</button>
             <span class="grow"></span>
-            <button class="send">Send</button>
+            <button class="send" data-toast="Would send your follow-up. The worker continues with what it already read for this order.">Send</button>
           </div>
         </div>
+        <div class="composer hidden" id="ordReadonly" style="text-align:center;color:var(--muted)">Shared with you, read-only. Start a new question to ask about this order yourself.</div>
       </div>
     </section>
 
@@ -386,33 +350,17 @@ tr.click:hover td{background:#f8fafd}
     <section id="v-chat-general" class="hidden">
       <div class="chat-wrap">
         <div class="chat-head">
-          <div><h1>Do we support the AquaLab M300 meter?</h1><div class="muted"><span class="chip general">General question</span> &nbsp;Today 13:41 · €0.04</div></div>
+          <div><h1 id="genTitle"></h1><div class="muted"><span class="chip general">General question</span> &nbsp;<span id="genMeta"></span></div></div>
           <button class="btn share-btn">↗ Share</button>
         </div>
-        <div class="msgs">
-          <div class="msg-user">Do we support the AquaLab M300 meter? A customer asks if they can keep using theirs.</div>
-          <div class="msg-ai">
-            <p><b>Not as a standard option.</b> The M300 is not in the list of supported meters for any template <sup>[1]</sup>.</p>
-            <p>It has been connected once, as custom work on order 99412345 (Waters template, 2024) <sup>[2]</sup>. Whether that can be reused for this customer is for Software Engineering to confirm.</p>
-            <div class="sources">
-              <b>Sources</b>
-              <div class="src"><span class="n">1</span>Knowledge base: Supported meters <span class="chip verified">verified</span></div>
-              <div class="src"><span class="n">2</span>Order index card: 99412345 <span class="chip draft">draft</span></div>
-            </div>
-            <div class="ai-foot">
-              <span class="grow">Example answer · 3 s · €0.04</span>
-              <button class="icon-btn thumb" title="Helpful">👍</button>
-              <button class="icon-btn thumb" title="Not helpful">👎</button>
-            </div>
-          </div>
-        </div>
+        <div class="msgs" id="genMsgs"></div>
         <div class="composer">
           <textarea placeholder="Ask a follow-up…"></textarea>
           <div class="comp-row">
             <label class="field order-field">#&nbsp;Order <input placeholder="optional"></label>
-            <label class="field log-field" style="cursor:pointer">📎 Attach log</label>
+            <button class="field log-field" data-toast="Would open a file picker for a .glf log. Adding a log moves this conversation to a full order investigation." style="cursor:pointer;background:#fff">📎 Attach log</button>
             <span class="grow"></span>
-            <button class="send">Send</button>
+            <button class="send" data-toast="Would send your follow-up.">Send</button>
           </div>
           <p class="hint">Adding an order number or a log moves this conversation to a full order investigation.</p>
         </div>
@@ -423,7 +371,7 @@ tr.click:hover td{background:#f8fafd}
     <section id="v-admin" class="hidden">
       <div class="page-head">
         <div><h1>Admin</h1><p class="sub">Budgets, requests and feedback for November.</p></div>
-        <button class="btn">Export costs (CSV)</button>
+        <button class="btn" data-toast="Would download the cost of every AI call this month as a CSV file.">Export costs (CSV)</button>
       </div>
       <div class="grid">
         <div class="card">
@@ -436,7 +384,7 @@ tr.click:hover td{background:#f8fafd}
           <h3>Budget requests</h3>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
             <div><b>R. de Boer</b> (Service)<div class="muted">+€30 · "On site in Korea this week"</div></div>
-            <div style="display:flex;gap:6px"><button class="btn small primary">Approve</button><button class="btn small">Decline</button></div>
+            <div style="display:flex;gap:6px"><button class="btn small primary" data-toast="Approved: R. de Boer gets +€30 this month and is told by e-mail.">Approve</button><button class="btn small" data-toast="Declined: R. de Boer is told by e-mail.">Decline</button></div>
           </div>
         </div>
         <div class="card">
@@ -445,7 +393,7 @@ tr.click:hover td{background:#f8fafd}
             <div><div class="n">👍 86</div><div class="muted">helpful</div></div>
             <div><div class="n">👎 9</div><div class="muted">not helpful</div></div>
           </div>
-          <button class="btn small" style="margin-top:12px">Review 👎 answers</button>
+          <button class="btn small" style="margin-top:12px" data-toast="Would list every answer marked not helpful, with the comments.">Review 👎 answers</button>
         </div>
       </div>
       <div class="card" style="padding:8px">
@@ -464,7 +412,7 @@ tr.click:hover td{background:#f8fafd}
     <h2>Share conversation</h2>
     <div class="muted">The colleague can read it, but cannot continue it.</div>
     <input placeholder="Colleague's name or e-mail">
-    <div class="actions"><button class="btn close">Cancel</button><button class="btn primary close">Share</button></div>
+    <div class="actions"><button class="btn close">Cancel</button><button class="btn primary close" data-toast="Shared read-only.">Share</button></div>
   </div>
 </div>
 <div class="overlay hidden" id="reqModal">
@@ -473,19 +421,19 @@ tr.click:hover td{background:#f8fafd}
     <div class="muted">Your request goes to an admin.</div>
     <input placeholder="Amount, e.g. €20">
     <textarea rows="3" placeholder="Why do you need it? (optional)"></textarea>
-    <div class="actions"><button class="btn close">Cancel</button><button class="btn primary close">Send request</button></div>
+    <div class="actions"><button class="btn close">Cancel</button><button class="btn primary close" data-toast="Request sent to an admin.">Send request</button></div>
   </div>
 </div>
 
 <script>
 const convs = [
   {t:"99441979 stops after the second sample", k:"order", s:"run", when:"Today 13:58", c:"€4.12", go:"chat-order"},
-  {t:"Do we support the AquaLab M300 meter?", k:"general", s:"ok", when:"Today 13:41", c:"€0.04", go:"chat-general"},
-  {t:"YSI membrane replacement interval", k:"general", s:"ok", when:"Yesterday", c:"€0.03", go:"chat-general"},
-  {t:"99434862 probe goes too deep in rinse", k:"order", s:"ok", when:"3 Nov", c:"€3.80", go:"chat-order"},
-  {t:"Have we seen error 1203 before?", k:"general", s:"ok", when:"2 Nov", c:"€0.05", go:"chat-general"},
-  {t:"Which templates support a paperband filter?", k:"general", s:"ok", when:"30 Oct", c:"€0.04", go:"chat-general"},
-  {t:"99445796 diluter timeout at start", k:"order", s:"ok", when:"28 Oct", c:"€2.65", go:"chat-order"},
+  {t:"Do we support the AquaLab M300 meter?", k:"general", s:"ok", when:"Today 13:41", c:"€0.04", go:"chat-meter"},
+  {t:"YSI membrane replacement interval", k:"general", s:"ok", when:"Yesterday", c:"€0.03", go:"chat-ysi"},
+  {t:"99434862 probe goes too deep in rinse", k:"order", s:"ok", when:"3 Nov", c:"€3.80", go:"chat-34862"},
+  {t:"Have we seen error 1203 before?", k:"general", s:"ok", when:"2 Nov", c:"€0.05", go:"chat-error"},
+  {t:"Which templates support a paperband filter?", k:"general", s:"ok", when:"30 Oct", c:"€0.04", go:"chat-pbf"},
+  {t:"99445796 diluter timeout at start", k:"order", s:"ok", when:"28 Oct", c:"€2.65", go:"chat-45796"},
 ];
 const kind = k => k==="order" ? '<span class="chip order">Order</span>' : '<span class="chip general">General</span>';
 const stat = s => s==="run" ? '<span class="chip run">Answering…</span>' : '<span class="chip ok">Answered</span>';
@@ -502,9 +450,106 @@ document.getElementById("userRows").innerHTML = users.map(([n,r,s,b])=>{
   <td><div class="bar ${p>=100?'full':''}" style="margin:0"><span style="width:${p}%"></span></div></td>
   <td class="right"><input value="€${b}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:6px;padding:3px 6px"></td></tr>`}).join("");
 
+// general (knowledge lane) example conversations
+const st = s => `<span class="chip ${s}">${s}</span>`;
+const gen = {
+  "chat-meter": {t:"Do we support the AquaLab M300 meter?", meta:"Today 13:41 · €0.04",
+    q:"Do we support the AquaLab M300 meter? A customer asks if they can keep using theirs.",
+    a:`<p><b>Not as a standard option.</b> The M300 is not in the list of supported meters for any template <sup>[1]</sup>.</p>
+       <p>It has been connected once, as custom work on order 99412345 (Waters template, 2024) <sup>[2]</sup>. Whether that can be reused for this customer is for Software Engineering to confirm.</p>`,
+    src:[["Knowledge base: Meters and probes","verified"],["Order index card: 99412345","draft"]], foot:"Example answer · 3 s · €0.04"},
+  "chat-ysi": {t:"YSI membrane replacement interval", meta:"Yesterday 10:12 · €0.03",
+    q:"How often should the YSI membrane be replaced on a BOD system?",
+    a:`<p><b>Our pages do not give a replacement interval.</b> For that, follow the YSI probe manual.</p>
+       <p>What they do say:</p>
+       <ul>
+         <li>The membrane probe Skalar uses is the <b>YSI 4100 ProBOD</b> (SP701). Its membrane cap kit is <b>90103065</b>. In the meter's calibration settings, set <i>Calibration / Membrane cap</i> to <b>Black</b> <sup>[1]</sup>.</li>
+         <li>Optical probes, such as the YSI ProOBOD, have no membrane. They are preferred because maintenance costs less and calibration is more stable. A membrane probe is chosen only when the customer's accreditation method does not allow optical probes <sup>[1][2]</sup>.</li>
+       </ul>`,
+    src:[["Knowledge base: Meters and probes","draft"],["Knowledge base: BOD analyzer configurations","draft"]], foot:"Example answer · 4 s · €0.03"},
+  "chat-error": {t:"Have we seen error 1203 before?", meta:"2 Nov 16:05 · €0.05",
+    q:"Have we seen error 1203 before?",
+    a:`<p><b>Error numbers mean different things on different systems</b>, so 1203 cannot be looked up on its own.</p>
+       <p>One solved case mentions 1203: order 99434862, where a missing height row for the rinse position stopped the run <sup>[1]</sup>. That may or may not be your situation.</p>
+       <p>Add the order number, and a log if you have one, and Robotics-AI will look up what 1203 means on that system and investigate.</p>`,
+    src:[["Solved case: 99434862 probe height on rinse","reviewed"]], foot:"Example answer · 3 s · €0.05"},
+  "chat-pbf": {t:"Which templates support a paperband filter?", meta:"30 Oct 09:20 · €0.04",
+    q:"Which templates support a paperband filter?",
+    a:`<p><b>I could not find a page that answers this.</b> The knowledge base only explains what a paperband filter is <sup>[1]</sup>, not which templates offer one.</p>
+       <p>Software Engineering can answer this. If you have a specific order in mind, add its order number and Robotics-AI will check that system's configuration.</p>`,
+    src:[["Knowledge base: Glossary","draft"]], foot:"Example answer · 2 s · €0.04"},
+};
+gen["chat-general"] = gen["chat-meter"];
+function showGeneral(id){
+  const c = gen[id];
+  document.getElementById("genTitle").textContent = c.t;
+  document.getElementById("genMeta").textContent = c.meta;
+  document.getElementById("genMsgs").innerHTML = `
+    <div class="msg-user">${c.q}</div>
+    <div class="msg-ai">${c.a}
+      <div class="sources"><b>Sources</b>${c.src.map((s,i)=>`<div class="src"><span class="n">${i+1}</span>${s[0]} ${st(s[1])}</div>`).join("")}</div>
+      <div class="ai-foot"><span class="grow">${c.foot}</span>
+        <button class="icon-btn thumb" title="Helpful">👍</button>
+        <button class="icon-btn thumb" title="Not helpful">👎</button></div>
+    </div>`;
+}
+
+// order (agent lane) example conversations
+const steps = (done, now=[], todo=[]) => `<div class="progress">${
+  done.map(s=>`<div class="step done"><span class="dot">✓</span>${s}</div>`).join("")}${
+  now.map(s=>`<div class="step now"><span class="dot"></span>${s}</div>`).join("")}${
+  todo.map(s=>`<div class="step"><span class="dot"></span>${s}</div>`).join("")}</div>`;
+const answer = (body, src, foot) => `<div class="msg-ai">${body}
+  <div class="sources"><b>Sources</b>${src.map((s,i)=>`<div class="src"><span class="n">${i+1}</span>${s[0]} ${s[1]?st(s[1]):""}</div>`).join("")}</div>
+  <div class="ai-foot"><span class="grow">${foot}</span>
+    <button class="icon-btn thumb" title="Helpful">👍</button><button class="icon-btn thumb" title="Not helpful">👎</button></div></div>`;
+const user = (q, order, log) => `<div class="msg-user">${q}<div class="att"><span># ${order}</span>${log?`<span>📎 ${log}</span>`:""}</div></div>`;
+const ord = {
+  "chat-order": {t:"99441979 stops after the second sample", order:"99441979", meta:"Started today 13:58 · €4.12 so far",
+    html: user("The robot stops after the second sample every run since yesterday. Log attached.","99441979","99441979_2026-11-06.glf · 4.2 MB")
+      + steps(["Fetched order 99441979 from SVN","Read the system profile and sequences","Read the log: run of 6 Nov, stopped at 14:32:07","Checked solved cases and known issues","Answer written · 3 min 40 s"])
+      + answer(`<h4>What happened</h4><p>After sample 2 the robot moves the transport manipulator to the rinse position. The Height table has no row for that manipulator at <b>RINSE</b>, so the move is refused and the run stops with error 1203 at 14:32:07 <sup>[1][2]</sup>.</p>
+        <h4>What to check</h4><p>In <b>Heights</b>, add a <i>DispenseHeight</i> row for <i>MANIPULATOR: TRANSPORT</i> at location <i>RINSE</i>, then teach the height on the robot.</p>
+        <h4>Seen before</h4><p>Same symptom on order 99434862 after a rinse position was added in the lab <sup>[3]</sup>.</p>`,
+        [["Log 99441979_2026-11-06.glf, 14:32:07, error 1203"],["Order 99441979, Height table"],["Solved case: 99434862 probe height on rinse","reviewed"]], "Example answer · €4.12")
+      + `<div class="msg-user">Which other positions miss a height row?</div>`
+      + steps(["Using what was already read for this order"],["Checking every position used by the run…"],["Writing the answer"])},
+  "chat-34862": {t:"99434862 probe goes too deep in rinse", order:"99434862", meta:"3 Nov 11:20 · €3.80",
+    html: user("On 99434862 the probe goes too deep into the rinse vessel and touches the bottom. It started after the lab changed the rinse position.","99434862")
+      + steps(["Fetched order 99434862 from SVN","Read the system profile and the Height table","Compared with the previous version on SVN","Answer written · 2 min 55 s"])
+      + answer(`<h4>What happened</h4><p>The <i>RinseHeight</i> for <i>MANIPULATOR: TRANSPORT</i> at <b>RINSE</b> is 152 mm. The other manipulators rinse at about 95 mm <sup>[1]</sup>. The value changed in the lab's commit of 2 Nov, together with the new rinse position <sup>[2]</sup>.</p>
+        <h4>What to check</h4><p>Teach the <i>RinseHeight</i> again with the probe tip about 1 cm above the bottom of the rinse vessel, and run a rinse from Hardware Control to confirm.</p>`,
+        [["Order 99434862, Height table"],["SVN history of order 99434862, commit of 2 Nov"]], "Example answer · €3.80")},
+  "chat-45796": {t:"99445796 diluter timeout at start", order:"99445796", meta:"Shared by P. Jansen (Lab) · 4 Nov · read-only", shared:true,
+    html: user("The run stops right at the start with a diluter timeout. Log attached.","99445796","99445796_2026-11-04.glf · 1.8 MB")
+      + steps(["Fetched order 99445796 from SVN","Read the system profile and the diluter configuration","Read the log: run of 4 Nov, stopped at 08:03:41","Answer written · 2 min 10 s"])
+      + answer(`<h4>What happened</h4><p>At the start of the run the software initialises both diluters. Diluter 1 answers. Diluter 2 on COM5 gives no reply within 10 seconds, so the run stops <sup>[1]</sup>.</p>
+        <h4>What to check</h4><p>Check the power and the serial cable of diluter 2. Then check in <b>DiluterConfiguration</b> that diluter 2 is set to the COM port it is actually connected to <sup>[2]</sup>.</p>`,
+        [["Log 99445796_2026-11-04.glf, 08:03:41"],["Order 99445796, DiluterConfiguration table"]], "Example answer · €2.65")},
+};
+function showOrder(id){
+  const c = ord[id];
+  document.getElementById("ordTitle").textContent = c.t;
+  document.getElementById("ordMeta").textContent = c.meta;
+  document.getElementById("ordField").textContent = "# " + c.order;
+  document.getElementById("ordMsgs").innerHTML = c.html;
+  document.getElementById("ordComposer").classList.toggle("hidden", !!c.shared);
+  document.getElementById("ordReadonly").classList.toggle("hidden", !c.shared);
+  document.querySelector("#v-chat-order .share-btn").classList.toggle("hidden", !!c.shared);
+}
+
+// small message for buttons that would do something in the real app
+function toast(msg){
+  let t=document.getElementById("toast");
+  if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}
+  t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2800);
+}
+
 // navigation
 const views = ["dash","all","new","chat-order","chat-general","admin"];
 function go(v){
+  if(gen[v]){ showGeneral(v); v="chat-general"; }
+  else if(ord[v]){ showOrder(v); v="chat-order"; }
   views.forEach(x=>document.getElementById("v-"+x).classList.toggle("hidden",x!==v));
   document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.go===v));
   document.querySelector("main").scrollTop=0;
@@ -514,6 +559,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest(".share-btn")) document.getElementById("shareModal").classList.remove("hidden");
   if(e.target.closest("#reqBtn")) document.getElementById("reqModal").classList.remove("hidden");
   if(e.target.closest(".close")) e.target.closest(".overlay").classList.add("hidden");
+  const tb=e.target.closest("[data-toast]"); if(tb && !tb.disabled) toast(tb.dataset.toast);
   const th=e.target.closest(".thumb"); if(th){th.parentElement.querySelectorAll(".thumb").forEach(b=>b.classList.remove("on"));th.classList.add("on")}
 });
 
@@ -544,7 +590,7 @@ document.getElementById("signOutBtn").onclick=()=>{document.getElementById("app"
 function fromHash(){
   const h=location.hash.slice(1);
   if(h==="signin") document.getElementById("signOutBtn").click();
-  else if(views.includes(h)){document.getElementById("signin").classList.add("hidden");document.getElementById("app").classList.remove("hidden");go(h)}
+  else if(views.includes(h) || gen[h] || ord[h]){document.getElementById("signin").classList.add("hidden");document.getElementById("app").classList.remove("hidden");go(h)}
 }
 fromHash(); window.addEventListener("hashchange",fromHash);
 
