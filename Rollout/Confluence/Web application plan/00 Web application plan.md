@@ -1,63 +1,79 @@
 # Web application plan
 
-> **Status:** proposal for discussion. The milestones below are meant to become Jira epics and tickets.
-
-A web page where anyone with access can ask a robot question, add a log or a zip, and get an answer with its sources, without installing anything. How it would be built is on the child page **Architecture**.
+> **Status:** proposal for discussion, November 2026. How it is built is on the child page **Architecture**.
 
 ## The goal
 
-A web page, open to everyone with access, where a colleague can ask any robot question, add a log or a zip, and get an answer with its sources, without installing anything. Answers go straight to the asker; there is no engineer review in front (decided 2026-10-27).
+A website where anyone with a Skalar work account can ask Robotics-AI a question about our robots, without installing anything and from anywhere, including a customer site.
 
-Behind the page there are **two lanes**:
+## What a user gets
 
-1. **Knowledge lane (new).** Product, method, hardware, maintenance and "have we seen this before?" questions are answered from a shared search over the written knowledge, in one AI call, citing the pages used. Fast, roughly €0.10 per answer (estimate, not measured).
-2. **Order lane (exists today, moves to a server).** Questions about one order's software, a log or a ticket run the full workflow that an engineer's PC runs now: check out the order, build its profile, read the log, reason over several rounds. Minutes, €3.73 to €6.23 per conversation (measured).
+- **Sign in with the Skalar work account.** No separate password. Access follows the company account, so leavers lose access automatically.
+- **A personal dashboard** with their past conversations, what they have spent this month, and how much of their budget is left.
+- **A chat.** A question can name an order number and come with a robot log (`.glf`). Follow-up questions continue the same conversation.
+- **Live progress** while a longer question runs ("checking out the order", "reading the log").
+- **Sources with every answer**, so the reader can check where it came from.
+- **Feedback** on every answer (thumbs up or down, optional comment).
+- **Sharing:** a conversation can be shared read-only with a colleague.
+- **Velaris branding.**
 
-## What already exists, and what is missing
+The user never chooses an AI model. Robotics-AI picks one per question, behind the scenes.
 
-| Already built | Still missing |
-|---|---|
-| The chat engine, on the same skills and tools, in two channels | The web page itself: login, question, upload, follow-ups |
-| An API-billed engine (Claude Agent SDK) for a shared service | An always-on server inside the company network |
-| Cost logging per turn | An API account with a spend limit, and agreement with IT on data |
-| Read-mostly behaviour (no Jira writes, no commits) | Tool permissions enforced by the server, not only by instructions |
-| All the knowledge, in plain files | The shared search index over that knowledge (the knowledge lane) |
-| | A queue per order, so two questions about one order never collide |
-| | A second maintainer who can keep it running |
+## Two kinds of questions
 
-## Milestones
-
-Sizes are relative (S = days, M = one to two weeks, L = several weeks of one person's time). They are not a schedule; the schedule depends on how much development time is allocated.
-
-| # | Milestone | What it delivers | Done when | Size |
-|---|---|---|---|---|
-| **M0** | **Decisions and access** | IT's answers on hosting, network and data; an Anthropic API account with a monthly spend limit; login method (company SSO); a named backup maintainer | Each decision is written down with its owner | S, but depends on others' calendars |
-| **M1** | **Shared search prototype** | A local search tool over the knowledge base, case base, known issues, dossiers and index cards, by keywords and by meaning | On past solved cases, the right write-up is in the top five for most questions (measured with the existing replay protocol) | M |
-| **M2** | **Server foundation** | A Windows server inside the network with its own copy of the workspace, the templates, SVN and Jira read-only accounts, the log reader and the search index, kept up to date automatically | An order-lane question run on the server gives the same answer as on an engineer's PC | M |
-| **M3** | **Order lane as a service** | The chat engine running unattended behind an internal API: per-order queue, enforced read-mostly permissions, upload handling for logs and zips, conversation storage, cost logging | Ten real lab and ticket questions run end to end through the API, two at once, with no collisions | L |
-| **M4** | **Web page MVP** | Company login, ask and follow up, upload, live progress ("checking out the order", "reading the log"), answers with sources, the knowledge lane switched on | A pilot user asks a question without help and gets an answer | M |
-| **M5** | **Pilot** | One department (Lab, as already decided), one or two people, a fixed period (about six weeks), baseline captured first | Agreed measures recorded: wrong answers, cost per conversation, time saved for the people who answer these questions today. Pilot users want to keep it | L (calendar time) |
-| **M6** | **Hardening and wider rollout** | A confidence gate (an unsure answer goes to an engineer instead of being sent), monitoring and alerts, Helpdesk and then Sales on the knowledge lane | Runs a month without the maintainer having to intervene | M |
-
-M1 can start now and runs alongside M0. M2 needs the server from M0. M3 and M4 can partly overlap once M2 is done.
-
-## Decisions needed
-
-| Decision | From whom | Why it matters |
+| | General questions | Order questions |
 |---|---|---|
-| Where the server runs, and whether it may reach SVN and Jira | IT | The order lane needs both. Inside the company network, no VPN is needed |
-| Whether customer logs, customer software and ticket content may be sent to Anthropic, and on which terms | IT / management | Every order-lane answer sends them. Running Claude inside the company's own cloud account is the fallback, and it is a configuration change, not a redesign |
-| Monthly API budget and spend limit | Management | A shared service is billed per conversation; it cannot run on personal seats |
-| Login method and who has access | IT | The page should use the company login, not a separate account |
-| Backup maintainer | Management | A service many people depend on cannot rest on one person |
-| How the search turns text into "meaning" (an embedding model) | IT, with the maintainers | A cloud model sends the knowledge to that provider; a local model keeps it on the server. The knowledge is small enough for local |
+| Examples | "How often should the YSI membrane be replaced?" · "Have we seen this error before?" · "Do we support meter X?" | "99441979 stops after the second sample", with the log attached |
+| How it is answered | **RAG** (retrieval-augmented generation): a search over the written knowledge (knowledge base, solved cases, known template issues, order index cards) finds the relevant passages, and one AI call writes the answer from them, citing the pages used | The same investigation Robotics-AI runs for Software Engineering today: fetch the order's software, read its configuration and the log, reason over it |
+| Speed and cost | Seconds, cents | Minutes, a few euros |
 
-## Main risks
+RAG keeps general questions cheap: only the few relevant passages are sent to the AI, not the whole knowledge base. How it works is on the **Architecture** page.
 
-| Risk | How it is handled |
+## Who can ask what
+
+| Role | May ask |
 |---|---|
-| A confident wrong answer puts people off for good | Every answer cites its sources and shows page status; a search with no good match hands over instead of guessing; facts, inferences and open questions are kept apart; maintainers read what was answered afterwards; a confidence gate follows in M6 |
-| Cost grows with use | A hard monthly spend limit on the API account; cost logged per conversation and per department; the knowledge lane answers the cheap questions |
-| The server fails and nobody notices | Health checks and an alert to a channel; a backup maintainer (M0) |
-| Two questions about one order corrupt its checkout | A queue per order (M3) |
-| The knowledge goes stale | The server pulls the workspace and rebuilds the index after every change |
+| **General** | General questions. "Can we build X?" is answered with a pointer to similar past orders and a referral to Software Engineering, never with an implementation plan. |
+| **Support** (e.g. Lab, service engineers) | + order questions with logs. Answers stay practical: what happened, what to check, what to change in which table. |
+| **Engineering** (Software Engineering, PM and a few others) | + feasibility and implementation detail. |
+| **Admin** | + all conversations and budget management. |
+
+Every role reads the same written knowledge. What differs is how deep an answer goes into implementation.
+
+## What it will not do
+
+The website never changes anything. It does not commit to SVN, write to Jira, edit scripts or change order software, for any role. Those changes stay with Software Engineering in the Robotics-AI workspace. This is enforced by the server's permissions, not only by instructions to the AI.
+
+## Budgets
+
+- Every person has a monthly budget in euros. Budgets can differ per person and reset every calendar month.
+- There is also a company-wide monthly limit, set in the AI provider's account as a final safety net.
+- The budget is checked before each question. An answer that has started always finishes, even if it goes over.
+- A user who has reached their limit can request more.
+- The cost of every AI call is recorded, so spend can be reported per person, per department and per kind of question.
+
+## Data
+
+- As in Robotics-AI today, questions, logs and relevant parts of order software are sent to Anthropic (the AI provider). The website does this through a Skalar company API account.
+- Uploaded files are deleted after a retention period. Conversation text is kept, so answers can be reviewed and improved.
+- Conversations are visible to the user, to colleagues they share them with, and to admins.
+
+## Proposed phases
+
+| Phase | Delivers |
+|---|---|
+| **0. Access** | IT: server, app registration for the work-account login, outside access through Microsoft. A company API account with a spend limit. |
+| **1. General questions** | The RAG search index, and the website with login, dashboard, budgets and chat, answering general questions. Used by a small test group. |
+| **2. Order questions** | Order numbers and log uploads, the full investigation, live progress. |
+| **3. Wider use** | More users. Later: customer software uploads, e-mail or Teams notice when a long answer is ready, a cost indication per kind of question once enough real data exists. |
+
+## Decisions still open
+
+| Decision | With |
+|---|---|
+| Licence for Microsoft's outside access (Entra application proxy) | IT |
+| Server and database (Skalar may already run a SQL Server) | IT |
+| Monthly company budget, and who sets and approves personal budgets | Management |
+| Who manages role membership | IT / project |
+| Whether a single question gets a maximum cost | Project |
+| Retention period for uploaded files | Project / IT |
