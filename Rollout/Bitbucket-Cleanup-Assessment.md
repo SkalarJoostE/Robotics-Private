@@ -1,6 +1,10 @@
 # Bitbucket move — cleanup assessment
 
-> **Date:** 2026-11-11. **Status:** assessment, decisions open (see §7).
+> **Date:** 2026-11-11. **Status:** all decisions taken (§7). **Today's part done 2026-11-11:** personal
+> material moved to `_private\` (pushed to `SkalarJoostE/Robotics-Private`), document moves and link fixes,
+> filtered history pushed to `skalaranalytical/robotics-ai` `main` (332 commits, quoted hashes re-pointed),
+> Joost's PC switched (`origin` = Bitbucket, `github` = old repo), bootstrapper/SETUP point at Bitbucket.
+> Remaining: §8 steps 1–3, 6–7, 13–16 and the grace-period end.
 > **Question:** what has to change before Robotics-AI moves to company Bitbucket as the open,
 > company-wide repo that carries only what the workspace needs to do its job.
 > Builds on PROJECT.md §8 entries 2026-08-07 ("moves to Bitbucket") and 2026-10-07 ("structured
