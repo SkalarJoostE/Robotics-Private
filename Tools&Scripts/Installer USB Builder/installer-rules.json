@@ -1,0 +1,77 @@
+{
+  "_about": [
+    "Rules table of the Installer USB Builder (plan principle 3). Joost maintains it; the Lab can read it.",
+    "Nothing reaches a delivery USB unless a rule here names it (principle 5, allowlist).",
+    "status 'use' = goes on the USB. status 'toCheck' = listed for a human with the proposed file, NOT copied (principle 8, better nothing than wrong).",
+    "'basis' records the evidence: 'n/m' = on n of the m mapped reference USBs that could have it (plan: Draft rules table, Reference installers 2-6).",
+    "File references are '<root>:<path inside that root>'. A template file keeps its path on the USB; methods go to 06. Methods; certificates to 03. Certificates.",
+    "'match' fields are case-insensitive regular expressions."
+  ],
+  "roots": {
+    "template": "\\\\fileserver\\Orders\\16. USB sticks\\Robotics",
+    "methods": "\\\\fileserver\\Data\\master methodes nieuw\\ROB",
+    "external": "\\\\fileserver\\Data\\Lab\\Robotics\\External manuals",
+    "serial": "\\\\fileserver\\Data\\Order Serienummers\\Serie nummers Skalar apparatuur\\1088 SP2000 Robot",
+    "orders": "\\\\fileserver\\Orders\\01. Orders"
+  },
+  "usbFolders": {
+    "access": "01. Skalar Robotics Access",
+    "certificates": "03. Certificates",
+    "calibration": "03. Certificates\\Certificate of Calibration",
+    "methods": "06. Methods"
+  },
+  "always": [
+    { "file": "template:02. Documents\\Manual RoboticAccess August 2023.pdf", "status": "use", "basis": "6/6" },
+    { "file": "template:02. Documents\\SP2000 Parts and Accessories August 2023.pdf", "status": "use", "basis": "6/6" },
+    { "file": "template:03. Certificates\\CE declaration of conformity SP2000 v1.0.pdf", "status": "use", "basis": "6/6" },
+    { "file": "template:04. Drivers\\ChipiX driver.zip", "status": "use", "basis": "6/6" },
+    { "file": "template:04. Drivers\\CP210x_Universal_Windows_Driver.zip", "status": "use", "basis": "6/6, D4" },
+    { "file": "template:04. Drivers\\hach_setup_amd64.exe", "status": "use", "basis": "6/6, also without a Hach device (finding 16)" },
+    { "folder": "template:05. Tools\\auto-oplijnen", "status": "use", "basis": "6/6" },
+    { "folder": "template:05. Tools\\SPD tools", "status": "use", "basis": "6/6" },
+    { "file": "template:05. Tools\\LoupeClient.exe", "status": "toCheck", "basis": "on 2 of 6 USBs (L1)" }
+  ],
+  "templates": [
+    { "match": "^BOD", "files": [ "template:02. Documents\\Manual SP2000 BOD Nov 2023 II.pdf" ], "status": "use", "basis": "3/3" },
+    { "match": "^Testkit", "files": [ "template:02. Documents\\Master Manual SP2000 Test kit October 2023.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^Waters", "files": [ "template:02. Documents\\Master Manual SP2000 Waters October 2023.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^Soil", "files": [ "template:02. Documents\\Master Manual SP2000 Soil October 2023.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^Soil", "files": [ "template:02. Documents\\Master Manual SP2000 Waters October 2023.pdf" ], "status": "toCheck", "basis": "1/1, but why a Waters manual on a Soil USB? (L1)" },
+    { "match": "^Beer", "files": [ "template:02. Documents\\Master Manual SP2000 Beer October 2023.pdf" ], "status": "toCheck", "basis": "no Beer USB mapped yet" },
+    { "match": "^Lutum", "files": [ "template:02. Documents\\Master Manual SP2000 Clay Fraction October 2023.pdf" ], "status": "toCheck", "basis": "no Clay Fraction USB mapped yet" },
+    { "match": "^Permanganate", "files": [ "template:02. Documents\\Master Manual SP2000 COD & Permanganate Nov 2023.pdf" ], "status": "toCheck", "basis": "no Permanganate USB mapped yet" },
+    { "match": "Weighing", "files": [ "template:02. Documents\\Master Manual SP2000 Weighing Nov 2023.pdf" ], "status": "toCheck", "basis": "no Weighing USB mapped yet" }
+  ],
+  "devices": [
+    { "match": "^SP\\d", "robot": true, "basis": "the robot itself is a DeviceConfiguration row" },
+    { "match": "^HachDR900$", "files": [ "template:02. Documents\\Meter and Probes\\Hach\\Hach DR3900 UserManual.pdf" ], "status": "use", "certificate": "required", "basis": "1/1" },
+    { "match": "^Hach TU5200$", "files": [ "template:02. Documents\\Meter and Probes\\Hach\\Hach TU5200 UserManual.pdf" ], "status": "use", "certificate": "required", "basis": "1/1" },
+    { "match": "^WTW Multi 9310", "files": [ "template:02. Documents\\Meter and Probes\\WTW\\BOD\\wtw_9310_Multi_Meter.pdf" ], "status": "use", "certificate": "required", "basis": "2/2 (one USB had the whole WTW folder, L1)" },
+    { "match": "^Consort C?6010", "files": [ "template:02. Documents\\Meter and Probes\\Consort\\Consort C6010 - C6030.pdf", "template:02. Documents\\Meter and Probes\\Consort\\Consort C6010 - C6030_Manual.pdf" ], "status": "use", "certificate": "required", "basis": "2/2" },
+    { "match": "^Consort C?6010", "files": [ "template:02. Documents\\Meter and Probes\\Metrohm\\Metrohm - Conductivity Measuring cell.pdf", "template:02. Documents\\Meter and Probes\\Metrohm\\Metrohm - Electrodes in Potentiometry.pdf" ], "status": "toCheck", "basis": "probe documents; the probe make is in no table (L8)" },
+    { "match": "^NanoColor UV/VIS II$", "files": [ "template:02. Documents\\Meter and Probes\\MN Nano VIS II\\nanocolor_uvvis_ii.pdf", "template:02. Documents\\Meter and Probes\\MN Nano VIS II\\QuickGuide_UVVISII_en.pdf", "template:02. Documents\\Meter and Probes\\MN Nano VIS II\\Skalar_Mn master method content jan2022.pdf" ], "status": "use", "certificate": "required", "basis": "1/1" },
+    { "match": "^YSI Multilab 4010-1$", "files": [ "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-1W-Quick-Start.pdf", "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-1W-User-Manual.pdf" ], "status": "use", "certificate": "toCheck", "basis": "1/1; no YSI meter certificate seen on any USB (L8)" },
+    { "match": "^YSI Multilab 4010-2$", "files": [ "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-2W-Quick-Start.pdf", "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-2W-User-Manual.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "what does 4010-2 denote? its 2W manuals were not on the USB (L8)" },
+    { "match": "^YSI", "files": [ "template:02. Documents\\Meter and Probes\\YSI\\YSI-ODO-Sensor-Cap-Guide.pdf", "template:02. Documents\\Meter and Probes\\YSI\\YSI-ProOBOD-User-Manual.pdf" ], "status": "use", "basis": "1/1 (BOD with YSI probes)" },
+    { "match": "^WTW Cond 7310$", "files": [ "template:02. Documents\\Meter and Probes\\WTW\\EC\\wtw_7310_Cond.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "guess from file names; no USB seen" },
+    { "match": "^Orion Star", "files": [ "template:02. Documents\\Meter and Probes\\Orion\\Orion-Star-A215-ph-conductivity-benchmeter-68X576505-EN.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "guess from file names; no USB seen" },
+    { "match": "^Titroline 7000", "files": [ "template:02. Documents\\Meter and Probes\\Titrino\\TitroLine-6000_7000_Manual_English.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "guess from file names; no USB seen" },
+    { "match": "^NanoColor VIS II$", "files": [ "template:02. Documents\\Meter and Probes\\MN Nano VIS II\\QuickGuide_UVVISII_en.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "guess from file names; no USB seen" },
+    { "match": "^YSI Multilab 4010-3$", "files": [ "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-3W-Quick-Start.pdf", "template:02. Documents\\Meter and Probes\\YSI\\YSI-MultiLab-4010-3W-User-Manual.pdf" ], "status": "toCheck", "certificate": "toCheck", "basis": "guess from file names; no USB seen" },
+    { "match": "Barcode|DM4000", "files": [ "template:02. Documents\\Meter and Probes\\Barcode Manual DM4000.pdf" ], "status": "toCheck", "basis": "guess; the barcode reader's DeviceID is not known yet" }
+  ],
+  "diluters": [
+    { "type": "^PSD6$", "serialFile": "PSD6*.pdf", "basis": "3/3 BOD with an enabled PSD/6" }
+  ],
+  "paperbandFilter": { "files": [ "template:02. Documents\\PBF Manual v2.pdf" ], "status": "use", "basis": "no PBF USB mapped yet; the Available flag is reliable since aaec87f" },
+  "methods": [
+    { "match": "^BOD$", "files": [ "methods:R232 Biochemical oxygen demand (BOD)\\Skalar Method BOD.pdf" ], "status": "use", "basis": "3/3" },
+    { "match": "^pH in Soil$", "files": [ "methods:R485 pH\\R485-122, pH in soil.pdf", "methods:R485 pH\\Skalar Method pH.pdf" ], "status": "use", "basis": "1/1 (the GOST PDF is left off)" },
+    { "match": "^Conductivity in Soil$", "files": [ "methods:R278 Conductivity\\R278-122, conductivity in soil.pdf", "methods:R278 Conductivity\\Skalar Method EC.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^pH( in Waters)?$", "files": [ "methods:R485 pH\\Skalar Method pH.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^(Conductivity|EC)( in Waters)?$", "files": [ "methods:R278 Conductivity\\Skalar Method EC.pdf" ], "status": "use", "basis": "1/1" },
+    { "match": "^(Colou?r|UV|Turbidity)( in Waters)?$", "files": [], "status": "use", "basis": "1/1: no method PDF exists for these" },
+    { "match": "^Chemical Oxygen Demand LCK ?1414$", "files": [ { "from": "external:Hach\\LCK1414 COD.pdf", "as": "LCK1414 COD 5 - 60 mgl.pdf" } ], "status": "use", "basis": "1/1, renamed as on the reference USB (L3: who owns this mapping?)" },
+    { "match": "^Chemical Oxygen Demand APC ?114$", "files": [ { "from": "external:Hach\\LCK114.pdf", "as": "LCK114 COD 150 - 1000mgl.pdf" } ], "status": "use", "basis": "1/1, renamed as on the reference USB (L3)" }
+  ]
+}

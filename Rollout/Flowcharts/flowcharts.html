@@ -1,0 +1,822 @@
+<title>How Robotics-AI Works</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&display=swap">
+<style>
+  /* Layout: one reading column; each flow is a numbered section with its diagram on a light sheet,
+     then key points beside a "for a web version" panel. Palette: Velaris brand (Prussian, Aegean, Tuscan). */
+  :root {
+    --prussian: #1b355d;
+    --aegean: #6686b7;
+    --tuscan: #ffa400;
+    --paper: #f3f5f9;
+    --card: #ffffff;
+    --sheet: #ffffff;
+    --ink: #16233a;
+    --ink-soft: #47597a;
+    --ink-faint: #7686a3;
+    --line: #dbe2ee;
+    --line-soft: #e9eef6;
+    --accent: var(--prussian);
+    --accent-bg: #e6ecf7;
+    --good: #1f7a4d; --good-bg: #e3f3ea;
+    --partial: #8a5a00; --partial-bg: #fff1d1;
+    --pc: #3f5a86; --pc-bg: #e8eef8;
+    --stop: #b03a3a; --stop-bg: #fdecec;
+    --display: "Bitter", Georgia, "Times New Roman", serif;
+    --body: "Nunito Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0f1c30; --card: #16294a; --sheet: #eef2f8; --ink: #eef2f9; --ink-soft: #b7c4dc;
+      --ink-faint: #8a9ac0; --line: #2a3e63; --line-soft: #203358;
+      --accent: #b7cbe9; --accent-bg: #22355c;
+      --good: #8fd9b0; --good-bg: #1d3d33; --partial: #ffcf70; --partial-bg: #3d3220;
+      --pc: #c3d1ec; --pc-bg: #22355c; --stop: #f2a5a5; --stop-bg: #44262c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1c30; --card: #16294a; --sheet: #eef2f8; --ink: #eef2f9; --ink-soft: #b7c4dc;
+    --ink-faint: #8a9ac0; --line: #2a3e63; --line-soft: #203358;
+    --accent: #b7cbe9; --accent-bg: #22355c;
+    --good: #8fd9b0; --good-bg: #1d3d33; --partial: #ffcf70; --partial-bg: #3d3220;
+    --pc: #c3d1ec; --pc-bg: #22355c; --stop: #f2a5a5; --stop-bg: #44262c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.6;
+  }
+  .wrap {
+    max-width: 1100px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 72px;
+    display: flex; flex-direction: column; gap: 56px;
+  }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; color: var(--ink); }
+  h1 { font-size: clamp(2rem, 4.5vw, 2.9rem); line-height: 1.12; font-weight: 700; }
+  h2 { font-size: clamp(1.4rem, 3vw, 1.75rem); line-height: 1.2; font-weight: 700; }
+  h3 { font-size: 1.05rem; font-weight: 700; }
+  p { margin: 0; }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--tuscan); outline-offset: 2px; border-radius: 3px; }
+  code { font-family: var(--mono); font-size: .86em; background: var(--line-soft); padding: 1px 5px; border-radius: 4px; }
+
+  /* Header */
+  .top { display: flex; flex-direction: column; gap: 16px; max-width: 72ch; }
+  .eyebrow { font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+  .lede { font-size: 1.12rem; color: var(--ink-soft); }
+  .meta { font-size: .85rem; color: var(--ink-faint); }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: .88rem; color: var(--ink-soft); padding: 0; margin: 0; list-style: none; }
+  .legend li { display: flex; align-items: center; gap: 8px; }
+  .legend.mini { gap: 6px 14px; font-size: .8rem; color: var(--ink-faint); }
+  .legend.mini .sw { width: 20px; height: 12px; }
+  .legend.mini .sw.decision { width: 14px; height: 14px; }
+  .sw { width: 26px; height: 16px; border-radius: 4px; border: 1.5px solid; flex: none; }
+  .sw.ai { background: #e6ecf7; border-color: #1b355d; }
+  .sw.script { background: #eef3fb; border-color: #6686b7; border-style: dashed; }
+  .sw.decision { background: #ffffff; border-color: #1b355d; transform: rotate(45deg) scale(.7); width: 18px; height: 18px; }
+  .sw.human { background: #fff3db; border-color: #ffa400; }
+  .sw.rule { background: #fdecec; border-color: #b03a3a; }
+  .sw.store { background: #f1f4f9; border-color: #47597a; border-radius: 8px / 5px; }
+  .sw.start { background: #1b355d; border-color: #1b355d; border-radius: 9px; }
+  .sw.proposed { background: #e3f3ea; border-color: #1f7a4d; border-style: dashed; }
+
+  /* Web-chat summary */
+  .web-summary { display: flex; flex-direction: column; gap: 24px; }
+  .web-summary > p { max-width: 72ch; color: var(--ink-soft); }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  table.matrix { border-collapse: collapse; width: 100%; min-width: 820px; font-size: .9rem; }
+  .matrix th, .matrix td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: middle; }
+  .matrix thead th { font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); vertical-align: bottom; }
+  .matrix thead th span { display: block; max-width: 9ch; line-height: 1.25; }
+  .matrix tbody th { font-weight: 600; }
+  .matrix tbody th a { color: var(--ink); text-decoration: none; }
+  .matrix tbody th a:hover { text-decoration: underline; }
+  .matrix tbody tr:last-child > * { border-bottom: 0; }
+  .matrix td.dot { text-align: center; color: var(--accent); font-size: 1.05rem; }
+  .matrix thead th:nth-child(n+3) { text-align: center; }
+  .matrix thead th:nth-child(n+3) span { margin: 0 auto; }
+
+  .fit { display: inline-block; font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .fit.good { color: var(--good); background: var(--good-bg); }
+  .fit.partial { color: var(--partial); background: var(--partial-bg); }
+  .fit.pc { color: var(--pc); background: var(--pc-bg); }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .fact { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .fact ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: .93rem; }
+  .fact li strong { color: var(--ink); }
+  .cost { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  .cost div { display: flex; flex-direction: column; }
+  .cost b { font-family: var(--display); font-size: 1.6rem; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.2; }
+  .cost span { font-size: .8rem; color: var(--ink-faint); }
+  .fine { font-size: .84rem; color: var(--ink-faint); }
+
+  /* Table of contents */
+  .toc ol { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px; }
+  .toc a { display: flex; gap: 10px; align-items: baseline; text-decoration: none; color: var(--ink); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
+  .toc a:hover { border-color: var(--aegean); }
+  .toc .n { font-family: var(--mono); font-size: .8rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+  /* Flow sections */
+  .chart { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; padding-top: 32px; border-top: 1px solid var(--line); }
+  .chart-head { display: flex; gap: 16px; align-items: flex-start; }
+  .chart-num { font-family: var(--mono); font-size: .85rem; color: var(--accent); background: var(--accent-bg); border-radius: 6px; padding: 4px 8px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .chart-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .asked { color: var(--ink-faint); font-style: italic; font-size: .95rem; }
+  .intro { max-width: 72ch; color: var(--ink-soft); }
+  .sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 20px 12px; overflow-x: auto; }
+  .sheet pre.mermaid { margin: 0 auto; background: transparent; color: #16233a; font-family: var(--body); text-align: center; min-width: 0; }
+  .sheet svg { max-width: 100%; height: auto; }
+  .notes { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+  .points ul { margin: 10px 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; color: var(--ink-soft); }
+  .web { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; font-size: .93rem; color: var(--ink-soft); }
+  .needs { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .needs li { font-size: .78rem; font-weight: 600; color: var(--ink); background: var(--line-soft); border-radius: 6px; padding: 2px 8px; }
+  .writes strong { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  html { scroll-behavior: smooth; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Robotics-AI · behind the screen</p>
+    <h1>How Robotics-AI Works</h1>
+    <p class="lede">What happens behind the screen for each kind of question an engineer asks, step by step, and what a web page where anyone can ask the same questions would need for each one.</p>
+    <p class="meta">12 flowcharts · built 2026-11-04 from the workspace's own skills and scripts</p>
+  </header>
+
+  <section aria-labelledby="legend-h" style="display:flex;flex-direction:column;gap:12px">
+    <h3 id="legend-h">Reading the charts</h3>
+    <ul class="legend"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
+  </section>
+
+  <section class="web-summary" id="web" aria-labelledby="web-h">
+    <h2 id="web-h">What a web version would need</h2>
+    <p>Today an engineer runs these flows in Claude Code on a PC that has the workspace, the VPN, SVN and the log reader. A web page where anyone can ask a question is only a new front door. Behind it, a server still needs the same workspace and the same access, and every answer is paid per conversation through the API.</p>
+    <div class="scroll">
+      <table class="matrix">
+        <thead><tr><th scope="col">Flow</th><th scope="col">Web fit</th><th scope="col"><span>Workspace files</span></th><th scope="col"><span>Windows scripts</span></th><th scope="col"><span>SVN via VPN</span></th><th scope="col"><span>Jira (read)</span></th><th scope="col"><span>Log reader</span></th><th scope="col"><span>File upload</span></th><th scope="col"><span>Runs robot app</span></th><th scope="col"><span>Engineer approval</span></th></tr></thead>
+        <tbody>
+        <tr>
+          <th scope="row"><a href="#lab-issue">A lab issue comes in</a></th>
+          <td><span class="fit good">Good</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#log-analysis">Reading a robot log</a></th>
+          <td><span class="fit good">Good</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#jira-ticket">Solving an RB or ES ticket</a></th>
+          <td><span class="fit good">Good</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#precedent-search">Have we built this before?</a></th>
+          <td><span class="fit partial">Partial</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#feature-implementation">Building a feature into an order</a></th>
+          <td><span class="fit pc">Engineer PC</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#sso-approval">Assessing a B-system order for R&amp;D approval</a></th>
+          <td><span class="fit good">Good</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#customer-software-to-svn">Putting a customer's software on SVN</a></th>
+          <td><span class="fit pc">Engineer PC</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#diluter-upgrade">Upgrading the diluters on an installed robot</a></th>
+          <td><span class="fit pc">Engineer PC</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="#learning-loop">How answers become knowledge</a></th>
+          <td><span class="fit partial">Partial</span></td>
+          <td class="dot" aria-label="needed">●</td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot empty" aria-label="not needed"></td><td class="dot" aria-label="needed">●</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fine">A dot means the flow needs that on the server behind the page; an empty cell means it can do without. <strong>Workspace files:</strong> the Robotics-AI repo, including the order and template software checked out in it, read as text (tables, action code). <strong>Windows scripts:</strong> the workspace's PowerShell tools. <strong>SVN via VPN:</strong> checking out or refreshing an order's software. <strong>Jira (read):</strong> reading tickets, never writing. <strong>Log reader:</strong> the reader for <code>.glf</code> robot logs. <strong>File upload:</strong> the asker hands over a log or a zip. <strong>Runs robot app:</strong> starting the robot application itself on Windows, to Build or run an emulation test; reading an order's software never needs it. <strong>Engineer approval:</strong> a person signs off before anything is kept or sent.</p>
+    <p class="fine">Good: reading and reasoning that a web chat can answer. Partial: the answer is fine, a person has to approve what is kept. Engineer PC: changes order software or SVN, needs the robot application, or waits on an engineer at every step, so it stays with an engineer.</p>
+
+    <div class="facts">
+      <div class="fact">
+        <h3>Already built</h3>
+        <ul>
+          <li><strong>A working chat engine</strong> (<code>lab-chat-poc</code>), in use since July 2026. It uses the same instructions, skills and log reader as Claude Code, so it gives the same answers.</li>
+          <li><strong>Two channels:</strong> lab questions about an order, and RB/ES helpdesk tickets.</li>
+          <li><strong>Read-mostly by design:</strong> the helpdesk channel never writes to Jira and ends with a draft reply for a person to send.</li>
+          <li><strong>Cost logging per turn</strong>, which is where the figures on this page come from.</li>
+        </ul>
+      </div>
+      <div class="fact">
+        <h3>Still missing for a shared web page</h3>
+        <ul>
+          <li><strong>The page itself:</strong> a place to type a question and upload a log or zip.</li>
+          <li><strong>One always-on server</strong> with the workspace, VPN, SVN and the log reader.</li>
+          <li><strong>API billing:</strong> a personal subscription cannot be shared, so a shared service runs on an API key.</li>
+          <li><strong>A queue per order:</strong> refreshing an order discards local edits, so two people asking about the same order must not run at once.</li>
+          <li><strong>Tighter permissions</strong> and agreement with IT on sending customer logs and software to a cloud model.</li>
+        </ul>
+      </div>
+      <div class="fact">
+        <h3>What a conversation costs</h3>
+        <div class="cost">
+          <div><b>€4.44</b><span>average</span></div>
+          <div><b>€6.23</b><span>RB/ES ticket</span></div>
+          <div><b>€3.73</b><span>lab question</span></div>
+        </div>
+        <ul>
+          <li>Measured on 14 conversations at API list prices. The setup was not yet optimised, so read these as an upper level, not a fixed unit price.</li>
+          <li>Every round re-sends the whole conversation, so cost grows with the square of the number of rounds. One investigation took 56 rounds and 7.5M tokens; the same work in 36 rounds took 4.8M. The investigation spine below exists to keep rounds down.</li>
+        </ul>
+        <p class="fine">Source: <code>Rollout/Access-and-Feedback-Loop.md</code> §2 and §5. Re-run <code>lab-chat-poc/cost_report.py</code> before quoting a number.</p>
+      </div>
+    </div>
+  </section>
+
+  <nav class="toc" aria-labelledby="toc-h">
+    <h2 id="toc-h">The flows</h2>
+    <ol>
+        <li><a href="#question-routing"><span class="n">00</span><span>What happens when you ask a question</span></a></li>
+        <li><a href="#investigation-spine"><span class="n">01</span><span>The investigation spine</span></a></li>
+        <li><a href="#lab-issue"><span class="n">02</span><span>A lab issue comes in</span></a></li>
+        <li><a href="#log-analysis"><span class="n">03</span><span>Reading a robot log</span></a></li>
+        <li><a href="#jira-ticket"><span class="n">04</span><span>Solving an RB or ES ticket</span></a></li>
+        <li><a href="#precedent-search"><span class="n">05</span><span>Have we built this before?</span></a></li>
+        <li><a href="#feature-implementation"><span class="n">06</span><span>Building a feature into an order</span></a></li>
+        <li><a href="#sso-approval"><span class="n">07</span><span>Assessing a B-system order for R&amp;D approval</span></a></li>
+        <li><a href="#customer-software-to-svn"><span class="n">08</span><span>Putting a customer's software on SVN</span></a></li>
+        <li><a href="#diluter-upgrade"><span class="n">09</span><span>Upgrading the diluters on an installed robot</span></a></li>
+        <li><a href="#learning-loop"><span class="n">10</span><span>How answers become knowledge</span></a></li>
+        <li><a href="#proposal-any-robot-question"><span class="n">11</span><span>Proposal: answering any robot question</span></a></li>
+    </ol>
+  </nav>
+
+  
+  <section class="chart" id="question-routing">
+    <header class="chart-head">
+      <span class="chart-num">00</span>
+      <div class="chart-titles">
+        <h2>What happens when you ask a question</h2>
+        <p class="asked">any question typed into Claude Code, GitHub Copilot or Codex inside the Robotics-AI workspace</p>
+      </div>
+    </header>
+    <p class="intro">Every assistant opens the same instruction file first, so the same question gets the same treatment whichever tool is used. The request is then matched to a skill: a written procedure for that kind of work, with its own scripts and its own rules. Anything that does not match a skill is answered from the instructions, the documentation and the software itself.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart LR
+    Q([Engineer types a question&lt;br/&gt;the assistant loads the shared&lt;br/&gt;instructions and memory]):::start --&gt; KIND{What kind&lt;br/&gt;of request?}:::decision
+
+    KIND --&gt;|"Solve RB-380 / ES-212"| JIRA[Jira ticket flow&lt;br/&gt;skalar-jira-issue]:::ai
+    KIND --&gt;|"Order number + log from the lab"| LAB[Lab issue flow&lt;br/&gt;skalar-lab-issue]:::ai
+    KIND --&gt;|"Here is a .glf log"| LOG[Log analysis&lt;br/&gt;skalar-log-analysis]:::ai
+    KIND --&gt;|"Have we built X before?"| PREC[Precedent search&lt;br/&gt;skalar-feature-precedent]:::ai
+    KIND --&gt;|"Add this feature to order X"| IMPL[Feature implementation&lt;br/&gt;skalar-feature-implementation]:::ai
+    KIND --&gt;|"Assess SSO-52"| SSO[B-system approval&lt;br/&gt;Process-SSO-Approvals.ps1]:::script
+    KIND --&gt;|"Put this customer zip on SVN"| SVN[SVN import&lt;br/&gt;skalar-svn-import]:::ai
+    KIND --&gt;|"Upgrade the diluters on order X"| DIL[Diluter Upgrade Kit&lt;br/&gt;diluterkit plan / apply]:::script
+    KIND --&gt;|"Add a rack / fix the layout"| TRAY[Tray tools&lt;br/&gt;Add-TrayType / Set-TrayLayout]:::script
+    KIND --&gt;|"How does X work?"| DOC[Answer from sources&lt;br/&gt;Confluence, template docs,&lt;br/&gt;action code, robotics-core]:::ai
+
+    JIRA &amp; LAB &amp; LOG &amp; PREC &amp; IMPL &amp; SSO &amp; SVN &amp; DIL &amp; TRAY &amp; DOC --&gt; OUT([Answer, write-up or prepared change&lt;br/&gt;for the engineer to review,&lt;br/&gt;then an offer to file it in the case base]):::start
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>The instruction file is the same for all three assistants (<code>CLAUDE.md</code> points at <code>.github/copilot-instructions.md</code>), so behaviour does not depend on which tool someone uses.</li><li>A skill is chosen from the wording of the request. The engineer does not have to name it.</li><li>The lab and ticket flows both end up in log analysis when a log is attached; the precedent search hands over to feature implementation once a reference order is chosen.</li><li>The same house rules hold on every path: software is read only from the workspace's own copies, nothing writes to Jira, and nothing is committed to SVN without the engineer saying yes in the conversation.</li></ul></div>
+    
+    </div>
+  </section>
+
+  <section class="chart" id="investigation-spine">
+    <header class="chart-head">
+      <span class="chart-num">01</span>
+      <div class="chart-titles">
+        <h2>The investigation spine</h2>
+        <p class="asked">any investigation, whether it arrives as a lab issue, an RB/ES ticket or a port check</p>
+      </div>
+    </header>
+    <p class="intro">A lab issue, a Jira ticket and a port verification differ only at the start and the end. The middle is always the same seven steps, in the same order. Following them keeps an investigation short and focused: known problems are found first, cheap summaries are read before raw files, and nothing is checked twice.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    S1[1 Intake&lt;br/&gt;fetch or refresh the order software,&lt;br/&gt;place the log in the order's Log folder]:::script
+    S2[2 Prior cases&lt;br/&gt;search the case base and the&lt;br/&gt;Template Known Issues page]:::ai
+    S2D{Seen before?}:::decision
+    S3[3 Pre-generated summaries first&lt;br/&gt;order Profile.md, Sequence CSVs&lt;br/&gt;before any raw XML]:::ai
+    S4[4 Log census&lt;br/&gt;four Loupe queries sent together]:::ai
+    S5{5 Long search ahead?&lt;br/&gt;a lot of material to go through}:::decision
+    SUB[Hand it to a helper agent&lt;br/&gt;that returns only the conclusion]:::ai
+    S6[6 Check each conclusion&lt;br/&gt;one small, specific lookup per point]:::ai
+    S7[7 Write-up]:::ai
+    LOGQ{Engineer: log it?}:::human
+    CB[(Case base&lt;br/&gt;md documents logs)]:::store
+
+    S1 --&gt; S2 --&gt; S2D
+    S2D --&gt;|"Yes: known fix, or&lt;br/&gt;template defect already fixed"| S7
+    S2D --&gt;|"No or partly"| S3 --&gt; S4 --&gt; S5
+    S5 --&gt;|Yes| SUB --&gt; S6
+    S5 --&gt;|No| S6
+    S6 --&gt; S7 --&gt; LOGQ
+    LOGQ --&gt;|Yes| CB
+    CB -.-&gt;|next case starts here| S2
+
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>Prior cases come before any new digging. Field issues repeat, and a past write-up is often most of the answer.</li><li>The order's <code>Profile.md</code> lists its hardware and every application's settings in about 15 KB. Building the same picture from the raw XML is many times slower and more expensive.</li><li>Step 6 checks the conclusions one at a time, each with its own narrow lookup, for example "did the gripper reach position 3 at 10:42?". One broad search that tries to confirm everything at once returns hundreds of lines and proves none of them clearly.</li><li>Lookups that do not depend on each other run at the same time. Lookups that depend on an earlier answer wait for it, so speed never replaces a check.</li><li>Each resolved case is filed back into the case base, so the next similar case starts with an answer.</li></ul></div>
+    
+    </div>
+  </section>
+
+  <section class="chart" id="lab-issue">
+    <header class="chart-head">
+      <span class="chart-num">02</span>
+      <div class="chart-titles">
+        <h2>A lab issue comes in</h2>
+        <p class="asked">"99441979 stops after the second sample, here is the log" · "the lab committed again, check it"</p>
+      </div>
+    </header>
+    <p class="intro">A colleague in the lab, or at a customer install, reports a robot problem with an order number and usually a log file. The assistant gets the exact software that robot runs, checks whether the problem is already known, and always ends with a diagnosis or a best hypothesis with its reasoning. It never ends with only a request for more information.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Colleague: order number, log, what they saw]):::start --&gt; ASK{Order number&lt;br/&gt;and symptom given?}:::decision
+    ASK --&gt;|No| CLAR[Ask for what is missing]:::human --&gt; SRC
+    ASK --&gt;|Yes| SRC{Where is the software?}:::decision
+
+    SRC --&gt;|On SVN| VPN{SVN reachable?}:::decision
+    VPN --&gt;|"No: VPN off"| STOP1[Stop: ask the engineer&lt;br/&gt;to connect the VPN]:::rule
+    VPN --&gt;|Yes| CO{Already checked out?}:::decision
+    CO --&gt;|Yes| REF["Refresh in place&lt;br/&gt;fetch-project.ps1&lt;br/&gt;logs are kept"]:::script
+    CO --&gt;|No| NEW["Check out the order&lt;br/&gt;fetch-project.ps1"]:::script
+    SRC --&gt;|"Customer zip"| ZIP["Install the zip as its own folder&lt;br/&gt;Process-SoftwareFolder.ps1&lt;br/&gt;never mixed with SVN"]:::script
+
+    REF &amp; NEW &amp; ZIP --&gt; POST["Same post-processing every time&lt;br/&gt;C# code mirror, Sequence CSVs,&lt;br/&gt;order Profile.md"]:::script
+    POST --&gt; PLACE[Put the log in the order's Log folder]:::ai
+    PLACE --&gt; PRIOR["One batch of lookups&lt;br/&gt;case base, Template Known Issues,&lt;br/&gt;order Profile.md"]:::ai
+    PRIOR --&gt; HASLOG{Log provided?}:::decision
+    HASLOG --&gt;|Yes| LOGA[[Log analysis flow]]:::ai
+    HASLOG --&gt;|No| SOFT[Reason from the software alone&lt;br/&gt;sequences, tables, action code]:::ai
+    LOGA &amp; SOFT --&gt; DIAG[Diagnosis or best hypothesis&lt;br/&gt;with the reasoning]:::ai
+    DIAG --&gt; FIX{Change needed?}:::decision
+    FIX --&gt;|Yes| IMPL[[Feature implementation flow]]:::ai
+    FIX --&gt;|No| DONE
+    IMPL --&gt; DONE{Fix confirmed&lt;br/&gt;on the robot?}:::human
+    DONE --&gt;|Yes| LOGIT[Offer: log this lab resolution]:::ai
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>The software is always the exact version under investigation: refreshed from SVN, or installed from the customer's zip. If SVN cannot be reached the assistant stops instead of using another copy.</li><li>A refresh never deletes the order folder, so logs and notes stay where they were.</li><li>When the lab says "we committed again" or "here is a new zip", the same step runs again and everything read earlier is treated as out of date.</li><li>No log is not a dead end. The assistant answers from the software and says which log would settle what is still open.</li><li>The resolution is filed only after the fix has been confirmed on the robot.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit good">Good</span> The chat proof of concept already runs this flow as its Lab channel; the work is reading and reasoning.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Log reader</li><li>File upload</li></ul>
+        <p class="writes"><strong>Writes:</strong> refreshes the order folder, which discards local edits, so a shared service needs one queue per order</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="log-analysis">
+    <header class="chart-head">
+      <span class="chart-num">03</span>
+      <div class="chart-titles">
+        <h2>Reading a robot log</h2>
+        <p class="asked">"why did this run hang?" · "what went wrong in this .glf?"</p>
+      </div>
+    </header>
+    <p class="intro">The robot writes binary <code>.glf</code> log files that can hold hundreds of thousands of lines. The assistant never reads them as text. It asks questions through a dedicated log reader (the Loupe server), starting with a fixed overview and then narrowing one question at a time, so that only the lines that matter end up in front of it.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Log file handed over]):::start --&gt; MCP{Log reader&lt;br/&gt;available?}:::decision
+    MCP --&gt;|No| STOP[Stop and explain how to start it&lt;br/&gt;no workaround, no manual reading]:::rule
+    MCP --&gt;|Yes| OPEN["Opening batch, four questions at once&lt;br/&gt;run summary, crashes,&lt;br/&gt;error census, activity timeline"]:::ai
+    OPEN --&gt; KIND{What kind of problem?}:::decision
+    KIND --&gt;|"Something failed"| CENSUS[Group errors by type]:::ai
+    KIND --&gt;|"Did X happen, when?"| TEXT[Search for that event]:::ai
+    KIND --&gt;|"Hang or freeze"| HANG[Timeline gaps&lt;br/&gt;and threads]:::ai
+    KIND --&gt;|"What led up to it?"| AROUND[Read the lines&lt;br/&gt;around one moment]:::ai
+    CENSUS &amp; TEXT &amp; HANG &amp; AROUND --&gt; NARROW[Narrow down&lt;br/&gt;each question smaller than the last,&lt;br/&gt;an empty answer is a finding]:::ai
+    NARROW --&gt; SAMPLE[Follow the affected sample&lt;br/&gt;by rack position]:::ai
+    SAMPLE --&gt; NOISE["Set aside known false alarms&lt;br/&gt;look up error codes in this&lt;br/&gt;order's own error table"]:::ai
+    NOISE --&gt; HOST{Problem in the PC&lt;br/&gt;application itself?}:::decision
+    HOST --&gt;|Yes| HL[Ask the engineer for&lt;br/&gt;the separate host log]:::human --&gt; REPORT
+    HOST --&gt;|No| REPORT[Report&lt;br/&gt;summary, timeline, root cause,&lt;br/&gt;affected samples, recommendation]:::ai
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>Without the log reader there is no analysis. The assistant stops and says how to fix it rather than guessing from the raw file.</li><li>The four opening questions always go out together, which saves time.</li><li>Searches are capped at 20 to 30 results and never paged through. A wide search would bury the few lines that matter.</li><li>Error codes differ per robot, so a code is looked up in that order's own error table, never in a template or another order.</li><li>A "COM port opened" line without a reply points to cabling or power, so the assistant stops looking at code there.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit good">Good</span> Read only from start to finish; the user uploads a log and gets a report.</p>
+        <ul class="needs"><li>Workspace files</li><li>Log reader</li><li>File upload</li></ul>
+        <p class="writes"><strong>Writes:</strong> nothing</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="jira-ticket">
+    <header class="chart-head">
+      <span class="chart-num">04</span>
+      <div class="chart-titles">
+        <h2>Solving an RB or ES ticket</h2>
+        <p class="asked">"solve RB-380" · "investigate ES-212"</p>
+      </div>
+    </header>
+    <p class="intro">Service tickets from the Robot Aftersales (RB) and Escalation (ES) boards are pulled into a local folder by a scraper script: the ticket text, every attachment, the order's SVN software and, when the customer sent it, their own running software. The assistant diagnoses from that folder and writes an analysis with a draft reply. It never writes to Jira; a person decides what to post.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Engineer: solve RB-380]):::start --&gt; SCRAPE["Fresh copy of the ticket&lt;br/&gt;Process-ServiceTickets.ps1&lt;br/&gt;Jira writes switched off"]:::script
+    SCRAPE --&gt; OK{Download worked?}:::decision
+    OK --&gt;|No| STOP1[Stop and report&lt;br/&gt;never diagnose from an old copy]:::rule
+    OK --&gt;|Yes| FOLDER[("Service Items folder&lt;br/&gt;ticket text, attachments, SVN software,&lt;br/&gt;customer software, logs")]:::store
+    FOLDER --&gt; READ[Read the ticket&lt;br/&gt;and the attachment list]:::ai
+    READ --&gt; SW{Which software&lt;br/&gt;is the evidence?}:::decision
+    SW --&gt;|"Customer zip attached"| CUST[Customer's software is the source&lt;br/&gt;SVN only for comparison]:::ai
+    SW --&gt;|"Ticket links a zip the&lt;br/&gt;scraper could not fetch"| DL[Engineer downloads it&lt;br/&gt;into the ticket folder]:::human --&gt; INST["Install it&lt;br/&gt;Process-SoftwareFolder.ps1"]:::script --&gt; CUST
+    SW --&gt;|"No customer software"| SVNSW[SVN software]:::ai
+    CUST &amp; SVNSW --&gt; PRIOR[Search the case base&lt;br/&gt;re-check any match against this ticket]:::ai
+    PRIOR --&gt; ROUTE{What does it need?}:::decision
+    ROUTE --&gt;|Log| LOGA[[Log analysis flow]]:::ai
+    ROUTE --&gt;|Code| CODE[Action code reference]:::ai
+    ROUTE --&gt;|Setup question| DOCS[Template docs, Confluence]:::ai
+    LOGA &amp; CODE &amp; DOCS --&gt; XCHK[Cross-check with a second source&lt;br/&gt;facts, inferences, open questions apart]:::ai
+    XCHK --&gt; ENOUGH{Enough evidence?}:::decision
+    ENOUGH --&gt;|No| ASKFOR[Smallest concrete request&lt;br/&gt;for what is missing]:::ai
+    ENOUGH --&gt;|Yes| LOCAL[Diagnose, and if needed fix&lt;br/&gt;locally in the ticket folder]:::ai
+    ASKFOR &amp; LOCAL --&gt; ANALYSIS[("analysis.md&lt;br/&gt;cause, confidence, verification,&lt;br/&gt;draft Jira reply to copy")]:::store
+    ANALYSIS --&gt; ENG{Engineer decides:&lt;br/&gt;post to Jira, commit to SVN}:::human
+    ENG --&gt; CONF{Fix confirmed&lt;br/&gt;on the robot?}:::human
+    CONF --&gt;|Yes| LOGIT[Offer: log this ticket resolution]:::ai
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>"Solve" covers diagnosis and a local fix only. Posting to Jira, changing the ticket, committing to SVN and deploying all need a person to ask for them.</li><li>When the customer sent their own software, that is what gets diagnosed. SVN can differ from what actually runs on site.</li><li>If the ticket points to customer software the scraper could not download, the assistant stops and asks for it instead of quietly using SVN.</li><li>The draft reply is written for internal readers and never claims testing or a delivery date that has not happened.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit good">Good</span> The chat proof of concept already runs this flow as its Helpdesk channel and ends with a draft reply for a person to send.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Jira (read)</li><li>Log reader</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> the local ticket folder and analysis.md, never Jira</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="precedent-search">
+    <header class="chart-head">
+      <span class="chart-num">05</span>
+      <div class="chart-titles">
+        <h2>Have we built this before?</h2>
+        <p class="asked">"have we ever built a robot that rinses the probe with KCl between samples?" · "find a reference order for a dual EC flowcell"</p>
+      </div>
+    </header>
+    <p class="intro">Most special requests (B-features) have been built for some earlier customer. The workspace keeps a searchable index card for every delivered order (about 1,275) and a growing collection of feature dossiers. The assistant searches those, a person picks the right reference order, and the assistant turns it into a dossier that says exactly what to copy and what not to.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Engineer describes the feature]):::start --&gt; GRILL{Requirement clear?}:::decision
+    GRILL --&gt;|"No: engineer starts&lt;br/&gt;the interview"| INT[Interview, one question at a time&lt;br/&gt;scope, hardware, trigger, failure, acceptance]:::human
+    INT --&gt; BRIEF{Engineer confirms&lt;br/&gt;the brief?}:::human
+    INT --&gt;|"Hardware does not exist"| QUOTE[Stop: this is a quoting question]:::rule
+    BRIEF --&gt;|Yes| SEARCH
+    GRILL --&gt;|Yes| SEARCH["Search the index cards&lt;br/&gt;1,275 orders, commit messages and names&lt;br/&gt;no software downloaded yet"]:::ai
+    SEARCH --&gt; SHORT[Shortlist of candidate orders&lt;br/&gt;with the evidence for each]:::ai
+    SHORT --&gt; GOOD{Convincing&lt;br/&gt;candidate?}:::decision
+    GOOD --&gt;|No| SEARCH
+    GOOD --&gt;|Yes| PICK{Engineer picks&lt;br/&gt;the reference order}:::human
+    PICK --&gt; HIST["Trace the order's history&lt;br/&gt;which template it came from,&lt;br/&gt;which revisions added the feature"]:::script
+    HIST --&gt; CO["Full checkout of the reference order&lt;br/&gt;and its template&lt;br/&gt;fetch-project.ps1"]:::script
+    CO --&gt; DOSS[("Feature dossier&lt;br/&gt;what to port, dependencies,&lt;br/&gt;what NOT to copy&lt;br/&gt;status: candidate")]:::store
+    DOSS --&gt; ADAPT[Adapt to the new order&lt;br/&gt;port nothing the order will not use]:::ai
+    ADAPT --&gt; IMPL[[Feature implementation flow]]:::ai
+    IMPL -.-&gt;|"FAT passed or engineer confirms"| VER[Dossier promoted to verified]:::human
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>Nothing is downloaded until a person has chosen the reference order. The index cards are enough to shortlist.</li><li>The choice is verified outside the tooling, for example from photos of the built system or by opening its software.</li><li>The dossier records what not to copy as well as what to copy: a reference order also carries other customer-specific parts.</li><li>Dossiers grow from live work. Each port adds or updates one, and it becomes "verified" once the first port passes FAT.</li><li>The interview step is optional and only starts when someone asks for it.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit partial">Partial</span> The search and shortlist only read the committed index cards; the checkout and dossier after the engineer's pick need SVN.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> a candidate dossier in the workspace</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="feature-implementation">
+    <header class="chart-head">
+      <span class="chart-num">06</span>
+      <div class="chart-titles">
+        <h2>Building a feature into an order</h2>
+        <p class="asked">"port the KCl rinse from 99412345 into 99446390" · "add a setting to switch the sprayer off"</p>
+      </div>
+    </header>
+    <p class="intro">A robot's behaviour lives in XML tables (sequences, settings, positions) and in C# action code stored inside those XML files. The assistant changes both through workspace scripts, checks that every new movement has a position to go to, and compiles the code. It can then build the change in the real application and run it in emulation. The test on the real robot stays with the lab, and nothing is committed to SVN without a person's yes.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Port list from a dossier,&lt;br/&gt;or a direct feature request]):::start --&gt; MIRROR["Refresh the C# code mirror&lt;br/&gt;of both orders&lt;br/&gt;Process-SoftwareFolder.ps1"]:::script
+    MIRROR --&gt; DIFF[Compare every code location&lt;br/&gt;between reference and target]:::ai
+    DIFF --&gt; SORT{Each difference}:::decision
+    SORT --&gt;|"Part of this feature"| PORT[Port it]:::ai
+    SORT --&gt;|"Another customer's extra"| SKIP[Leave it out]:::ai
+    PORT --&gt; TABLES[Edit the tables&lt;br/&gt;sequences, settings in all three places,&lt;br/&gt;dropdown values, positions]:::ai
+    PORT --&gt; CODE["Edit the action code&lt;br/&gt;Sync-ActionCode.ps1&lt;br/&gt;extract, edit, write back"]:::script
+    PORT --&gt; TRAYS["Racks and layout if needed&lt;br/&gt;Add-TrayType / Set-TrayLayout&lt;br/&gt;dry run first"]:::script
+    TABLES &amp; CODE &amp; TRAYS --&gt; GEO["Check every new step has a position&lt;br/&gt;Check-ManipulatorGeometry.ps1"]:::script
+    GEO --&gt; MISS{Position missing?}:::decision
+    MISS --&gt;|Yes| ADDROW[Add the position row&lt;br/&gt;the lab teaches the real value]:::ai --&gt; GEO
+    MISS --&gt;|No| VERIFY[Regenerate the mirror, re-compare,&lt;br/&gt;compile, run the checklist]:::ai
+    VERIFY --&gt; BUILD["Build in the application&lt;br/&gt;Build-ViaApp.ps1"]:::script
+    BUILD --&gt; TEST["Unattended test run in emulation&lt;br/&gt;Run-AppTest.ps1, no hardware"]:::script
+    TEST --&gt; FAT{Lab test / FAT}:::human
+    FAT --&gt; COMMIT{Person approves&lt;br/&gt;the commit?}:::human
+    COMMIT --&gt;|Yes| SVN[(SVN)]:::store
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>Every difference between the reference and the target order is sorted. Only the parts of this feature are ported, so another customer's extras do not travel along.</li><li>A new setting goes in three places (the shared table, every application, and the settings popup). Adding it in one place only fails silently, which is why it is a checklist item.</li><li>The geometry check catches a new movement with no position defined. On the robot that would otherwise show up as a crash or a wrong move.</li><li>The emulation test and the in-app Build are real compiles and runs. The assistant's own compile is an earlier, cheaper check.</li><li>Nothing is committed to SVN until a person says yes.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit pc">Engineer PC</span> It changes order software, and the Build and emulation test drive the robot application on Windows.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Runs robot app</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> order tables and action code in the local checkout; SVN only after a yes</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="sso-approval">
+    <header class="chart-head">
+      <span class="chart-num">07</span>
+      <div class="chart-titles">
+        <h2>Assessing a B-system order for R&amp;D approval</h2>
+        <p class="asked">"assess SSO-52" · "is this B-system ready to approve?"</p>
+      </div>
+    </header>
+    <p class="intro">Orders on the SSO board ("B-System Orders") wait for R&amp;D approval. A script downloads the order and every attachment and converts them to readable text locally: the application questionnaire, the B-features document, the workfile's SPDQ sheet, photos and any robot software. The assistant then reads all of it, cross-checks the documents against each other, finds the best reference order and writes a verdict. The approval itself stays with a person.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Engineer: assess SSO-52]):::start --&gt; FETCH["Download the order and attachments&lt;br/&gt;Process-SSO-Approvals.ps1&lt;br/&gt;read only against Jira"]:::script
+    FETCH --&gt; CONV["Convert every attachment locally&lt;br/&gt;PDF to text and page images, OCR,&lt;br/&gt;SPDQ sheet, Word, zips, robot software"]:::script
+    CONV --&gt; RET["Shortlist past similar orders&lt;br/&gt;and write the checklist"]:::script
+    RET --&gt; BUNDLE[("Approval bundle&lt;br/&gt;issue, attachments, readable copies,&lt;br/&gt;warnings list, precedent shortlist")]:::store
+    BUNDLE --&gt; READ[Read the issue and every comment&lt;br/&gt;the B decision is often in a comment]:::ai
+    READ --&gt; DOCS[Read every converted document&lt;br/&gt;check page images where flagged]:::ai
+    DOCS --&gt; WARN{Every conversion&lt;br/&gt;warning resolved?}:::decision
+    WARN --&gt;|"No: evidence unreadable"| NEEDS
+    WARN --&gt;|Yes| CROSS[Cross-check the documents&lt;br/&gt;for example the meter in the AQ&lt;br/&gt;against the B-features document]:::ai
+    CROSS --&gt; PREC[[Precedent search:&lt;br/&gt;confirm the best reference order]]:::ai
+    PREC --&gt; VERDICT{Complete and&lt;br/&gt;consistent?}:::decision
+    VERDICT --&gt;|Yes| READY[assessment.md&lt;br/&gt;Ready to approve]:::ai
+    VERDICT --&gt;|No| NEEDS[assessment.md&lt;br/&gt;Needs info, with the open questions]:::ai
+    READY &amp; NEEDS --&gt; ENG{Engineer makes the&lt;br/&gt;approval call in Jira}:::human
+    ENG --&gt; LOGIT[Offer: log in the order approval log]:::ai
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>Two stages. The script fetches and converts with no AI involved; the assistant reasons over the result.</li><li>Scope is never taken from a file name. The AQ, the B-features document and the workfile are read as independent evidence, so a contradiction between them shows up.</li><li>A conversion warning does not block approval once it has been checked against the original, but unreadable evidence does.</li><li>Neither the script nor the assistant posts to Jira or changes the issue status.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit good">Good</span> A reviewer asks one question and gets a written verdict; the work is reading.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>Jira (read)</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> a bundle folder and assessment.md in the workspace, nothing in Jira</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="customer-software-to-svn">
+    <header class="chart-head">
+      <span class="chart-num">08</span>
+      <div class="chart-titles">
+        <h2>Putting a customer's software on SVN</h2>
+        <p class="asked">"put this customer zip on SVN" · "commit the customer's version"</p>
+      </div>
+    </header>
+    <p class="intro">When a customer sends the software that actually runs on their robot, SVN has to be brought in line with it without losing anything. The script plans first and changes nothing, a person makes three decisions, the changes are staged in the local copy, and the commit happens only after an explicit yes.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Engineer: put this zip on SVN]):::start --&gt; SAFE["Check the local SVN copy is safe&lt;br/&gt;Import-CustomerSoftware.ps1, plan mode"]:::script
+    SAFE --&gt; SAFEOK{Copy clean and&lt;br/&gt;SVN reachable?}:::decision
+    SAFEOK --&gt;|"No: local edits, no VPN,&lt;br/&gt;or a different order"| STOP1[Stop and say why&lt;br/&gt;never reverts someone's work]:::rule
+    SAFEOK --&gt;|Yes| PLAN["Compare the zip with SVN&lt;br/&gt;plan report, changes nothing"]:::script
+    PLAN --&gt; ANY{Anything to import?}:::decision
+    ANY --&gt;|No| END1([Nothing to do]):::start
+    ANY --&gt;|Yes| THREE["Present three decisions&lt;br/&gt;whose program files, the customer's or SVN's&lt;br/&gt;which new files to add&lt;br/&gt;which missing files to delete"]:::ai
+    THREE --&gt; DEC{Engineer decides}:::human
+    DEC --&gt; PREVIEW["Preview, then stage in the local copy&lt;br/&gt;-WhatIf, then -Apply&lt;br/&gt;still undoable"]:::script
+    PREVIEW --&gt; MSG[Propose the commit message&lt;br/&gt;Customer version dd-MM-yyyy]:::ai
+    MSG --&gt; YES{Engineer: yes, commit?}:::human
+    YES --&gt;|"No, or commits in TortoiseSVN"| END2([Stops here]):::start
+    YES --&gt;|Yes| COMMIT["Commit to SVN&lt;br/&gt;and refresh the workspace summaries"]:::script
+    COMMIT --&gt; SVN[(SVN)]:::store
+    COMMIT --&gt; LOGIT[Offer to log it&lt;br/&gt;the plan report is the evidence]:::ai
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>"Put it on SVN" allows planning and staging. The commit needs a separate, explicit yes in the conversation.</li><li>Files missing from the zip are kept unless a person names them; new files are added only when chosen.</li><li>If SVN holds a newer core than the customer, the assistant has to ask, because taking the customer's version would roll SVN back.</li><li>The customer's zip is evidence and is never moved, renamed or deleted.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit pc">Engineer PC</span> It changes the system of record and every step waits on an engineer's decision.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>File upload</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> the local SVN copy, then SVN itself after a yes</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="diluter-upgrade">
+    <header class="chart-head">
+      <span class="chart-num">09</span>
+      <div class="chart-titles">
+        <h2>Upgrading the diluters on an installed robot</h2>
+        <p class="asked">"upgrade the diluters on 99325813" · "what path is this order?"</p>
+      </div>
+    </header>
+    <p class="intro">Older robots carry one of several diluter software generations. The Diluter Upgrade Kit brings an order's own software to the current diluter code in place, keeping the customer's positions, calibrations and customisation. It works in stages with gates: anything it cannot handle safely stops the run and says what has to change first.</p>
+    <ul class="legend mini"><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Engineer: upgrade the diluters on order X]):::start --&gt; PLAN["Classify the order's diluter generation&lt;br/&gt;diluterkit plan, read only&lt;br/&gt;upgrade path A to E"]:::script
+    PLAN --&gt; USE{Diluters in use?}:::decision
+    USE --&gt;|No| END1([Nothing to do]):::start
+    USE --&gt;|Yes| BLOCK{Blocking gate?}:::decision
+    BLOCK --&gt;|"Core too old"| CORE["Update the core first&lt;br/&gt;Update-CoreVersion.ps1"]:::script --&gt; PLAN
+    BLOCK --&gt;|"Unknown code lineage&lt;br/&gt;or other blocker"| FIXFIRST[Engineer changes the order&lt;br/&gt;or the kit first]:::human --&gt; PLAN
+    BLOCK --&gt;|None| SURVEY{Path B, C or D?}:::decision
+    SURVEY --&gt;|Yes| SITE["On-site survey of COM ports&lt;br/&gt;diluterkit survey"]:::human --&gt; ACC
+    SURVEY --&gt;|No| ACC{Engineer reviews the&lt;br/&gt;acceptable gates}:::human
+    ACC --&gt; APPLY["Pre-flight checks and backup,&lt;br/&gt;then swap the diluter code&lt;br/&gt;diluterkit apply"]:::script
+    APPLY --&gt; GATES{Two headless&lt;br/&gt;build checks pass?}:::decision
+    GATES --&gt;|No| UNDO[Run stopped&lt;br/&gt;report says how to undo]:::rule
+    GATES --&gt;|Yes| REPORT[("change report, flags,&lt;br/&gt;FAT sheet")]:::store
+    REPORT --&gt; BUILD["Build in the application&lt;br/&gt;Build-ViaApp.ps1"]:::script
+    BUILD --&gt; FAT{FAT on the robot}:::human
+    FAT --&gt; COMMIT{Person approves,&lt;br/&gt;files committed to SVN}:::human
+    REPORT -.-&gt;|"on request"| GUIDE["Engineer guide for the installer&lt;br/&gt;diluterkit guide, to USB"]:::script
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>The upgrade is always done in the order's own software, never by rebuilding the robot on today's template. The installed software is the customer's system of record.</li><li>Most gates cannot be waved through: the order has to change first. A short list may be accepted, and only after a person has reviewed it.</li><li>A failed build check stops the run with undo instructions. Nothing half-upgraded is left behind silently.</li><li>The kit itself never writes to SVN. The files are committed after the in-app Build and the FAT, once a person approves.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit pc">Engineer PC</span> It edits order software, needs the robot application to build it, and has an on-site survey.</p>
+        <ul class="needs"><li>Workspace files</li><li>Windows scripts</li><li>SVN via VPN</li><li>Runs robot app</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> the local order checkout, backed up first; SVN only by the engineer</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="learning-loop">
+    <header class="chart-head">
+      <span class="chart-num">10</span>
+      <div class="chart-titles">
+        <h2>How answers become knowledge</h2>
+        <p class="asked">"wrap up" · "log this ticket resolution" · "add this to the feature catalogue"</p>
+      </div>
+    </header>
+    <p class="intro">The workspace improves because finished work is written down where the next question will find it. At the end of a case the assistant proposes what to keep and where, a person approves the list, and the write-up goes into the matching log. Every investigation flow starts by searching those same logs.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw script"></span>A workspace script runs</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw human"></span>An engineer decides or acts</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    DONE([Case finished]):::start --&gt; PROPOSE[Assistant proposes what is worth keeping&lt;br/&gt;and where it belongs]:::ai
+    PROPOSE --&gt; OK{Engineer approves&lt;br/&gt;the list?}:::human
+    OK --&gt;|"No: exploration or dead end"| NOTHING([Nothing filed]):::start
+    OK --&gt;|Yes| KIND{What kind of result?}:::decision
+    KIND --&gt;|"RB/ES ticket"| T[(Ticket resolution log)]:::store
+    KIND --&gt;|"Lab, FAT or install case"| L[(Lab resolution log)]:::store
+    KIND --&gt;|"Defect in a template"| TP[(Template issue log)]:::store
+    KIND --&gt;|"B-feature built"| F[(Feature implementation log&lt;br/&gt;plus feature dossier)]:::store
+    KIND --&gt;|"Order or SSO assessment"| A[(Order approval log)]:::store
+    KIND --&gt;|"Change to the assistant itself"| W[(Workspace plan&lt;br/&gt;and context changelog)]:::store
+    T &amp; L &amp; TP &amp; F &amp; A --&gt; HEADER[Each write-up opens with a four-line summary&lt;br/&gt;symptom, cause, fix, scope]:::ai
+    HEADER --&gt; SHARE{Colleague's PC?}:::decision
+    SHARE --&gt;|Yes| SEND["Send to the maintainer for review&lt;br/&gt;Submit-Contributions.ps1"]:::script
+    SHARE --&gt;|No| GIT[(Workspace repository)]:::store
+    SEND --&gt; GIT
+    GIT -.-&gt;|"Prior-cases search&lt;br/&gt;at the start of every case"| NEXT([Next question]):::start
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef script fill:#eef3fb,stroke:#6686b7,color:#16233a,stroke-dasharray:4 3
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>The four-line summary at the top of each write-up is what makes the case base cheap to search. A match is judged from those lines before the whole file is opened.</li><li>Filing is by how the work arrived (ticket or lab), but every search covers all the logs.</li><li>Nothing is filed without a person's OK, and filing never posts to Jira or commits to SVN.</li><li>Colleagues who do not use git send their entries for review rather than changing the shared workspace directly.</li></ul></div>
+    <aside class="web"><h3>For a web version</h3>
+        <p><span class="fit partial">Partial</span> The write-up can be drafted automatically, but someone has to decide what is correct before it becomes knowledge.</p>
+        <ul class="needs"><li>Workspace files</li><li>Engineer approval</li></ul>
+        <p class="writes"><strong>Writes:</strong> the case-base logs in the workspace repository, after review</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="chart" id="proposal-any-robot-question">
+    <header class="chart-head">
+      <span class="chart-num">11</span>
+      <div class="chart-titles">
+        <h2>Proposal: answering any robot question</h2>
+        <p class="asked">"how often should the YSI membrane be replaced?" · "which BOD method uses seed correction?" · "have we seen a blank fail like this before?"</p>
+      </div>
+    </header>
+    <p class="intro">This chart is a proposal. Nothing on it is built yet. It shows how a web page open to everyone with access could answer any question about the robots, not only software questions. Knowledge questions are answered from a shared search over the written knowledge (RAG: retrieval-augmented generation). Questions about one order's software or a log still go through the full workflows above. Full reasoning: <code>md documents\Assessments &amp; Plans\RAG Assessment.md</code>.</p>
+    <ul class="legend mini"><li><span class="sw ai"></span>The assistant reasons or writes</li><li><span class="sw decision"></span>A branch in the flow</li><li><span class="sw rule"></span>A hard stop or house rule</li><li><span class="sw store"></span>A stored result</li><li><span class="sw start"></span>Start or end</li><li><span class="sw proposed"></span>Proposed, not built yet</li></ul>
+    <div class="sheet"><pre class="mermaid">%%{init: {'theme':'base','themeVariables':{'fontFamily':'Nunito Sans, Segoe UI, sans-serif','fontSize':'15px','lineColor':'#47597a','primaryTextColor':'#16233a','textColor':'#16233a','edgeLabelBackground':'#ffffff','clusterBkg':'#f3f5f9','clusterBorder':'#b7cbe9'},'flowchart':{'curve':'basis','htmlLabels':true}}}%%
+flowchart TD
+    Q([Anyone with access asks&lt;br/&gt;a question on the web page]):::start --&gt; ROUTE{What kind&lt;br/&gt;of question?}:::decision
+    ROUTE --&gt;|"Product, method, hardware,&lt;br/&gt;maintenance, seen before?"| SEARCH
+    ROUTE --&gt;|"Names an order, a log&lt;br/&gt;or a ticket"| AGENT
+
+    SEARCH["Shared search, by meaning and keywords&lt;br/&gt;knowledge base, case base, known issues,&lt;br/&gt;feature dossiers, order index cards"]:::proposed
+    CONF[Confluence and Jira&lt;br/&gt;through Atlassian's own search]:::proposed
+    SEARCH --&gt; TOP[(Best passages with&lt;br/&gt;source, status and date)]:::store
+    CONF -.-&gt; TOP
+    TOP --&gt; ANSWER[One AI call writes the answer&lt;br/&gt;and cites the pages it used]:::proposed
+    ANSWER --&gt; GOOD{Good sources found?}:::decision
+    GOOD --&gt;|Yes| OUT1([Answer with links&lt;br/&gt;draft pages marked as draft]):::start
+    GOOD --&gt;|No| AGENT
+
+    AGENT[["Full workflow on the server, charts 02 to 04&lt;br/&gt;check out or refresh the order from SVN,&lt;br/&gt;profile and sequences, uploaded log through&lt;br/&gt;the log reader, several rounds"]]:::ai
+    AGENT -.- QUEUE[One question per order at a time]:::rule
+    SEARCH -.-&gt;|"prior-cases step starts&lt;br/&gt;from the same results"| AGENT
+    AGENT --&gt; OUT2([Answer]):::start
+
+    classDef start fill:#1b355d,stroke:#1b355d,color:#ffffff
+    classDef ai fill:#e6ecf7,stroke:#1b355d,color:#16233a
+    classDef decision fill:#ffffff,stroke:#1b355d,color:#16233a
+    classDef human fill:#fff3db,stroke:#ffa400,color:#16233a
+    classDef store fill:#f1f4f9,stroke:#47597a,color:#16233a
+    classDef rule fill:#fdecec,stroke:#b03a3a,color:#16233a
+    classDef proposed fill:#e3f3ea,stroke:#1f7a4d,color:#16233a,stroke-dasharray:6 3</pre></div>
+    <div class="notes">
+    <div class="points"><h3>Key points</h3><ul><li>RAG fits the written knowledge: the product knowledge base, solved cases, known template issues, feature dossiers and order index cards. Together they are about 5 MB of text, so one index file is enough and no database server is needed.</li><li>It does not fit the robot software, logs, action code or error codes. Those need exact answers for one order, which the existing tools give.</li><li>A web question about one order's software still triggers the usual background work on the server: checking out or refreshing that order from SVN, regenerating its profile and sequences, and reading the uploaded log. RAG only speeds up the search for prior cases.</li><li>A knowledge answer is one AI call, estimated at around €0.10 (not measured). A full order-lane chat costs €3.73 to €6.23 as measured.</li><li>The more of the product knowledge base is written, the more questions the cheap lane can answer. Its pages already carry a status (draft, reviewed, verified) that the answer can show.</li><li>When the search finds nothing good, the question goes to the full workflow or an engineer instead of getting a guess.</li></ul></div>
+    
+    </div>
+  </section>
+</div>

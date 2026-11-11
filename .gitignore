@@ -1,0 +1,7 @@
+# Generated or local-only content
+node_modules/
+__pycache__/
+*.pyc
+# Drafts that were never tracked in the old repo either
+Rollout/Jira-Ticket-Quality.md
+Rollout/Jira-Ticket-Walkthrough.md
