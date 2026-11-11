@@ -1,5 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-# Superseded cost-log schemas, kept locally by the migration in cost_log.py.
-cost_log.csv.*.bak
