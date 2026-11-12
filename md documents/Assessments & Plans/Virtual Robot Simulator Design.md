@@ -7,7 +7,7 @@
 
 **Date:** 2026-10-20
 **Inputs:** `roboticsonefirmware` (master `f6eaf97`), `tocsimulator` (TOCSimulator, v1.9.0), `fwsimulator` (master), `SSPLv1.10.docx` (2015 manual), `Virtual Robot SSPL Surface Spike.md`, `Virtual Robot Simulation Test Plan.md`, the RB-418 analysis and logs.
-**Repos:** cloned at the workspace root next to `robotics-core`, git-ignored: `roboticsonefirmware/`, `fwsimulator/`, `tocsimulator/`. Clone from `https://bitbucket.org/skalaranalytical/<name>.git` (same workspace as `robotics-core`); the simulator itself from `https://github.com/SkalarJoostE/Robotic-Simulator` into `Robotic-Simulator/`.
+**Repos:** cloned at the workspace root next to `robotics-core`, git-ignored: `roboticsonefirmware/`, `fwsimulator/`, `tocsimulator/`. Clone from `https://bitbucket.org/skalaranalytical/<name>.git` (same workspace as `robotics-core`); the simulator itself from `https://bitbucket.org/skalaranalytical/robsimulator.git` (branch `master`) into `Robotic-Simulator/`.
 
 ---
 

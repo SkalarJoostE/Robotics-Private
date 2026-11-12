@@ -300,7 +300,42 @@ Translation choices worth knowing before you present it:
   English and the icon cards wrap into their own body text past ~38 characters. If you re-edit a
   title, keep it under that.
 
-## 9. Build note
+## 9. The short deck would not open in PowerPoint — fixed at source
+
+**Symptom (2026-08-20):** `Robotics-AI Capability Overview (Short).pptx` opened fine in
+LibreOffice but PowerPoint refused it. Re-saving it through LibreOffice cleared it.
+
+**Cause:** seven shapes carried `<a:ext cy="-100584"/>` — a **negative height**, which is invalid
+OOXML (`cy` must be a positive coordinate). PowerPoint rejects the file outright; LibreOffice
+tolerates it and silently normalises it on export, which is why the re-save appeared to "fix" it.
+
+It came from `numberCard`, which always drew a body text box sized `h: o.h - 2.06`. The short deck
+passes `body: ""` on slides 5 and 9, and those cards were shrunk to `h: 1.95` to remove the dead
+space underneath — so the box computed to **−0.11 in**. Slide 10's cards are 2.35, which is
+exactly why 7 shapes broke and not 9.
+
+**Fixed in both builders:**
+
+1. `numberCard` no longer draws a body box when there is no body text, and clamps the height with
+   `Math.max(0.2, o.h - 2.06)` so it can never go negative again. This also removed 7 empty text
+   frames that had no business being in the file.
+2. Every build now ends with `assertOpensInPowerPoint()`, which reads the written `.pptx` back and
+   **throws** if any slide contains a negative `cx`/`cy`, naming the slide and the shape. Verified
+   by deliberately re-introducing the bug: the build fails with
+   `Invalid geometry — PowerPoint would refuse this file (1 shapes): slide5.xml …`.
+
+**Why the check had to be added.** A LibreOffice render cannot catch this class of bug — it draws
+the broken file happily, so both the PDF and the PNG proofs looked perfect. The XML is the only
+place the fault is visible, so the gate belongs in the build rather than in the eyeballs.
+
+> **Use the freshly built file, not the LibreOffice re-save.** The re-save is valid but it has been
+> through a foreign renderer, which shifts fonts, shadows and spacing. `(Short).pptx` has been
+> rebuilt from source and is now correct as generated — the re-saved copy can be deleted.
+
+`build-capability-deck-nl.js` still carries the old `numberCard` and no validator. It is parked and
+out of date anyway (§8); if it is ever revived, port both fixes across first.
+
+## 10. Build note
 
 `build-capability-deck.js` needs `pptxgenjs`, `react`, `react-dom`, `react-icons` and `sharp`
 in `Rollout/node_modules`. They are declared in `Rollout/package.json` but were not installed

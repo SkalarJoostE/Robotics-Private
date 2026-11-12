@@ -145,10 +145,16 @@ function numberCard(s, o) {
     x: o.x + 0.36, y: o.y + 1.34, w: o.w - 0.72, h: 0.42, margin: 0,
     fontFace: FONT, fontSize: 15, bold: true, color: o.dark ? W : NAVY, valign: "top",
   });
-  s.addText(o.body, {
-    x: o.x + 0.36, y: o.y + 1.82, w: o.w - 0.72, h: o.h - 2.06, margin: 0,
-    fontFace: FONT, fontSize: 11.5, color: o.dark ? ICE : GREY, lineSpacing: 15, valign: "top",
-  });
+  /* No body text, no box. An empty text frame whose height goes negative
+     (any card shorter than 2.06) writes cy="-..." into the XML. That is invalid
+     OOXML: PowerPoint refuses to open the file, while LibreOffice silently
+     tolerates it — so it will not show up in a local render. */
+  if (o.body && o.body.length) {
+    s.addText(o.body, {
+      x: o.x + 0.36, y: o.y + 1.82, w: o.w - 0.72, h: Math.max(0.2, o.h - 2.06), margin: 0,
+      fontFace: FONT, fontSize: 11.5, color: o.dark ? ICE : GREY, lineSpacing: 15, valign: "top",
+    });
+  }
 }
 
 /* =========================================================== 1 · title */
@@ -618,6 +624,30 @@ function slideAsk() {
   );
 }
 
+/* --------------------------------------------------------------- validate */
+/** Reads the written deck back and rejects geometry PowerPoint will not open.
+    LibreOffice renders negative extents happily, so a visual check cannot
+    catch this — the only safe gate is the XML itself. */
+async function assertOpensInPowerPoint(file) {
+  const JSZip = require("jszip");
+  const fs = require("fs");
+  const zip = await JSZip.loadAsync(fs.readFileSync(file));
+  const bad = [];
+  for (const name of Object.keys(zip.files)) {
+    if (!/^ppt\/slides\/slide\d+\.xml$/.test(name)) continue;
+    const xml = await zip.file(name).async("string");
+    const m = xml.match(/<a:ext cx="-?\d+" cy="-?\d+"\/>/g) || [];
+    for (const ext of m) if (/(cx|cy)="-/.test(ext)) bad.push(name.split("/").pop() + " " + ext);
+  }
+  if (bad.length) {
+    throw new Error(
+      "Invalid geometry — PowerPoint would refuse this file (" + bad.length + " shapes):\n  " +
+      bad.join("\n  ") +
+      "\nA negative width/height usually means a text box was sized from a card that shrank."
+    );
+  }
+}
+
 /* ------------------------------------------------------------------ build */
 (async () => {
   slideTitle();
@@ -630,6 +660,8 @@ function slideAsk() {
   await slideDepartments();
   slideStart();
   slideAsk();
-  await pres.writeFile({ fileName: path.join(__dirname, OUT) });
-  console.log("Wrote " + path.join(__dirname, OUT));
+  const outFile = path.join(__dirname, OUT);
+  await pres.writeFile({ fileName: outFile });
+  await assertOpensInPowerPoint(outFile);
+  console.log("Wrote " + outFile);
 })();
