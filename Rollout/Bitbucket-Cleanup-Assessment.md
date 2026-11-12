@@ -4,7 +4,10 @@
 > material moved to `_private\` (pushed to `SkalarJoostE/Robotics-Private`), document moves and link fixes,
 > filtered history pushed to `skalaranalytical/robotics-ai` `main` (332 commits, quoted hashes re-pointed),
 > Joost's PC switched (`origin` = Bitbucket, `github` = old repo), bootstrapper/SETUP point at Bitbucket.
-> Remaining: §8 steps 1–3, 6–7, 13–16 and the grace-period end.
+> Remaining: §8 steps 1–3, 6–7, 13–16 and the grace-period end. **2026-11-12:** steps 1–3 pushed
+> (Claude-only; `Orders\`/`Templates\`, RBTAI-6), step 6 done on the work laptop (Joost's two other PCs
+> running it from a prompt), step 7 checks passed incl. a lab-issue dry run. Step 16 renamed to **Team
+> workflow** and step 14 folded into it (§8 D). Now remaining: 13, 15, 16, the two PCs, grace-period end.
 > **Question:** what has to change before Robotics-AI moves to company Bitbucket as the open,
 > company-wide repo that carries only what the workspace needs to do its job.
 > Builds on PROJECT.md §8 entries 2026-08-07 ("moves to Bitbucket") and 2026-10-07 ("structured
@@ -248,4 +251,32 @@ Worked through one at a time; answers recorded here as they are made.
 
 **D. After the move**
 13. `robsimulator`: Design + Spike into `docs/`, `Orders`/`Templates` probe bases, photo-reference paths.
-14. Cowork guide rework for Bitbucket. 15. Slim `CLAUDE.md`, measured. 16. Lab setup project.
+14. ~~Cowork guide rework for Bitbucket~~ — folded into 16 (one contribution route for everyone).
+15. Slim `CLAUDE.md`, measured.
+16. **Team workflow** (was "Lab setup", renamed 2026-11-12, Joost): how everyone works together in
+    this repo, not only the Lab. Joost owns the working parts (skills, instructions, tools); Arnold,
+    Sammy and Cor mainly add information (case base, knowledge base, questions); Maciej contributes
+    code (Diluter Upgrade Kit). The project answers, per person:
+    - **Who changes what.** Starts from the ownership rule `Submit-Contributions.ps1` already applies
+      (own files freely, ask before others'). Roles chosen at install, e.g. maintainer, code
+      contributor, knowledge contributor; the Lab role lock (`Access-and-Feedback-Loop.md` §8.5)
+      becomes one of them.
+    - **How a contribution gets in.** One Bitbucket route instead of three (Cowork's question branch,
+      `Submit-Contributions.ps1`, direct pushes); Bitbucket pull requests are the obvious candidate.
+      Includes the old step 14: `knowledge-base/CONTRIBUTING.md` + `kb-sync.sh` for Bitbucket — still
+      the deadline for ending the grace period (Arnold's Cowork route is down until then).
+    - **How approved work reaches everyone.** The `stable` branch + session-start update (§8.4 of
+      that doc), per person rather than per lab machine.
+    - **Where questions go.** One place instead of the question branch, `md documents\Lab Questions\`
+      and the drafts share.
+    - **Automatic, unverified logging** (Joost, 2026-11-12). Contributors will not ask "log it", so on
+      a contributor's machine Claude writes the entry itself at the end of an answer that resolved
+      something, without being asked, and says in the answer that it did. Every such entry is marked
+      **unverified**; it becomes verified only if the person says it worked (e.g. "fixed on the
+      robot", which §8.5 already counts as verified) — expect that rarely. The entry travels on the
+      contribution branch (not a share, replacing §8.5's "drafts to a share"), and Joost verifies it
+      during the merge or after. To settle in the design: what counts as "resolved something" (not
+      every chat turn); one entry per issue, updated rather than duplicated, and a link instead of a
+      new entry when the answer came from an existing case; skill instruction vs a session-end hook
+      as the trigger (a hook guarantees it, an instruction can be skipped); unverified entries
+      visible to other users with the label carried into answers (§8.5 review rules).
