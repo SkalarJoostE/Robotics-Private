@@ -64,6 +64,11 @@
 | D44 | 2026-11-11 | Back end in C#, ASP.NET Core, replacing Python/FastAPI (D35): most Skalar back ends are ASP.NET, so colleagues can maintain it, and Entra login is Microsoft's own library. The Python Agent SDK is not needed for the agent: it only starts the bundled Claude Code program and exchanges JSON lines with it. The back end does the same directly (`claude -p`, `stream-json`), as `lab-chat-poc\lab_triage_cli.py` already does. The tool allowlist is set by Claude Code's flags and settings. |
 | D45 | 2026-11-11 | The Claude Code version on the server is pinned and updated on purpose, because the back end depends on its command-line flags and output format. |
 | D46 | 2026-11-11 | The search index is built in C# as well (local embedding model through ONNX Runtime, SQLite keyword index). Only if the embedding model proves impractical in ONNX, a small Python helper computes embeddings and nothing else. |
+| D47 | 2026-11-17 | The back end follows the conventions of Skalar's `toc-be` (reference clone in `Reference\toc-be`): projects Common / Persistence / Domain / WebAPI plus tests; one model type per layer (`*Entity`, domain, `*Model`) with `ToDomain()`/`ToAPI()` mappers; controllers → providers → services → repositories; central package management, warnings as errors, `.editorconfig` enforced on build; NLog; Swashbuckle with `swagger.json` committed; xUnit v3, Moq, Reqnroll, WebApplicationFactory; EF Core with SQLite; Conventional Commits carrying the Jira key. Added beyond toc-be: ProblemDetails error responses, a mapped `/health`, IOptions configuration, Entra ID login via Microsoft.Identity.Web. |
+| D48 | 2026-11-17 | Live progress to the browser goes over SignalR, as in other Skalar apps. |
+| D49 | 2026-11-17 | The front end is a separate React app in this project's repo, built on the published `@skalar/*` packages (Azure Artifacts feed `skalar-npm`, read access requested), not inside `skalar-fe`. |
+| D50 | 2026-11-17 | Code lives in Bitbucket `skalaranalytical/robotics-ai-web`: `backend/` and `frontend/`. Single developer, so commits go straight to `main` without branches or pull requests. The API runs locally on port 5190 (5180 is the SP2000 simulator). |
+| D51 | 2026-11-17 | Work is tracked on Jira board RBTAI with components Workspace / Web app / Simulator. Tickets state the work only (Why / Done when). |
 
 ## Open
 
