@@ -69,6 +69,10 @@
 | D49 | 2026-11-17 | The front end is a separate React app in this project's repo, built on the published `@skalar/*` packages (Azure Artifacts feed `skalar-npm`, read access requested), not inside `skalar-fe`. |
 | D50 | 2026-11-17 | Code lives in Bitbucket `skalaranalytical/robotics-ai-web`: `backend/` and `frontend/`. Single developer, so commits go straight to `main` without branches or pull requests. The API runs locally on port 5190 (5180 is the SP2000 simulator). |
 | D51 | 2026-11-17 | Work is tracked on Jira board RBTAI with components Workspace / Web app / Simulator. Tickets state the work only (Why / Done when). |
+| D52 | 2026-11-24 | Development and testing run the back end's `claude -p` (D44) on Joost's own Claude subscription, as `lab-chat-poc` does. The company API account (Claude Console) is needed only once colleagues use the app (pilot). Switching is one setting: when an API key is present, the same `claude -p` is billed to the API account. Either way, the ledger records the API-equivalent cost of every turn, so budgets are tested without API spend. |
+| D53 | 2026-11-24 | Budgets, role membership and the pilot group start as working values in configuration (now €25 per user and €500 for the company each month) and are adjusted while testing. They are not decisions that block building. |
+| D54 | 2026-11-24 | Everything that does not need IT is built and tested locally first: the API on port 5190 (D50) and the front end's development server, with a development sign-in standing in for Entra ID. IT is needed only for the real sign-in, the server VM, outside access and the read-only SVN account (RBTAI-44, RBTAI-48, RBTAI-49). |
+| D55 | 2026-11-24 | Build order: finish RBTAI-42 (part lists crowding out how-to pages) → RBTAI-43 with the development sign-in from RBTAI-44 → RBTAI-63 → live progress over SignalR (D48) → front end from the mockup on the `@skalar` packages, once `skalar-npm` access is in (new chat and general chat first, then RBTAI-45/46/47, budget requests, admin). RBTAI-62 fits anywhere. The front end and live progress get Jira tickets on Joost's yes. Phase 2 (order questions) follows. |
 
 ## Open
 
@@ -78,8 +82,12 @@
 - Retention period for uploads.
 - The release process for the workspace branch (who releases, how).
 - Phasing on the Confluence plan page is Claude's proposal, not yet confirmed by Joost.
-- Who sets and approves budgets (D4, D6).
-- The web app needs its own API account (Claude Console); the Team plan does not cover API usage.
+- Who sets and approves budgets (D4, D6). Working values until then (D53); who signs off the real ones is asked of
+  the software manager.
+- The web app needs its own API account (Claude Console) by the pilot; the Team plan does not cover API usage.
+  Not needed for development (D52).
+- Read access to the `skalar-npm` feed (D49): requested 2026-11-17, not in yet; asked of the software manager on
+  2026-11-24. The front end waits on it.
 - Roles: which tiers, which departments in each, what each may ask, who manages membership.
 - Upload size limits.
 - How the router picks a model.

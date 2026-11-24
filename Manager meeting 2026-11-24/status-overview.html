@@ -1,0 +1,181 @@
+<title>Robotics-AI Web App Status</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow reading column; three status bands (built / next / waiting) then the decisions list. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2330;
+  --muted: #5b6676;
+  --line: #dde2e9;
+  --accent: #1f5f8b;
+  --ok: #2e7d4f;
+  --ok-bg: #e5f2ea;
+  --next: #1f5f8b;
+  --next-bg: #e3edf5;
+  --wait: #9a5b00;
+  --wait-bg: #fbefdc;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e4e8ee; --muted: #9aa5b4; --line: #2c3440;
+    --accent: #7db4dc; --ok: #7fcf9f; --ok-bg: #1d3226; --next: #8fc0e4; --next-bg: #1b2a38;
+    --wait: #f0b45c; --wait-bg: #382a14; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ee; --muted: #9aa5b4; --line: #2c3440;
+  --accent: #7db4dc; --ok: #7fcf9f; --ok-bg: #1d3226; --next: #8fc0e4; --next-bg: #1b2a38;
+  --wait: #f0b45c; --wait-bg: #382a14; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 48px;
+}
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lede { margin: 0; color: var(--fg); max-width: 65ch; }
+section { display: grid; gap: 12px; }
+.chip { font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.next { color: var(--next); background: var(--next-bg); }
+.chip.wait { color: var(--wait); background: var(--wait-bg); }
+ul.items { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+ul.items li { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 11px 14px; border-top: 1px solid var(--line); }
+ul.items li:first-child { border-top: 0; }
+ul.items li > div { min-width: 0; }
+.key { font-family: var(--font-mono); font-size: 13px; padding-top: 1px; }
+.key a { color: var(--accent); text-decoration: none; }
+.key a:hover, .key a:focus-visible { text-decoration: underline; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.t { font-weight: 500; }
+.d { color: var(--muted); font-size: 14px; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.facts div { background: var(--surface); padding: 10px 12px; display: grid; gap: 2px; }
+.facts b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 12.5px; color: var(--muted); }
+ol.decisions { margin: 0; padding: 0; list-style: none; counter-reset: dec; display: grid; gap: 10px; }
+ol.decisions li { counter-increment: dec; display: grid; grid-template-columns: 28px 1fr; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+ol.decisions li::before { content: counter(dec); font-weight: 600; color: var(--wait); font-variant-numeric: tabular-nums; }
+ol.decisions li > div { min-width: 0; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+@media (max-width: 560px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  ul.items li { grid-template-columns: 1fr; gap: 2px; }
+}
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Robotics-AI web app · back end · 24 November 2026</div>
+    <h1>Robotics-AI Web App Status</h1>
+    <p class="lede">The search behind Phase 1 (general questions) is built and tested on the real knowledge. Nothing
+      answers a user yet: no AI-written answer, sign-in, chat screen or server. Writing answers is the next step and
+      can start now. Development runs on a Claude subscription. The company API key is needed once colleagues use it,
+      and it can be switched on with one setting.</p>
+  </header>
+
+  <div class="facts" aria-label="Key figures">
+    <div><b>2,552</b><span>pages searchable</span></div>
+    <div><b>~12,150</b><span>passages indexed</span></div>
+    <div><b>90 / 90</b><span>automated tests pass</span></div>
+    <div><b>1 h 10 min</b><span>full rebuild; changes in seconds</span></div>
+  </div>
+
+  <section>
+    <h2>Built and tested <span class="chip ok">Done</span></h2>
+    <ul class="items">
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-41">RBTAI-41</a></div>
+        <div><div class="t">Search index</div>
+        <div class="d">Covers the knowledge base, case write-ups, known template issues, the 1,276 order cards and the
+          feature dossiers. Each question runs a search by meaning and a search by keyword, and the two results are
+          combined. Passages the user's role may not see are left out. Only changed pages are reprocessed.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-40">RBTAI-40</a></div>
+        <div><div class="t">Database and cost ledger</div>
+        <div class="d">Stores users, conversations, budgets and the cost of every AI call, and checks budgets. Tested,
+          but no screen or API uses it yet.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-39">RBTAI-39</a></div>
+        <div><div class="t">Back-end skeleton</div>
+        <div class="d">ASP.NET Core, following the conventions of Skalar's existing back ends. So far it only answers a
+          health check.</div></div></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Next, can start now <span class="chip next">Next</span></h2>
+    <ul class="items">
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-43">RBTAI-43</a></div>
+        <div><div class="t">Ask a question, get an answer with sources</div>
+        <div class="d">Connects the search, the budget check and the cost ledger to Claude. It also rewrites questions,
+          so Dutch and full-sentence questions find the right pages. During development every answer records what it
+          would have cost on the API, so budgets are tested without the API spend.</div></div></li>
+      <li><div class="key">No ticket yet</div>
+        <div><div class="t">Front end, starting with the chat screen</div>
+        <div class="d">Built from the agreed mockup (sign-in, dashboard, new chat, general and order chats, admin) in
+          React on Skalar's own front-end packages. Needs read access to the <code>skalar-npm</code> package feed,
+          requested on 17 November. A development sign-in stands in until the real one is ready.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-42">RBTAI-42</a></div>
+        <div><div class="t">Test set of real questions</div>
+        <div class="d">In progress. A scoring command now exists. First baseline: of 36 questions with a known
+          answer, 28 have the right page in the top 3 and 33 in the top 8. All three misses are Dutch questions.
+          Still to do: stop ERP part lists from pushing how-to pages down.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-62">RBTAI-62</a></div>
+        <div><div class="t">Confluence setup pages into the search</div>
+        <div class="d">The Software Setup and In Details pages of every template. Only the BOD setup page is in the
+          index today.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-63">RBTAI-63</a></div>
+        <div><div class="t">Answer tests</div>
+        <div class="d">Known lab questions the AI must still answer correctly after each change.</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-38">RBTAI-38</a></div>
+        <div><div class="t">Plan and architecture on Confluence</div>
+        <div class="d">The published pages still describe the earlier Python design.</div></div></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Needed before colleagues can use it <span class="chip wait">Waiting</span></h2>
+    <ul class="items">
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-44">RBTAI-44</a></div>
+        <div><div class="t">Sign in with the Skalar work account</div>
+        <div class="d">Needs the app registration from IT (RBTAI-34).</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-48">RBTAI-48</a></div>
+        <div><div class="t">Server and scheduled sync</div>
+        <div class="d">Needs a server inside the network (RBTAI-34).</div></div></li>
+      <li><div class="key"><a href="https://skalaranalytical.atlassian.net/browse/RBTAI-49">RBTAI-49</a></div>
+        <div><div class="t">Pilot with a test group</div>
+        <div class="d">Needs the sign-in, the server and the company API key. Budgets and roles start with working
+          values (currently €25 per person and €500 for the company each month) and are adjusted during the
+          pilot.</div></div></li>
+    </ul>
+    <p class="note">Phase 2 (order investigations with logs) and Phase 3 (wider use) get their tickets when Phase 1 is
+      nearly done.</p>
+  </section>
+
+  <section>
+    <h2>What I need</h2>
+    <ol class="decisions">
+      <li><div><div class="t">An IT contact for the infrastructure (<a href="https://skalaranalytical.atlassian.net/browse/RBTAI-34">RBTAI-34</a>)</div>
+        <div class="d">The only real dependency. It covers an app registration in Entra ID with four roles, access
+          from outside without VPN (the Entra application proxy needs an Entra ID P1 licence, or IT's alternative), a
+          Windows VM that can reach SVN, and a read-only SVN service account.</div></div></li>
+      <li><div><div class="t">Read access to the <code>skalar-npm</code> package feed</div>
+        <div class="d">The front end is built on Skalar's <code>@skalar/*</code> packages. Access was requested on 17
+          November and hasn't come through yet.</div></div></li>
+      <li><div><div class="t">The company API key, ready by the pilot (<a href="https://skalaranalytical.atlassian.net/browse/RBTAI-35">RBTAI-35</a>)</div>
+        <div class="d">Not needed for development. A date is enough.</div></div></li>
+      <li><div><div class="t">Who confirms the real numbers (<a href="https://skalaranalytical.atlassian.net/browse/RBTAI-36">RBTAI-36</a>, <a href="https://skalaranalytical.atlassian.net/browse/RBTAI-37">RBTAI-37</a>, <a href="https://skalaranalytical.atlassian.net/browse/RBTAI-49">RBTAI-49</a>)</div>
+        <div class="d">Budgets, which departments get which role, and the pilot group start with working values and
+          are easy to change. Only the person who signs them off before colleagues start needs to be named.</div></div></li>
+      <li><div><div class="t">Time</div>
+        <div class="d">How much of my week this gets, next to lab and support work.</div></div></li>
+    </ol>
+  </section>
+</main>
