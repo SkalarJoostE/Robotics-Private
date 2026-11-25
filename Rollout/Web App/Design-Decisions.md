@@ -66,9 +66,12 @@
 | D46 | 2026-11-11 | The search index is built in C# as well (local embedding model through ONNX Runtime, SQLite keyword index). Only if the embedding model proves impractical in ONNX, a small Python helper computes embeddings and nothing else. |
 | D47 | 2026-11-17 | The back end follows the conventions of Skalar's `toc-be` (reference clone in `Reference\toc-be`): projects Common / Persistence / Domain / WebAPI plus tests; one model type per layer (`*Entity`, domain, `*Model`) with `ToDomain()`/`ToAPI()` mappers; controllers → providers → services → repositories; central package management, warnings as errors, `.editorconfig` enforced on build; NLog; Swashbuckle with `swagger.json` committed; xUnit v3, Moq, Reqnroll, WebApplicationFactory; EF Core with SQLite; Conventional Commits carrying the Jira key. Added beyond toc-be: ProblemDetails error responses, a mapped `/health`, IOptions configuration, Entra ID login via Microsoft.Identity.Web. |
 | D48 | 2026-11-17 | Live progress to the browser goes over SignalR, as in other Skalar apps. |
-| D49 | 2026-11-17 | The front end is a separate React app in this project's repo, built on the published `@skalar/*` packages (Azure Artifacts feed `skalar-npm`, read access requested), not inside `skalar-fe`. |
+| D49 | 2026-11-17 | The front end is a separate React app in this project's repo, ~~built on the published `@skalar/*` packages (Azure Artifacts feed `skalar-npm`, read access requested),~~ not inside `skalar-fe`. Package use replaced by D53. |
 | D50 | 2026-11-17 | Code lives in Bitbucket `skalaranalytical/robotics-ai-web`: `backend/` and `frontend/`. Single developer, so commits go straight to `main` without branches or pull requests. The API runs locally on port 5190 (5180 is the SP2000 simulator). |
 | D51 | 2026-11-17 | Work is tracked on Jira board RBTAI with components Workspace / Web app / Simulator. Tickets state the work only (Why / Done when). |
+| D52 | 2026-11-24 | Three stages. **1 — self-hosted:** the full application on Joost's PC (localhost), for Joost only, with the development sign-in (RBTAI-44) until IT registers the Entra app; questions go through the chat as an end user's would, answered on Joost's Claude subscription, no API calls. **2 — in company:** anyone on the Skalar network can log in and use it. **3 — outside the company:** reachable from anywhere, login with Skalar credentials (D2, D10). |
+| D53 | 2026-11-24 | The front end does not use the `@skalar/*` packages. It takes what it needs from the `skalar-fe` repository (reference clone in `Reference\skalar-fe`) into this project; anything missing is added in this project only. No pull requests to `skalar-fe` unless there is a strong reason. |
+| D54 | 2026-11-24 | Every question goes through Claude Code (`claude -p`, D44), in two settings: **Knowledge** (our own system prompt, the search as its only tool, filtered by role) and **Deep dive** (the full workspace and the allowlisted scripts; a conversation moves there when a log or order comes in, D29). The back end reaches it through its own small `IAnswerEngine` interface, with a fake implementation for tests. No Anthropic SDK or `IChatClient` route: one is added behind the same interface only if stage 1 measurements (tokens and duration per question) show Claude Code's overhead matters for knowledge questions. |
 
 ## Open
 
@@ -83,4 +86,5 @@
 - Roles: which tiers, which departments in each, what each may ask, who manages membership.
 - Upload size limits.
 - How the router picks a model.
+- Whether a small step first classifies the question (part list / general knowledge / deep dive) to focus the search, and with what (local model, Haiku, or the answering model's own search tool).
 - Hosting: a Windows VM inside the network; the Entra licence (D10).
