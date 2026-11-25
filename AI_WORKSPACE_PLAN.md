@@ -213,6 +213,35 @@ reverted its log-analysis half disappears with it. Never keep change 1 while dro
 whether the diagnosis held, and what was kept. A test that is run and not written down leaves the
 next person exactly where this one started.
 
+### Phase 6 — Knowledge intake for the web app search (opened 2026-11-25)
+
+The process is `md documents\Knowledge Intake\README.md` (decision below). State at the end of 2026-11-25:
+process page `a6fd292f`, Confluence mirror + triage register `269f6eb5`, AI-drafted verdicts for all 61 SPDKB
+pages committed the same evening. **To continue on another PC:** `git pull` in the workspace and in `_private`,
+then run `Tools&Scripts\Confluence Mirror\Export-ConfluenceMirror.ps1` once — the mirror folder is git-ignored, so
+a fresh PC has the register but not the page copies (needs `Tools&Scripts\Jira ticket scraper\jira-config.json`;
+the Atlassian token works for Confluence too; ~25 s).
+
+- [ ] **Review the drafts in `confluence-triage.csv`, starting with the 13 whose reason starts "Check:"**: ALS
+      Canada Waters template still in use (2 pages); `svn.skalar.com` URL on "Creating a new project"; Korea Soil
+      setup unfinished?; the two 2022 diluter-upgrade pages vs the Diluter Upgrade Kit; whether the A/B approval
+      rule page belongs in the search; Beer in Details slips; Crucible Weighing TBDs; Single pHEC in Details
+      contradictions; splitter box; SQLite attachment; PSU PCB page. Then confirm all 61 by filling `triaged_by`
+      (empty `triaged_by` = draft, never searched).
+- [ ] **Send the 5 "Owner:" findings to the page owners** (Confluence is never edited from the workspace):
+      EC criterion "0.475 ± 1" on Soil Dual pHEC and multi-probe (Single says ± 0.05); Beer default rack sizes
+      contradict each other and Beer in Details; two cut-off sentences in BOD Dual Bridge in Details;
+      "Create a new project" links into the personal space `~maciej`.
+- [ ] **Indexer source for the mirror** (`robotics-ai-web`): read `confluence-mirror\`, search only `keep` rows
+      with `triaged_by` filled, cite the Confluence URL, and handle the boilerplate every setup page repeats
+      (install tools, plugin path, create project) so it does not crowd results. Add test questions to
+      `search-eval/questions.yaml`.
+- [ ] Decide the lowest role for the proposed Route 3 folders (How-tos, System Write-ups, Lab Handovers) and
+      add them as sources.
+- [ ] Ask the PM whether `draft` knowledge-base pages should stay searchable.
+- [ ] Later: the ~129 robot pages outside SPDKB (e.g. the SKB space) and the Power App board guide SPDKB links
+      to; gap signals in the web app (answers with no or weak citations, a "not helpful" button).
+
 ---
 
 ## 5. Decision log
@@ -257,3 +286,5 @@ next person exactly where this one started.
 - **2026-10-14 — No pre-extracted error-code table; error codes are looked up per system, and only when needed** (Joost). The core promised a per-template `error-codes.md` in each template's `docs/` (F12). None existed: `Extract-ErrorCodes.py` hardcoded the old root `c:\SPD_Projects\Robotics-AI`, so it skipped every template on any other clone, nothing ran it, and its output landed in the template's SVN working copy, outside git. A per-order replacement generated into `Sequences\` was built and then dropped. The premise was wrong: **error codes are per system** — an order adds and changes its own — so a template table can give the wrong meaning, and the lookup it saves is one grep of that system's `SkalarPack.GeneralTables.Tables.xml` for `<ErrorNumber>N</ErrorNumber>`, too cheap to be worth a generated file and a post-processing step (the 2026-07-25 Rollout finding agrees: none of 41 write-ups had used the tables). The core and `skalar-log-analysis` now say exactly that, and say to look a code up only when a log or question names one that matters — never as a routine step when looking at a system. Generator deleted; `Tools&Scripts\README.md`, `SETUP.md` and `Setup-Workspace.ps1` no longer mention it. Do not re-add a pre-extracted table.\n
 
 - **2026-11-17 — Testkit knowledge lives in the how-to, and the always-on core and the feature skill point at it** (Joost). On SSO-146 the agent re-derived the Testkit wiring (kits vs methods, TableWizard, heater blocks) from the XML again, although `md documents\How-tos\Testkit - Adding a New Range.md` already covered most of it: CLAUDE.md said only BOD has template docs, and `skalar-feature-implementation` never mentioned Testkit, so nothing led there. Fix: one line in CLAUDE.md's template-docs list and a note at the top of the skill, plus a "new method" section (§8) and the operator flow (§7) in the how-to. Rejected: a Testkit `docs/` folder in the template checkout (not guaranteed on disk, and a second place to keep in sync); a new skill (the how-to is the reusable procedure; a skill would duplicate it). `AI_CONTEXT_CHANGELOG.md` row marked under evaluation until the next Testkit job shows it starts from the how-to.
+
+- **2026-11-25 — Knowledge intake: the workspace is the source, three routes, Confluence is mirrored rather than rewritten** (Joost). With the web app's RAG search live, scattered documentation needed a path in. The search reads fixed workspace folders and its index is derived, so "adding to the search" means a page in a searched folder plus an indexer run — never an upload. Three routes: (1) product knowledge (manuals, master methods) into `knowledge-base\` — already owned and running by the PM through his question log and source register; the SharePoint Robotics Library (11 manuals, 912 pages) turned out to be exactly his `manuals/` input, so nothing was built beside it; (2) Confluence, mirrored by `Export-ConfluenceMirror.ps1` into a git-ignored folder with a committed per-page triage register, because a hand-written copy drifts and a live Confluence search cannot be ranked with the workspace pages; (3) workspace folders added as sources by a checklist. Raw PDFs are deliberately not indexed: the manuals repeat the platform chapters, lose their tables, and carry no review status. AI-drafted triage verdicts are drafts until a person fills `triaged_by`. The wrap-up skill got two rows: a product fact becomes a drafted question for the PM (never an edit to his knowledge base), a search gap goes through the intake page. Rejected: a separate document-upload store for the RAG (two truths), copying Confluence by hand. Open work: §4 Phase 6.
